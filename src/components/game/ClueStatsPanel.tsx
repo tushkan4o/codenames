@@ -20,7 +20,6 @@ export default function ClueStatsPanel({ clueId, spymasterUserId }: ClueStatsPan
   if (!stats) return null;
 
   // Build simple score distribution: count occurrences of each score value
-  const maxScore = Math.max(...stats.scores, 0);
   const distribution = new Map<number, number>();
   for (const s of stats.scores) {
     distribution.set(s, (distribution.get(s) ?? 0) + 1);
