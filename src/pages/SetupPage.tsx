@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { generateSeed } from '../lib/boardGenerator';
-import { mockApi } from '../mock/mockApi';
+import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
 import type { BoardSize, GameMode, RuleSet, WordPack } from '../types/game';
 
@@ -26,7 +26,7 @@ export default function SetupPage() {
       navigate(`/give-clue/${encodeURIComponent(seed)}?pack=${wordPack}&size=${boardSize}&rules=${ruleSet}`);
     } else {
       setLoading(true);
-      const clue = await mockApi.getRandomClue(user.id, [], wordPack, boardSize);
+      const clue = await api.getRandomClue(user.id, [], wordPack, boardSize);
       setLoading(false);
       if (clue) {
         navigate(`/guess/${clue.id}`);

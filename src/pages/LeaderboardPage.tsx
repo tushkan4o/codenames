@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
-import { mockApi } from '../mock/mockApi';
+import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
 import type { BoardSize } from '../types/game';
 
@@ -32,7 +32,7 @@ export default function LeaderboardPage() {
 
   const loadData = useCallback(async (size: SizeFilter) => {
     const boardSize = size === 'all' ? undefined : size;
-    const data = await mockApi.getLeaderboard(boardSize);
+    const data = await api.getLeaderboard(boardSize);
     setSpymasters(data.spymasters);
     setGuessers(data.guessers);
   }, []);

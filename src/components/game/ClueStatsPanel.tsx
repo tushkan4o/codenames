@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockApi } from '../../mock/mockApi';
+import { api } from '../../lib/api';
 import { useTranslation } from '../../i18n/useTranslation';
 
 interface ClueStatsPanelProps {
@@ -14,7 +14,7 @@ export default function ClueStatsPanel({ clueId, spymasterUserId }: ClueStatsPan
   const [stats, setStats] = useState<{ attempts: number; avgScore: number; scores: number[] } | null>(null);
 
   useEffect(() => {
-    mockApi.getClueStats(clueId).then(setStats);
+    api.getClueStats(clueId).then(setStats);
   }, [clueId]);
 
   if (!stats) return null;

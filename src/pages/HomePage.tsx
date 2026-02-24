@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
-import { mockApi } from '../mock/mockApi';
+import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
 import type { UserStats } from '../types/user';
 
@@ -14,7 +14,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (user) {
-      mockApi.getUserStats(user.id).then(setStats);
+      api.getUserStats(user.id).then(setStats);
     }
   }, [user]);
 

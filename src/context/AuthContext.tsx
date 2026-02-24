@@ -2,21 +2,12 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { User } from '../types/user';
 import { DEFAULT_PREFERENCES } from '../types/user';
 
-const USERS_KEY = 'codenames_users';
 const CURRENT_USER_KEY = 'codenames_current_user';
-
-function getStoredUsers(): User[] {
-  const raw = localStorage.getItem(USERS_KEY);
-  return raw ? JSON.parse(raw) : [];
-}
-
-function saveUsers(users: User[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
+const CACHED_USER_KEY = 'codenames_cached_user';
 
 interface AuthContextValue {
   user: User | null;
-  login: (displayName: string) => User;
+  login: (displayName: string) => Promise<User>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
 }
@@ -27,51 +18,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     const userId = localStorage.getItem(CURRENT_USER_KEY);
     if (!userId) return null;
-    const users = getStoredUsers();
-    return users.find((u) => u.id === userId) ?? null;
+    // Load cached user data for instant render
+    const cached = localStorage.getItem(CACHED_USER_KEY);
+    if (cached) {
+      try { return JSON.parse(cached); } catch { /* ignore */ }
+    }
+    return null;
   });
 
-  function login(displayName: string): User {
-    const id = displayName.trim().toLowerCase();
-    const users = getStoredUsers();
-    let existing = users.find((u) => u.id === id);
+  async function login(displayName: string): Promise<User> {
+    const preferences = { ...DEFAULT_PREFERENCES };
 
-    if (!existing) {
-      existing = {
-        id,
-        displayName: displayName.trim(),
-        createdAt: Date.now(),
-        preferences: { ...DEFAULT_PREFERENCES },
-      };
-      users.push(existing);
-      saveUsers(users);
-    } else if (existing.preferences.defaultWordPack !== DEFAULT_PREFERENCES.defaultWordPack) {
-      // Migrate existing users to updated default word pack
-      existing = { ...existing, preferences: { ...existing.preferences, defaultWordPack: DEFAULT_PREFERENCES.defaultWordPack } };
-      const idx = users.findIndex((u) => u.id === id);
-      if (idx !== -1) users[idx] = existing;
-      saveUsers(users);
-    }
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName: displayName.trim(), preferences }),
+    });
+    const dbUser = await res.json();
 
-    localStorage.setItem(CURRENT_USER_KEY, id);
-    setUser(existing);
-    return existing;
+    const localUser: User = {
+      id: dbUser.id,
+      displayName: dbUser.display_name,
+      createdAt: Number(dbUser.created_at),
+      preferences: dbUser.preferences || preferences,
+    };
+
+    localStorage.setItem(CURRENT_USER_KEY, localUser.id);
+    localStorage.setItem(CACHED_USER_KEY, JSON.stringify(localUser));
+    setUser(localUser);
+    return localUser;
   }
 
   function logout() {
     localStorage.removeItem(CURRENT_USER_KEY);
+    localStorage.removeItem(CACHED_USER_KEY);
     setUser(null);
   }
 
   function updateUser(updates: Partial<User>) {
     if (!user) return;
-    const users = getStoredUsers();
-    const idx = users.findIndex((u) => u.id === user.id);
-    if (idx === -1) return;
-    const updated = { ...users[idx], ...updates };
-    users[idx] = updated;
-    saveUsers(users);
+    const updated = { ...user, ...updates };
+    localStorage.setItem(CACHED_USER_KEY, JSON.stringify(updated));
     setUser(updated);
+    // Also update preferences on server
+    if (updates.preferences) {
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName: user.displayName, preferences: updates.preferences }),
+      });
+    }
   }
 
   return (

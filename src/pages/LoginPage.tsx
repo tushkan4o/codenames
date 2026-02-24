@@ -8,7 +8,7 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
@@ -23,7 +23,7 @@ export default function LoginPage() {
       setError('Username must be 20 characters or less');
       return;
     }
-    login(trimmed);
+    await login(trimmed);
     navigate('/');
   }
 

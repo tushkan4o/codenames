@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
-import { mockApi } from '../mock/mockApi';
+import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
 import BoardReviewModal from '../components/game/BoardReviewModal';
 import type { Clue, GuessResult } from '../types/game';
@@ -33,12 +33,12 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!profileId) return;
-    mockApi.getUserStats(profileId).then(setStats);
-    mockApi.getCluesByUser(profileId).then(setCluesGiven);
-    mockApi.getResultsByUser(profileId).then(async (results) => {
+    api.getUserStats(profileId).then(setStats);
+    api.getCluesByUser(profileId).then(setCluesGiven);
+    api.getResultsByUser(profileId).then(async (results) => {
       const entries = await Promise.all(
         results.map(async (result) => {
-          const clue = await mockApi.getClueById(result.clueId);
+          const clue = await api.getClueById(result.clueId);
           return { result, clue };
         }),
       );
@@ -46,7 +46,7 @@ export default function ProfilePage() {
     });
     // Load current user's solved clue IDs
     if (user) {
-      mockApi.getResultsByUser(user.id).then((results) => {
+      api.getResultsByUser(user.id).then((results) => {
         setMySolvedClueIds(new Set(results.map((r) => r.clueId)));
       });
     }

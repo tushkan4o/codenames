@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { generateBoard, generateSeed } from '../lib/boardGenerator';
-import { mockApi } from '../mock/mockApi';
+import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { BOARD_CONFIGS } from '../types/game';
@@ -71,7 +71,7 @@ export default function ClueGivingPage() {
       boardSize,
       reshuffleCount,
     };
-    await mockApi.saveClue(clue);
+    await api.saveClue(clue);
     setSubmitted(true);
   }
 

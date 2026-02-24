@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
-import { mockApi } from '../mock/mockApi';
+import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
 
 export default function ResultsPage() {
@@ -13,7 +13,7 @@ export default function ResultsPage() {
   useEffect(() => {
     async function load() {
       if (!clueId) return;
-      const s = await mockApi.getClueStats(clueId);
+      const s = await api.getClueStats(clueId);
       setStats(s);
     }
     load();

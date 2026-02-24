@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { generateBoard } from '../lib/boardGenerator';
 import { computeGuessScore } from '../lib/scoring';
-import { mockApi } from '../mock/mockApi';
+import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../types/game';
@@ -33,7 +33,7 @@ export default function GuessingPage() {
   useEffect(() => {
     async function loadClue() {
       if (!clueId) return;
-      const found = await mockApi.getClueById(clueId);
+      const found = await api.getClueById(clueId);
       setClue(found);
       setLoading(false);
     }
@@ -65,7 +65,7 @@ export default function GuessingPage() {
 
   async function handleAnotherClue() {
     if (!user) return;
-    const newClue = await mockApi.getRandomClue(user.id, clue ? [clue.id] : []);
+    const newClue = await api.getRandomClue(user.id, clue ? [clue.id] : []);
     if (newClue) {
       navigate(`/guess/${newClue.id}`);
     } else {
@@ -108,7 +108,7 @@ export default function GuessingPage() {
 
       const correctCount = finalPicked.filter((i) => clue.targetIndices.includes(i)).length;
 
-      await mockApi.saveGuessResult({
+      await api.saveGuessResult({
         clueId: clue.id,
         guessedIndices: finalPicked,
         correctCount,
@@ -283,7 +283,7 @@ export default function GuessingPage() {
           </div>
           <ClueRating
             onRate={(rating) => {
-              if (user) mockApi.saveRating(clue.id, user.id, rating);
+              if (user) api.saveRating(clue.id, user.id, rating);
             }}
             onReport={(reason) => console.log('Reported:', reason)}
           />
