@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDb } from '../_lib/db';
+import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const { boardSize } = req.query;
-  const sql = getDb();
+  const sql = neon(process.env.DATABASE_URL!);
 
   // Fetch clues and results, optionally filtered by board size
   let clues: Record<string, unknown>[];

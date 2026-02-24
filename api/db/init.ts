@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDb } from '../_lib/db';
+import { neon } from '@neondatabase/serverless';
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {
@@ -7,7 +7,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       return res.status(500).json({ error: 'DATABASE_URL environment variable is not set' });
     }
 
-    const sql = getDb();
+    const sql = neon(process.env.DATABASE_URL!);
 
     await sql`CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
