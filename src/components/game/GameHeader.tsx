@@ -9,7 +9,7 @@ interface GameHeaderProps {
 export default function GameHeader({ mode, config }: GameHeaderProps) {
   const { t } = useTranslation();
   const modeLabel = mode === 'clue-giving' ? t.game.spymasterMode : t.game.guesserMode;
-  const modeColor = mode === 'clue-giving' ? 'text-purple-400' : 'text-cyan-400';
+  const modeColor = mode === 'clue-giving' ? 'text-blue-400' : 'text-gray-400';
 
   return (
     <div className="text-center mb-4">

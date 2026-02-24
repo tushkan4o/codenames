@@ -12,6 +12,7 @@ import GameHeader from '../components/game/GameHeader';
 import ClueDisplay from '../components/clue/ClueDisplay';
 import RevealOverlay from '../components/game/RevealOverlay';
 import ClueRating from '../components/game/ClueRating';
+import ClueStatsPanel from '../components/game/ClueStatsPanel';
 
 type GamePhase = 'picking' | 'revealing' | 'done';
 
@@ -47,7 +48,7 @@ export default function GuessingPage() {
 
   const board = useMemo(() => {
     if (!clue) return null;
-    return generateBoard(clue.boardSeed, config, clue.wordPack || 'en');
+    return generateBoard(clue.boardSeed, config, clue.wordPack || 'ru');
   }, [clue, config]);
 
   const animationEnabled = user?.preferences.animationEnabled ?? true;
@@ -115,6 +116,7 @@ export default function GuessingPage() {
         score: computedScore,
         timestamp: Date.now(),
         userId: user.id,
+        boardSize: clue.boardSize,
       });
 
       // Reveal remaining cards
@@ -226,14 +228,14 @@ export default function GuessingPage() {
           </button>
           <button
             onClick={handleAnotherClue}
-            className="px-4 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-sm font-bold transition-colors"
+            className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-bold transition-colors"
           >
             {t.game.anotherClue}
           </button>
           {pickedIndices.length > 0 && (
             <button
               onClick={handleEndTurn}
-              className="px-4 py-2 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-sm font-bold transition-colors"
+              className="px-4 py-2 rounded-lg bg-red-800 hover:bg-red-700 text-white text-sm font-bold transition-colors"
             >
               {t.game.endTurn}
             </button>
@@ -255,6 +257,20 @@ export default function GuessingPage() {
 
       {phase === 'done' && (
         <>
+          <div className="flex justify-center gap-3 mt-4 mb-4">
+            <button
+              onClick={handleHome}
+              className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold transition-colors"
+            >
+              {t.game.home}
+            </button>
+            <button
+              onClick={handleAnotherClue}
+              className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-colors"
+            >
+              {t.game.nextPuzzle}
+            </button>
+          </div>
           <RevealOverlay
             cards={board.cards}
             guessedIndices={pickedIndices}
@@ -262,6 +278,9 @@ export default function GuessingPage() {
             score={score}
             onClose={() => navigate('/')}
           />
+          <div className="max-w-md mx-auto mt-4">
+            <ClueStatsPanel clueId={clue.id} spymasterUserId={clue.userId} />
+          </div>
           <ClueRating
             onRate={(rating) => {
               if (user) mockApi.saveRating(clue.id, user.id, rating);

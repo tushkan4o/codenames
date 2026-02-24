@@ -24,8 +24,8 @@ export function validateClue(
     return { valid: false, error: 'Clue cannot be a word on the board' };
   }
 
-  if (number < 0 || number > 9 || !Number.isInteger(number)) {
-    return { valid: false, error: 'Number must be between 0 and 9' };
+  if (number < 1 || !Number.isInteger(number)) {
+    return { valid: false, error: 'Select at least one target word' };
   }
 
   return { valid: true };

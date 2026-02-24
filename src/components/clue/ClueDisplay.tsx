@@ -10,7 +10,7 @@ export default function ClueDisplay({ word, number }: ClueDisplayProps) {
         <span className="text-2xl font-bold text-white uppercase tracking-wider">
           {word}
         </span>
-        <span className="ml-3 text-2xl font-bold text-yellow-400">{number}</span>
+        <span className="ml-3 text-2xl font-bold text-white">{number}</span>
       </div>
     </div>
   );

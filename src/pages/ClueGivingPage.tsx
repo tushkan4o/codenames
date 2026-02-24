@@ -55,8 +55,7 @@ export default function ClueGivingPage() {
 
   async function handleSubmitClue(word: string, number: number) {
     if (!user) return;
-    // Validate target count matches clue number
-    if (selectedTargets.length !== number) {
+    if (selectedTargets.length === 0) {
       setTargetError(t.game.targetsMismatch.replace('{n}', String(number)));
       return;
     }
@@ -93,7 +92,7 @@ export default function ClueGivingPage() {
   if (submitted) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4 gap-4">
-        <h2 className="text-2xl font-bold text-green-400">{t.game.clueSubmitted}</h2>
+        <h2 className="text-2xl font-bold text-blue-400">{t.game.clueSubmitted}</h2>
         <p className="text-gray-400">{t.game.othersCanGuess}</p>
         <div className="flex gap-3">
           <button
@@ -104,7 +103,7 @@ export default function ClueGivingPage() {
           </button>
           <button
             onClick={handleGiveAnother}
-            className="px-6 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold transition-colors"
+            className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors"
           >
             {t.game.giveAnotherClue}
           </button>
@@ -127,18 +126,18 @@ export default function ClueGivingPage() {
         </button>
         <button
           onClick={handleReshuffle}
-          className="px-4 py-2 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-sm font-bold transition-colors"
+          className="px-4 py-2 rounded-lg bg-red-800 hover:bg-red-700 text-white text-sm font-bold transition-colors"
           title={t.game.reshuffleWarning}
         >
           {t.game.reshuffle}
           {reshuffleCount > 0 && (
-            <span className="ml-1 text-amber-300">({reshuffleCount})</span>
+            <span className="ml-1 text-red-300">({reshuffleCount})</span>
           )}
         </button>
       </div>
 
       {reshuffleCount > 0 && (
-        <p className="text-center text-amber-400 text-xs mb-2">{t.game.reshuffleWarning}</p>
+        <p className="text-center text-red-400 text-xs mb-2">{t.game.reshuffleWarning}</p>
       )}
 
       <p className="text-center text-gray-400 text-sm mb-1">
@@ -161,7 +160,7 @@ export default function ClueGivingPage() {
       />
 
       <div className="mt-6">
-        <ClueInput boardCards={board.cards} maxNumber={config.redCount} onSubmit={handleSubmitClue} />
+        <ClueInput boardCards={board.cards} targetCount={selectedTargets.length} onSubmit={handleSubmitClue} />
       </div>
     </div>
   );

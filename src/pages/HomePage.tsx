@@ -27,7 +27,7 @@ export default function HomePage() {
 
         <button
           onClick={() => navigate('/setup')}
-          className="px-12 py-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xl transition-colors mb-8"
+          className="px-12 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xl transition-colors mb-8"
         >
           {t.home.startGame}
         </button>

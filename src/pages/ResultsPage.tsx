@@ -30,7 +30,7 @@ export default function ResultsPage() {
             <p className="text-gray-400 text-sm">Total attempts</p>
             <p className="text-3xl font-bold text-white">{stats.attempts}</p>
             <p className="text-gray-400 text-sm mt-4">{t.leaderboard.avgScore}</p>
-            <p className="text-3xl font-bold text-yellow-400">
+            <p className="text-3xl font-bold text-white">
               {stats.attempts > 0 ? stats.avgScore : 'N/A'}
             </p>
           </div>

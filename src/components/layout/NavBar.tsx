@@ -17,7 +17,7 @@ export default function NavBar() {
     <nav className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800">
       <button
         onClick={() => navigate('/')}
-        className="text-lg font-bold text-white hover:text-purple-400 transition-colors"
+        className="text-lg font-bold text-white hover:text-blue-400 transition-colors"
       >
         CODENAMES
       </button>
@@ -46,7 +46,12 @@ export default function NavBar() {
         </select>
 
         {user && (
-          <span className="text-sm text-gray-500">{user.displayName}</span>
+          <button
+            onClick={() => navigate('/profile')}
+            className="text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            {user.displayName}
+          </button>
         )}
         <button
           onClick={handleLogout}

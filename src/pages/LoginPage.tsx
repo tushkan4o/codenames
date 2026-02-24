@@ -39,12 +39,12 @@ export default function LoginPage() {
           onChange={(e) => { setName(e.target.value); setError(''); }}
           placeholder="Username"
           autoFocus
-          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg focus:outline-none focus:border-purple-500 mb-3"
+          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg focus:outline-none focus:border-blue-500 mb-3"
         />
         {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
         <button
           type="submit"
-          className="w-full py-3 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-lg transition-colors"
+          className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg transition-colors"
         >
           Enter
         </button>

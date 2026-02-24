@@ -37,13 +37,13 @@ export default function RevealOverlay({
 
       <div className="text-center mb-4">
         <p className="text-gray-400 text-sm">{t.results.score}</p>
-        <span className="text-4xl font-bold text-yellow-400">{score}</span>
+        <span className="text-4xl font-bold text-white">{score}</span>
       </div>
 
       <div className="space-y-3 text-sm">
         {pickedRedClued.length > 0 && (
           <div>
-            <span className="text-green-400 font-semibold">{t.results.pickedRedClued}: </span>
+            <span className="text-blue-400 font-semibold">{t.results.pickedRedClued}: </span>
             <span className="text-gray-300">
               {pickedRedClued.map((i) => cards[i].word).join(', ')}
             </span>
@@ -59,7 +59,7 @@ export default function RevealOverlay({
         )}
         {missedClued.length > 0 && (
           <div>
-            <span className="text-amber-400 font-semibold">{t.results.missedClued}: </span>
+            <span className="text-gray-400 font-semibold">{t.results.missedClued}: </span>
             <span className="text-gray-300">
               {missedClued.map((i) => cards[i].word).join(', ')}
             </span>

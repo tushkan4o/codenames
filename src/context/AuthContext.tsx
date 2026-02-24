@@ -45,6 +45,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
       users.push(existing);
       saveUsers(users);
+    } else if (existing.preferences.defaultWordPack !== DEFAULT_PREFERENCES.defaultWordPack) {
+      // Migrate existing users to updated default word pack
+      existing = { ...existing, preferences: { ...existing.preferences, defaultWordPack: DEFAULT_PREFERENCES.defaultWordPack } };
+      const idx = users.findIndex((u) => u.id === id);
+      if (idx !== -1) users[idx] = existing;
+      saveUsers(users);
     }
 
     localStorage.setItem(CURRENT_USER_KEY, id);

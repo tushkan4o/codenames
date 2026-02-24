@@ -8,7 +8,7 @@ interface KeyCardProps {
 const miniColorMap = {
   red: 'bg-red-500',
   blue: 'bg-blue-500',
-  neutral: 'bg-amber-200',
+  neutral: 'bg-gray-300',
   assassin: 'bg-gray-900',
 };
 

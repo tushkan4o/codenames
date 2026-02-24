@@ -13,7 +13,7 @@ export default function SetupPage() {
   const { t } = useTranslation();
 
   const [mode, setMode] = useState<GameMode>('clue-giving');
-  const [wordPack, setWordPack] = useState<WordPack>(user?.preferences.defaultWordPack ?? 'en');
+  const [wordPack, setWordPack] = useState<WordPack>(user?.preferences.defaultWordPack ?? 'ru');
   const [boardSize, setBoardSize] = useState<BoardSize>(user?.preferences.defaultBoardSize ?? '5x5');
   const [ruleSet, setRuleSet] = useState<RuleSet>('default');
   const [loading, setLoading] = useState(false);
@@ -50,7 +50,7 @@ export default function SetupPage() {
               onClick={() => setMode('clue-giving')}
               className={`p-4 rounded-lg border-2 transition-colors text-left ${
                 mode === 'clue-giving'
-                  ? 'border-purple-500 bg-purple-900/30'
+                  ? 'border-blue-500 bg-blue-900/30'
                   : 'border-gray-700 bg-gray-800 hover:border-gray-600'
               }`}
             >
@@ -61,7 +61,7 @@ export default function SetupPage() {
               onClick={() => setMode('guessing')}
               className={`p-4 rounded-lg border-2 transition-colors text-left ${
                 mode === 'guessing'
-                  ? 'border-cyan-500 bg-cyan-900/30'
+                  ? 'border-gray-500 bg-gray-800'
                   : 'border-gray-700 bg-gray-800 hover:border-gray-600'
               }`}
             >
@@ -76,24 +76,24 @@ export default function SetupPage() {
           <label className="block text-sm text-gray-400 mb-2">{t.setup.wordPack}</label>
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => setWordPack('en')}
-              className={`p-3 rounded-lg border-2 transition-colors font-bold ${
-                wordPack === 'en'
-                  ? 'border-green-500 bg-green-900/30 text-white'
-                  : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
-              }`}
-            >
-              {t.setup.english}
-            </button>
-            <button
               onClick={() => setWordPack('ru')}
               className={`p-3 rounded-lg border-2 transition-colors font-bold ${
                 wordPack === 'ru'
-                  ? 'border-green-500 bg-green-900/30 text-white'
+                  ? 'border-blue-500 bg-blue-900/30 text-white'
                   : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
               }`}
             >
               {t.setup.russian}
+            </button>
+            <button
+              onClick={() => setWordPack('en')}
+              className={`p-3 rounded-lg border-2 transition-colors font-bold ${
+                wordPack === 'en'
+                  ? 'border-blue-500 bg-blue-900/30 text-white'
+                  : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+              }`}
+            >
+              {t.setup.english}
             </button>
           </div>
         </div>
@@ -106,7 +106,7 @@ export default function SetupPage() {
               onClick={() => setBoardSize('4x4')}
               className={`p-3 rounded-lg border-2 transition-colors text-center ${
                 boardSize === '4x4'
-                  ? 'border-yellow-500 bg-yellow-900/30'
+                  ? 'border-blue-500 bg-blue-900/30'
                   : 'border-gray-700 bg-gray-800 hover:border-gray-600'
               }`}
             >
@@ -117,7 +117,7 @@ export default function SetupPage() {
               onClick={() => setBoardSize('5x5')}
               className={`p-3 rounded-lg border-2 transition-colors text-center ${
                 boardSize === '5x5'
-                  ? 'border-yellow-500 bg-yellow-900/30'
+                  ? 'border-blue-500 bg-blue-900/30'
                   : 'border-gray-700 bg-gray-800 hover:border-gray-600'
               }`}
             >
@@ -157,7 +157,7 @@ export default function SetupPage() {
         <button
           onClick={handleStart}
           disabled={loading}
-          className="w-full py-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-lg transition-colors disabled:opacity-50"
+          className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg transition-colors disabled:opacity-50"
         >
           {loading ? t.game.findingClue : t.setup.start}
         </button>

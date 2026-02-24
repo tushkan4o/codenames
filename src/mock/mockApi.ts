@@ -34,8 +34,15 @@ export const mockApi = {
     wordPack?: WordPack,
     boardSize?: BoardSize,
   ): Promise<Clue | null> {
+    // Exclude clues the user has already solved
+    const solvedClueIds = new Set(
+      getStored<GuessResult>(RESULTS_KEY)
+        .filter((r) => r.userId === userId)
+        .map((r) => r.clueId),
+    );
     let clues = getStored<Clue>(CLUES_KEY)
       .filter((c) => !excludeIds.includes(c.id))
+      .filter((c) => !solvedClueIds.has(c.id))
       .filter((c) => c.userId !== userId); // don't guess your own clues
     if (wordPack) clues = clues.filter((c) => c.wordPack === wordPack);
     if (boardSize) clues = clues.filter((c) => c.boardSize === boardSize);
@@ -59,6 +66,11 @@ export const mockApi = {
   // --- Guess Results ---
   async saveGuessResult(result: GuessResult): Promise<void> {
     const results = getStored<GuessResult>(RESULTS_KEY);
+    // Prevent duplicate: one solve per (clueId, userId) pair
+    const alreadySolved = results.some(
+      (r) => r.clueId === result.clueId && r.userId === result.userId,
+    );
+    if (alreadySolved) return;
     results.push(result);
     setStored(RESULTS_KEY, results);
   },
@@ -71,13 +83,15 @@ export const mockApi = {
     return getStored<GuessResult>(RESULTS_KEY).filter((r) => r.clueId === clueId);
   },
 
-  async getClueStats(clueId: string): Promise<{ attempts: number; avgScore: number }> {
+  async getClueStats(clueId: string): Promise<{ attempts: number; avgScore: number; scores: number[] }> {
     const results = getStored<GuessResult>(RESULTS_KEY).filter((r) => r.clueId === clueId);
-    if (results.length === 0) return { attempts: 0, avgScore: 0 };
-    const totalScore = results.reduce((sum, r) => sum + (r.score ?? 0), 0);
+    const scores = results.map((r) => r.score ?? 0);
+    if (results.length === 0) return { attempts: 0, avgScore: 0, scores: [] };
+    const totalScore = scores.reduce((s, v) => s + v, 0);
     return {
       attempts: results.length,
-      avgScore: totalScore / results.length,
+      avgScore: Math.round((totalScore / results.length) * 10) / 10,
+      scores,
     };
   },
 
@@ -139,12 +153,17 @@ export const mockApi = {
   },
 
   // --- Leaderboard ---
-  async getLeaderboard(): Promise<{
+  async getLeaderboard(boardSize?: BoardSize): Promise<{
     spymasters: { userId: string; cluesGiven: number; avgWordsPerClue: number; avgScoreOnClues: number }[];
     guessers: { userId: string; cluesSolved: number; avgWordsPicked: number; avgScore: number }[];
   }> {
-    const clues = getStored<Clue>(CLUES_KEY);
-    const results = getStored<GuessResult>(RESULTS_KEY);
+    const allClues = getStored<Clue>(CLUES_KEY);
+    const allResults = getStored<GuessResult>(RESULTS_KEY);
+
+    const clues = boardSize ? allClues.filter((c) => c.boardSize === boardSize) : allClues;
+    const results = boardSize
+      ? allResults.filter((r) => r.boardSize === boardSize || clues.some((c) => c.id === r.clueId))
+      : allResults;
 
     // Group clues by user
     const cluesByUser = new Map<string, Clue[]>();

@@ -26,7 +26,7 @@ export default function ClueRating({ onRate, onReport }: ClueRatingProps) {
   }
 
   if (rated) {
-    return <p className="text-green-400 text-sm text-center">{t.rating.thanks}</p>;
+    return <p className="text-blue-400 text-sm text-center">{t.rating.thanks}</p>;
   }
 
   return (
