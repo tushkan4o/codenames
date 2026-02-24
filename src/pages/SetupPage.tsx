@@ -26,12 +26,17 @@ export default function SetupPage() {
       navigate(`/give-clue/${encodeURIComponent(seed)}?pack=${wordPack}&size=${boardSize}&rules=${ruleSet}`);
     } else {
       setLoading(true);
-      const clue = await api.getRandomClue(user.id, [], wordPack, boardSize);
-      setLoading(false);
-      if (clue) {
-        navigate(`/guess/${clue.id}`);
-      } else {
-        alert(t.game.noClues);
+      try {
+        const clue = await api.getRandomClue(user.id, [], wordPack, boardSize);
+        if (clue) {
+          navigate(`/guess/${clue.id}`);
+        } else {
+          alert(t.game.noClues);
+        }
+      } catch {
+        alert('Failed to load clue. Please try again.');
+      } finally {
+        setLoading(false);
       }
     }
   }
