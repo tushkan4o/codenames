@@ -9,8 +9,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const sql = neon(process.env.DATABASE_URL!);
 
-  // UNIQUE constraint handles duplicate prevention
   try {
+    // Ensure user exists
+    await sql`INSERT INTO users (id, display_name, created_at)
+      VALUES (${result.userId}, ${result.userId}, ${result.timestamp})
+      ON CONFLICT (id) DO NOTHING`;
+
     await sql`INSERT INTO results (clue_id, user_id, guessed_indices, correct_count, total_targets, score, timestamp, board_size)
       VALUES (${result.clueId}, ${result.userId}, ${result.guessedIndices}, ${result.correctCount}, ${result.totalTargets}, ${result.score}, ${result.timestamp}, ${result.boardSize || null})`;
     res.json({ ok: true });
@@ -19,6 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (err && typeof err === 'object' && 'code' in err && (err as Record<string, unknown>).code === '23505') {
       return res.json({ ok: true, duplicate: true });
     }
-    throw err;
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
   }
 }
