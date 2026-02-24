@@ -2,9 +2,14 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getDb } from '../_lib/db';
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
-  const sql = getDb();
+  try {
+    if (!process.env.DATABASE_URL) {
+      return res.status(500).json({ error: 'DATABASE_URL environment variable is not set' });
+    }
 
-  await sql`CREATE TABLE IF NOT EXISTS users (
+    const sql = getDb();
+
+    await sql`CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     display_name TEXT NOT NULL,
     created_at BIGINT NOT NULL,
@@ -44,5 +49,9 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     PRIMARY KEY (clue_id, user_id)
   )`;
 
-  res.status(200).json({ ok: true, message: 'Tables created successfully' });
+    res.status(200).json({ ok: true, message: 'Tables created successfully' });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
+  }
 }
