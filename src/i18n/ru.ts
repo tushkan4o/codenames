@@ -40,6 +40,8 @@ export const ru: TranslationKeys = {
     default: 'Стандартные',
     strict: 'Строгие',
     start: 'Начать',
+    availablePuzzles: '{available} пазлов доступно ({total} всего)',
+    noPuzzlesAvailable: 'Нет доступных пазлов с этими настройками',
   },
   game: {
     spymasterMode: 'Режим капитана',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
@@ -17,6 +17,15 @@ export default function SetupPage() {
   const [boardSize, setBoardSize] = useState<BoardSize>(user?.preferences.defaultBoardSize ?? '5x5');
   const [ruleSet, setRuleSet] = useState<RuleSet>('default');
   const [loading, setLoading] = useState(false);
+  const [puzzleCount, setPuzzleCount] = useState<{ available: number; total: number } | null>(null);
+
+  useEffect(() => {
+    if (!user || mode !== 'guessing') {
+      setPuzzleCount(null);
+      return;
+    }
+    api.getClueCount(user.id, wordPack, boardSize).then(setPuzzleCount).catch(() => setPuzzleCount(null));
+  }, [user, mode, wordPack, boardSize]);
 
   async function handleStart() {
     if (!user) return;
@@ -66,7 +75,7 @@ export default function SetupPage() {
               onClick={() => setMode('guessing')}
               className={`p-4 rounded-lg border-2 transition-colors text-left ${
                 mode === 'guessing'
-                  ? 'border-gray-500 bg-gray-800'
+                  ? 'border-blue-500 bg-blue-900/30'
                   : 'border-gray-700 bg-gray-800 hover:border-gray-600'
               }`}
             >
@@ -159,9 +168,18 @@ export default function SetupPage() {
           </div>
         </div>
 
+        {/* Puzzle count (guessing mode only) */}
+        {mode === 'guessing' && puzzleCount && (
+          <p className={`text-center text-sm mb-4 ${puzzleCount.available > 0 ? 'text-gray-400' : 'text-red-400'}`}>
+            {puzzleCount.available > 0
+              ? t.setup.availablePuzzles.replace('{available}', String(puzzleCount.available)).replace('{total}', String(puzzleCount.total))
+              : t.setup.noPuzzlesAvailable}
+          </p>
+        )}
+
         <button
           onClick={handleStart}
-          disabled={loading}
+          disabled={loading || (mode === 'guessing' && puzzleCount?.available === 0)}
           className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg transition-colors disabled:opacity-50"
         >
           {loading ? t.game.findingClue : t.setup.start}

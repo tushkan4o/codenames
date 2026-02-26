@@ -65,6 +65,14 @@ export const api = {
     return get(`/api/users/${encodeURIComponent(userId)}/stats`);
   },
 
+  // --- Clue Count ---
+  async getClueCount(userId: string, wordPack?: WordPack, boardSize?: BoardSize): Promise<{ available: number; total: number }> {
+    const params = new URLSearchParams({ userId });
+    if (wordPack) params.set('wordPack', wordPack);
+    if (boardSize) params.set('boardSize', boardSize);
+    return get(`/api/clues/count?${params}`);
+  },
+
   // --- Leaderboard ---
   async getLeaderboard(boardSize?: BoardSize): Promise<{
     spymasters: { userId: string; cluesGiven: number; avgWordsPerClue: number; avgScoreOnClues: number }[];

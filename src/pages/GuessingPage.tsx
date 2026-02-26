@@ -29,10 +29,18 @@ export default function GuessingPage() {
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
   const [revealStep, setRevealStep] = useState(-1);
+  const [showNoClues, setShowNoClues] = useState(false);
 
   useEffect(() => {
     async function loadClue() {
       if (!clueId) return;
+      // Reset all state for new clue
+      setPickedIndices([]);
+      setPhase('picking');
+      setAssassinHit(false);
+      setScore(0);
+      setRevealStep(-1);
+      setLoading(true);
       const found = await api.getClueById(clueId);
       setClue(found);
       setLoading(false);
@@ -65,11 +73,15 @@ export default function GuessingPage() {
 
   async function handleAnotherClue() {
     if (!user) return;
-    const newClue = await api.getRandomClue(user.id, clue ? [clue.id] : []);
-    if (newClue) {
-      navigate(`/guess/${newClue.id}`);
-    } else {
-      alert(t.game.noClues);
+    try {
+      const newClue = await api.getRandomClue(user.id, clue ? [clue.id] : []);
+      if (newClue) {
+        navigate(`/guess/${newClue.id}`);
+      } else {
+        setShowNoClues(true);
+      }
+    } catch {
+      setShowNoClues(true);
     }
   }
 
@@ -288,6 +300,21 @@ export default function GuessingPage() {
             onReport={(reason) => console.log('Reported:', reason)}
           />
         </>
+      )}
+
+      {/* No clues popup */}
+      {showNoClues && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/90" onClick={() => setShowNoClues(false)}>
+          <div className="bg-gray-800 rounded-xl p-8 border border-gray-700 text-center max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+            <p className="text-white text-lg font-bold mb-2">{t.game.noClues}</p>
+            <button
+              onClick={() => navigate('/')}
+              className="mt-4 px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors"
+            >
+              {t.game.home}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

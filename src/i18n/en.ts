@@ -38,6 +38,8 @@ export const en = {
     default: 'Default',
     strict: 'Strict',
     start: 'Start',
+    availablePuzzles: '{available} puzzles available ({total} total)',
+    noPuzzlesAvailable: 'No puzzles available with these settings',
   },
   game: {
     spymasterMode: 'Spymaster Mode',
