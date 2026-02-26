@@ -39,7 +39,7 @@ export const api = {
   },
 
   async getCluesByUser(userId: string): Promise<Clue[]> {
-    return get(`/api/clues/by-user/${encodeURIComponent(userId)}`);
+    return get(`/api/clues?userId=${encodeURIComponent(userId)}`);
   },
 
   // --- Guess Results ---
@@ -48,11 +48,11 @@ export const api = {
   },
 
   async getResultsByUser(userId: string): Promise<GuessResult[]> {
-    return get(`/api/results/by-user/${encodeURIComponent(userId)}`);
+    return get(`/api/results?userId=${encodeURIComponent(userId)}`);
   },
 
   async getClueStats(clueId: string): Promise<{ attempts: number; avgScore: number; scores: number[] }> {
-    return get(`/api/clues/${encodeURIComponent(clueId)}/stats`);
+    return get(`/api/clues/${encodeURIComponent(clueId)}?stats=true`);
   },
 
   // --- Ratings ---
@@ -67,10 +67,10 @@ export const api = {
 
   // --- Clue Count ---
   async getClueCount(userId: string, wordPack?: WordPack, boardSize?: BoardSize): Promise<{ available: number; total: number }> {
-    const params = new URLSearchParams({ userId });
+    const params = new URLSearchParams({ userId, countOnly: 'true' });
     if (wordPack) params.set('wordPack', wordPack);
     if (boardSize) params.set('boardSize', boardSize);
-    return get(`/api/clues/count?${params}`);
+    return get(`/api/clues/random?${params}`);
   },
 
   // --- Leaderboard ---
