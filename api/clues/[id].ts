@@ -9,7 +9,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const sql = neon(process.env.DATABASE_URL!);
 
-  // If ?stats=true, return clue statistics
   if (stats === 'true') {
     const rows = await sql`SELECT score FROM results WHERE clue_id = ${id}`;
 
@@ -27,7 +26,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // Otherwise return the clue itself
   const rows = await sql`SELECT * FROM clues WHERE id = ${id}`;
 
   if (rows.length === 0) return res.json(null);
@@ -39,6 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     number: row.number,
     boardSeed: row.board_seed,
     targetIndices: row.target_indices,
+    nullIndices: row.null_indices || [],
     createdAt: Number(row.created_at),
     userId: row.user_id,
     wordPack: row.word_pack,

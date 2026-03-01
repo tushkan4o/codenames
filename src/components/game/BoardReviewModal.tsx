@@ -28,35 +28,33 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-gray-950 overflow-y-auto py-6 px-4"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-board-bg/95 overflow-y-auto py-6 px-4"
       onClick={onClose}
     >
       <div
         className="w-full max-w-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Clue header */}
         <div className="text-center mb-4">
-          <span className="text-2xl font-bold text-white uppercase">{clue.word}</span>
-          <span className="ml-3 text-2xl font-bold text-white">{clue.number}</span>
+          <span className="text-2xl font-extrabold text-white uppercase">{clue.word}</span>
+          <span className="ml-3 text-2xl font-extrabold text-white">{clue.number}</span>
           <p className="text-xs text-gray-400 mt-1">
-            {clue.boardSize} &middot; {clue.wordPack} &middot;{' '}
+            {clue.boardSize} &middot;{' '}
             {new Date(clue.createdAt).toLocaleDateString()}
           </p>
         </div>
 
-        {/* Board */}
         <Board
           cards={displayCards}
           columns={config.cols}
           showColors={true}
           selectedIndices={clue.targetIndices}
           targetIndices={clue.targetIndices}
+          nullIndices={clue.nullIndices || []}
           disabled={true}
           pickOrder={guessedIndices}
         />
 
-        {/* Results breakdown (only for solved) */}
         {result && (
           <RevealOverlay
             cards={board.cards}
@@ -67,12 +65,10 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
           />
         )}
 
-        {/* Clue stats */}
         <div className="mt-4">
           <ClueStatsPanel clueId={clue.id} spymasterUserId={clue.userId} />
         </div>
 
-        {/* Close button */}
         <div className="mt-4 text-center">
           <button
             onClick={onClose}

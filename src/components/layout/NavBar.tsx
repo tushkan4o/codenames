@@ -1,12 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../i18n/useTranslation';
-import type { Language } from '../../types/game';
 
 export default function NavBar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { t, language, setLanguage } = useTranslation();
+  const { t } = useTranslation();
 
   function handleLogout() {
     logout();
@@ -14,10 +13,10 @@ export default function NavBar() {
   }
 
   return (
-    <nav className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800">
+    <nav className="flex items-center justify-between px-4 py-3 bg-gray-900/80 border-b border-gray-800/50 backdrop-blur-sm">
       <button
         onClick={() => navigate('/')}
-        className="text-lg font-bold text-white hover:text-blue-400 transition-colors"
+        className="text-lg font-extrabold text-white hover:text-board-blue transition-colors tracking-tight"
       >
         CODENAMES
       </button>
@@ -35,27 +34,17 @@ export default function NavBar() {
         >
           {t.nav.profile}
         </button>
-
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value as Language)}
-          className="text-sm bg-gray-800 border border-gray-700 text-gray-300 rounded px-2 py-1 focus:outline-none"
-        >
-          <option value="en">EN</option>
-          <option value="ru">RU</option>
-        </select>
-
         {user && (
           <button
             onClick={() => navigate('/profile')}
-            className="text-sm text-gray-400 hover:text-white transition-colors"
+            className="text-sm text-board-blue hover:text-blue-300 transition-colors font-semibold"
           >
             {user.displayName}
           </button>
         )}
         <button
           onClick={handleLogout}
-          className="text-gray-600 hover:text-red-400 transition-colors"
+          className="text-gray-600 hover:text-board-red transition-colors"
           title={t.nav.logout}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

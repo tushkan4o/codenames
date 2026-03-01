@@ -10,11 +10,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const sql = neon(process.env.DATABASE_URL!);
 
-    // Get solved clue IDs for this user
     const solvedRows = await sql`SELECT clue_id FROM results WHERE user_id = ${userId as string}`;
     const solvedIds = solvedRows.map((r: Record<string, unknown>) => r.clue_id as string);
 
-    // If ?countOnly=true, return available/total counts
     if (countOnly === 'true') {
       let availableRows;
       let totalRows;
@@ -42,7 +40,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Otherwise return a random clue
     const excludeIds: string[] = exclude ? (typeof exclude === 'string' ? exclude.split(',') : exclude).filter(Boolean) : [];
     const allExcluded = [...new Set([...excludeIds, ...solvedIds])];
 
@@ -69,6 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       number: row.number,
       boardSeed: row.board_seed,
       targetIndices: row.target_indices,
+      nullIndices: row.null_indices || [],
       createdAt: Number(row.created_at),
       userId: row.user_id,
       wordPack: row.word_pack,

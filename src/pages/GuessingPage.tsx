@@ -28,18 +28,17 @@ export default function GuessingPage() {
   const [assassinHit, setAssassinHit] = useState(false);
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
-  const [revealStep, setRevealStep] = useState(-1);
   const [showNoClues, setShowNoClues] = useState(false);
+  const [revealDelays, setRevealDelays] = useState<Record<number, number>>({});
 
   useEffect(() => {
     async function loadClue() {
       if (!clueId) return;
-      // Reset all state for new clue
       setPickedIndices([]);
       setPhase('picking');
       setAssassinHit(false);
       setScore(0);
-      setRevealStep(-1);
+      setRevealDelays({});
       setLoading(true);
       const found = await api.getClueById(clueId);
       setClue(found);
@@ -61,7 +60,12 @@ export default function GuessingPage() {
 
   const animationEnabled = user?.preferences.animationEnabled ?? true;
 
-  // Count how many red cards the guesser has found
+  // Effective target count: use targetIndices length for clue-0
+  const effectiveTargetCount = useMemo(() => {
+    if (!clue) return 0;
+    return clue.number === 0 ? clue.targetIndices.length : clue.number;
+  }, [clue]);
+
   const redPickedCount = useMemo(() => {
     if (!board) return 0;
     return pickedIndices.filter((i) => board.cards[i].color === 'red').length;
@@ -87,26 +91,22 @@ export default function GuessingPage() {
 
   function handlePick(index: number) {
     if (phase !== 'picking' || !board || !clue) return;
-    if (pickedIndices.includes(index)) return; // already picked
+    if (pickedIndices.includes(index)) return;
 
     const newPicked = [...pickedIndices, index];
     setPickedIndices(newPicked);
 
     const card = board.cards[index];
 
-    // Assassin → immediate game over
     if (card.color === 'assassin') {
       setAssassinHit(true);
       setScore(0);
-      // Short delay then reveal all
       setTimeout(() => finishGame(newPicked, true), 600);
       return;
     }
 
-    // Check if found enough red words
     const newRedCount = newPicked.filter((i) => board.cards[i].color === 'red').length;
-    if (newRedCount >= clue.number) {
-      // Auto-finish: found all target reds
+    if (newRedCount >= effectiveTargetCount) {
       setTimeout(() => finishGame(newPicked, false), 400);
     }
   }
@@ -131,7 +131,6 @@ export default function GuessingPage() {
         boardSize: clue.boardSize,
       });
 
-      // Reveal remaining cards
       runRevealAnimation(finalPicked);
     },
     [clue, board, user],
@@ -144,7 +143,6 @@ export default function GuessingPage() {
   function runRevealAnimation(finalPicked: number[]) {
     if (!board) return;
 
-    // Find unrevealed indices (not picked)
     const unrevealed = board.cards
       .map((_, idx) => idx)
       .filter((idx) => !finalPicked.includes(idx));
@@ -154,21 +152,19 @@ export default function GuessingPage() {
       return;
     }
 
+    // Build staggered delay map for CSS transitions
+    const delays: Record<number, number> = {};
+    unrevealed.forEach((idx, i) => {
+      delays[idx] = i * 60;
+    });
+    setRevealDelays(delays);
     setPhase('revealing');
-    let step = 0;
-    setRevealStep(0);
-    const interval = setInterval(() => {
-      step++;
-      if (step >= unrevealed.length) {
-        clearInterval(interval);
-        setTimeout(() => {
-          setRevealStep(-1);
-          setPhase('done');
-        }, 200);
-      } else {
-        setRevealStep(step);
-      }
-    }, 50); // fast reveal for remaining cards
+
+    // Wait for all reveals to complete then transition to done
+    const totalTime = unrevealed.length * 60 + 500;
+    setTimeout(() => {
+      setPhase('done');
+    }, totalTime);
   }
 
   if (loading) {
@@ -193,61 +189,57 @@ export default function GuessingPage() {
     );
   }
 
-  // Build display cards: picked cards are always revealed, others revealed only during reveal phase or done
-  const unrevealedIndices = board.cards
-    .map((_, idx) => idx)
-    .filter((idx) => !pickedIndices.includes(idx));
-
   const displayCards: CardState[] = board.cards.map((card, idx) => {
-    // Picked cards are always revealed
     if (pickedIndices.includes(idx)) return { ...card, revealed: true };
-    // Done = all revealed
     if (phase === 'done') return { ...card, revealed: true };
-    // During reveal animation: reveal unrevealed cards up to current step
-    if (phase === 'revealing' && revealStep >= 0) {
-      const revealedSoFar = unrevealedIndices.slice(0, revealStep + 1);
-      if (revealedSoFar.includes(idx)) return { ...card, revealed: true };
-    }
+    if (phase === 'revealing') return { ...card, revealed: true };
     return card;
   });
 
-  const currentFlippingIndex =
-    phase === 'revealing' && revealStep >= 0 ? unrevealedIndices[revealStep] : undefined;
-
   const isPicking = phase === 'picking' && !assassinHit;
 
+  // For done phase: show target markers on spymaster's intended words
+  const doneTargetIndices = phase === 'done' ? clue.targetIndices : [];
+  const doneNullIndices = phase === 'done' && clue.nullIndices?.length > 0 ? clue.nullIndices : [];
+
   return (
-    <div className="min-h-screen px-4 py-6">
+    <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-6">
       <GameHeader mode="guessing" config={config} />
-      <ClueDisplay word={clue.word} number={clue.number} />
+      <ClueDisplay word={clue.word} number={clue.number} nullCount={clue.nullIndices?.length || 0} />
 
       <p className="text-center text-gray-400 text-sm mt-3 mb-1">
         {assassinHit
           ? t.game.gameOverAssassin
           : phase === 'done'
             ? t.game.resultsRevealed
-            : `${t.game.selectWords} — ${redPickedCount} / ${clue.number} ${t.game.pickedRedCount}`}
+            : `${t.game.selectWords} — ${redPickedCount} / ${effectiveTargetCount} ${t.game.pickedRedCount}`}
       </p>
 
-      {/* Action buttons */}
+      {/* Avoid hint for clue-0 */}
+      {clue.number === 0 && clue.nullIndices?.length > 0 && phase === 'picking' && (
+        <p className="text-center text-amber-400 text-xs mb-1">
+          {t.game.avoidHint.replace('{n}', String(clue.nullIndices.length))}
+        </p>
+      )}
+
       {isPicking && (
-        <div className="flex justify-center gap-3 mb-4 mt-2">
+        <div className="flex flex-wrap justify-center gap-2 mb-3 mt-2">
           <button
             onClick={handleHome}
-            className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors"
           >
             {t.game.home}
           </button>
           <button
             onClick={handleAnotherClue}
-            className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-bold transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors"
           >
             {t.game.anotherClue}
           </button>
           {pickedIndices.length > 0 && (
             <button
               onClick={handleEndTurn}
-              className="px-4 py-2 rounded-lg bg-red-800 hover:bg-red-700 text-white text-sm font-bold transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-board-red/80 hover:bg-board-red text-white text-sm font-semibold transition-colors"
             >
               {t.game.endTurn}
             </button>
@@ -259,16 +251,17 @@ export default function GuessingPage() {
         cards={displayCards}
         columns={config.cols}
         showColors={phase === 'done' || phase === 'revealing'}
-        selectedIndices={phase === 'done' ? clue.targetIndices : pickedIndices}
-        targetIndices={[]}
+        selectedIndices={phase === 'done' ? doneTargetIndices : pickedIndices}
+        targetIndices={doneTargetIndices}
+        nullIndices={doneNullIndices}
         onCardClick={isPicking ? handlePick : undefined}
         disabled={!isPicking}
         pickOrder={pickedIndices}
-        flippingIndex={currentFlippingIndex}
+        revealDelays={phase === 'revealing' ? revealDelays : undefined}
       />
 
       {phase === 'done' && (
-        <>
+        <div className="animate-slide-up">
           <div className="flex justify-center gap-3 mt-4 mb-4">
             <button
               onClick={handleHome}
@@ -278,7 +271,7 @@ export default function GuessingPage() {
             </button>
             <button
               onClick={handleAnotherClue}
-              className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition-colors"
+              className="px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-bold transition-colors"
             >
               {t.game.nextPuzzle}
             </button>
@@ -299,17 +292,16 @@ export default function GuessingPage() {
             }}
             onReport={(reason) => console.log('Reported:', reason)}
           />
-        </>
+        </div>
       )}
 
-      {/* No clues popup */}
       {showNoClues && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/90" onClick={() => setShowNoClues(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-board-bg/90 animate-fade-in" onClick={() => setShowNoClues(false)}>
           <div className="bg-gray-800 rounded-xl p-8 border border-gray-700 text-center max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
             <p className="text-white text-lg font-bold mb-2">{t.game.noClues}</p>
             <button
               onClick={() => navigate('/')}
-              className="mt-4 px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors"
+              className="mt-4 px-6 py-3 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold transition-colors"
             >
               {t.game.home}
             </button>

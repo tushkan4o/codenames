@@ -5,10 +5,12 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { BOARD_CONFIGS } from '../types/game';
-import type { BoardSize, WordPack } from '../types/game';
+import type { BoardSize } from '../types/game';
 import Board from '../components/board/Board';
 import GameHeader from '../components/game/GameHeader';
 import ClueInput from '../components/clue/ClueInput';
+
+type AvoidPhase = 'nulls' | 'targets';
 
 export default function ClueGivingPage() {
   const { seed: rawSeed } = useParams<{ seed: string }>();
@@ -17,57 +19,115 @@ export default function ClueGivingPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
 
-  const wordPack = (searchParams.get('pack') as WordPack) || 'ru';
   const boardSize = (searchParams.get('size') as BoardSize) || '5x5';
   const config = BOARD_CONFIGS[boardSize];
 
   const [currentSeed, setCurrentSeed] = useState(rawSeed ? decodeURIComponent(rawSeed) : generateSeed());
   const [selectedTargets, setSelectedTargets] = useState<number[]>([]);
+  const [selectedNulls, setSelectedNulls] = useState<number[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [reshuffleCount, setReshuffleCount] = useState(0);
   const [targetError, setTargetError] = useState('');
+  const [avoidMode, setAvoidMode] = useState(false);
+  const [avoidPhase, setAvoidPhase] = useState<AvoidPhase>('nulls');
 
   const board = useMemo(() => {
-    return generateBoard(currentSeed, config, wordPack);
-  }, [currentSeed, config, wordPack]);
+    return generateBoard(currentSeed, config);
+  }, [currentSeed, config]);
 
   function handleReshuffle() {
     const newSeed = generateSeed();
     setCurrentSeed(newSeed);
     setSelectedTargets([]);
+    setSelectedNulls([]);
     setTargetError('');
     setReshuffleCount((prev) => prev + 1);
+    setAvoidPhase('nulls');
     window.history.replaceState(
       null,
       '',
-      `/give-clue/${encodeURIComponent(newSeed)}?pack=${wordPack}&size=${boardSize}`,
+      `/give-clue/${encodeURIComponent(newSeed)}?size=${boardSize}`,
     );
   }
 
-  function toggleTarget(index: number) {
-    // Only allow selecting red cards
-    if (board.cards[index].color !== 'red') return;
-    setSelectedTargets((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
-    );
+  function toggleAvoidMode() {
+    setAvoidMode((prev) => {
+      if (!prev) {
+        // Entering avoid mode: reset selections
+        setSelectedTargets([]);
+        setSelectedNulls([]);
+        setAvoidPhase('nulls');
+      } else {
+        // Leaving avoid mode: reset nulls
+        setSelectedNulls([]);
+        setSelectedTargets([]);
+      }
+      return !prev;
+    });
+    setTargetError('');
+  }
+
+  function handleCardClick(index: number) {
+    if (avoidMode) {
+      if (avoidPhase === 'nulls') {
+        // In null phase: can click any NON-red card
+        if (board.cards[index].color === 'red') return;
+        setSelectedNulls((prev) =>
+          prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
+        );
+      } else {
+        // In target phase: can click red cards
+        if (board.cards[index].color !== 'red') return;
+        setSelectedTargets((prev) =>
+          prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
+        );
+      }
+    } else {
+      // Normal mode: only allow selecting red cards
+      if (board.cards[index].color !== 'red') return;
+      setSelectedTargets((prev) =>
+        prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
+      );
+    }
+    setTargetError('');
+  }
+
+  function handleAdvanceToTargets() {
+    if (selectedNulls.length === 0) {
+      setTargetError(t.clue.errorNeedsNulls);
+      return;
+    }
+    setAvoidPhase('targets');
     setTargetError('');
   }
 
   async function handleSubmitClue(word: string, number: number) {
     if (!user) return;
-    if (selectedTargets.length === 0) {
-      setTargetError(t.game.targetsMismatch.replace('{n}', String(number)));
-      return;
+    if (avoidMode) {
+      if (selectedNulls.length === 0) {
+        setTargetError(t.clue.errorNeedsNulls);
+        return;
+      }
+      if (selectedTargets.length === 0) {
+        setTargetError(t.clue.errorNeedsTargets);
+        return;
+      }
+    } else {
+      if (selectedTargets.length === 0) {
+        setTargetError(t.game.targetsMismatch.replace('{n}', String(number)));
+        return;
+      }
     }
     const clue = {
       id: `${currentSeed}-${Date.now()}`,
       word,
-      number,
+      number: avoidMode ? 0 : number,
       boardSeed: currentSeed,
       targetIndices: selectedTargets,
+      nullIndices: selectedNulls,
       createdAt: Date.now(),
       userId: user.id,
-      wordPack,
+      wordPack: 'ru',
       boardSize,
       reshuffleCount,
     };
@@ -79,20 +139,23 @@ export default function ClueGivingPage() {
     const newSeed = generateSeed();
     setCurrentSeed(newSeed);
     setSelectedTargets([]);
+    setSelectedNulls([]);
     setTargetError('');
     setSubmitted(false);
     setReshuffleCount(0);
+    setAvoidMode(false);
+    setAvoidPhase('nulls');
     window.history.replaceState(
       null,
       '',
-      `/give-clue/${encodeURIComponent(newSeed)}?pack=${wordPack}&size=${boardSize}`,
+      `/give-clue/${encodeURIComponent(newSeed)}?size=${boardSize}`,
     );
   }
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4 gap-4">
-        <h2 className="text-2xl font-bold text-blue-400">{t.game.clueSubmitted}</h2>
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 gap-4 animate-fade-in">
+        <h2 className="text-2xl font-bold text-board-blue">{t.game.clueSubmitted}</h2>
         <p className="text-gray-400">{t.game.othersCanGuess}</p>
         <div className="flex gap-3">
           <button
@@ -103,7 +166,7 @@ export default function ClueGivingPage() {
           </button>
           <button
             onClick={handleGiveAnother}
-            className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors"
+            className="px-6 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold transition-colors"
           >
             {t.game.giveAnotherClue}
           </button>
@@ -112,56 +175,99 @@ export default function ClueGivingPage() {
     );
   }
 
+  const clueNumber = avoidMode ? 0 : selectedTargets.length;
+
+  // Phase hint text
+  let phaseHint = '';
+  if (avoidMode) {
+    if (avoidPhase === 'nulls') {
+      phaseHint = `${t.game.avoidPhase} (${selectedNulls.length} ${t.game.nulled})`;
+    } else {
+      phaseHint = `${t.game.targetPhase} (${selectedTargets.length} ${t.game.selected})`;
+    }
+  } else {
+    phaseHint = `${t.game.selectTargets} (${selectedTargets.length} ${t.game.selected})`;
+  }
+
   return (
-    <div className="min-h-screen px-4 py-6">
+    <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-6">
       <GameHeader mode="clue-giving" config={config} />
 
       {/* Action buttons */}
-      <div className="flex justify-center gap-3 mb-4">
+      <div className="flex flex-wrap justify-center gap-2 mb-3">
         <button
           onClick={() => navigate('/')}
-          className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold transition-colors"
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors"
         >
           {t.game.home}
         </button>
         <button
           onClick={handleReshuffle}
-          className="px-4 py-2 rounded-lg bg-red-800 hover:bg-red-700 text-white text-sm font-bold transition-colors"
+          className="px-3 py-1.5 rounded-lg bg-board-red/80 hover:bg-board-red text-white text-sm font-semibold transition-colors"
           title={t.game.reshuffleWarning}
         >
           {t.game.reshuffle}
           {reshuffleCount > 0 && (
-            <span className="ml-1 text-red-300">({reshuffleCount})</span>
+            <span className="ml-1 text-red-200">({reshuffleCount})</span>
           )}
+        </button>
+        <button
+          onClick={toggleAvoidMode}
+          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+            avoidMode
+              ? 'bg-amber-600 hover:bg-amber-500 text-white'
+              : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+          }`}
+        >
+          {t.game.avoidMode}
         </button>
       </div>
 
       {reshuffleCount > 0 && (
-        <p className="text-center text-red-400 text-xs mb-2">{t.game.reshuffleWarning}</p>
+        <p className="text-center text-board-red text-xs mb-2">{t.game.reshuffleWarning}</p>
       )}
 
-      <p className="text-center text-gray-400 text-sm mb-1">
-        {t.game.selectTargets} ({selectedTargets.length} {t.game.selected})
-      </p>
-      <p className="text-center text-gray-500 text-xs mb-2">
-        {t.game.selectTargetsHint}
-      </p>
+      <p className="text-center text-gray-400 text-sm mb-1">{phaseHint}</p>
+      {avoidMode && (
+        <p className="text-center text-gray-500 text-xs mb-1">
+          {avoidPhase === 'nulls' ? t.game.avoidPhaseHint : t.game.targetPhaseHint}
+        </p>
+      )}
+      {!avoidMode && (
+        <p className="text-center text-gray-500 text-xs mb-1">{t.game.selectTargetsHint}</p>
+      )}
       {targetError && (
-        <p className="text-center text-red-400 text-sm mb-2">{targetError}</p>
+        <p className="text-center text-board-red text-sm mb-2">{targetError}</p>
       )}
 
       <Board
         cards={board.cards}
         columns={config.cols}
         showColors={true}
-        selectedIndices={selectedTargets}
+        selectedIndices={[]}
         targetIndices={selectedTargets}
-        onCardClick={toggleTarget}
+        nullIndices={selectedNulls}
+        onCardClick={handleCardClick}
       />
 
-      <div className="mt-6">
-        <ClueInput boardCards={board.cards} targetCount={selectedTargets.length} onSubmit={handleSubmitClue} />
-      </div>
+      {/* Avoid mode: advance button */}
+      {avoidMode && avoidPhase === 'nulls' && (
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={handleAdvanceToTargets}
+            className="px-6 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold transition-colors"
+          >
+            {t.game.switchToTargets}
+          </button>
+        </div>
+      )}
+
+      {/* Clue input: show when not in nulls phase of avoid mode */}
+      {(!avoidMode || avoidPhase === 'targets') && (
+        <div className="mt-4">
+          <ClueInput boardCards={board.cards} targetCount={clueNumber} onSubmit={handleSubmitClue} />
+        </div>
+      )}
     </div>
   );
 }

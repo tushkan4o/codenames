@@ -44,7 +44,6 @@ export default function ProfilePage() {
       );
       setSolvedEntries(entries);
     });
-    // Load current user's solved clue IDs
     if (user) {
       api.getResultsByUser(user.id).then((results) => {
         setMySolvedClueIds(new Set(results.map((r) => r.clueId)));
@@ -54,7 +53,7 @@ export default function ProfilePage() {
 
   function canRevealClue(clue: Clue): boolean {
     if (isOwnProfile) return true;
-    if (clue.userId === user?.id) return true; // my own clue on someone else's profile
+    if (clue.userId === user?.id) return true;
     return mySolvedClueIds.has(clue.id);
   }
 
@@ -81,10 +80,10 @@ export default function ProfilePage() {
     navigate(`/guess/${clueId}`);
   }
 
-  // Show solved/not-solved badges when the clue can be attempted by the current user
+
   function shouldShowBadge(clue: Clue): boolean {
     if (isOwnProfile) return false;
-    if (clue.userId === user?.id) return false; // can't solve own clue
+    if (clue.userId === user?.id) return false;
     return true;
   }
 
@@ -92,34 +91,32 @@ export default function ProfilePage() {
     <div className="min-h-screen">
       <NavBar />
       <div className="max-w-2xl mx-auto px-4 pt-8">
-        <h1 className="text-2xl font-bold text-white mb-1 text-center">{t.profile.title}</h1>
+        <h1 className="text-2xl font-extrabold text-white mb-1 text-center">{t.profile.title}</h1>
         <p className="text-center text-gray-400 mb-6">{profileId}</p>
 
-        {/* Stats */}
         {stats && (
           <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="bg-gray-800 rounded-lg p-4 text-center border border-gray-700">
+            <div className="bg-gray-800/60 rounded-lg p-4 text-center border border-gray-700/30">
               <p className="text-2xl font-bold text-white">{stats.cluesGiven}</p>
               <p className="text-xs text-gray-400">{t.profile.cluesGiven}</p>
             </div>
-            <div className="bg-gray-800 rounded-lg p-4 text-center border border-gray-700">
+            <div className="bg-gray-800/60 rounded-lg p-4 text-center border border-gray-700/30">
               <p className="text-2xl font-bold text-white">{stats.cluesSolved}</p>
               <p className="text-xs text-gray-400">{t.profile.cluesSolved}</p>
             </div>
-            <div className="bg-gray-800 rounded-lg p-4 text-center border border-gray-700">
+            <div className="bg-gray-800/60 rounded-lg p-4 text-center border border-gray-700/30">
               <p className="text-2xl font-bold text-white">{stats.avgScore}</p>
               <p className="text-xs text-gray-400">{t.leaderboard.avgScore}</p>
             </div>
           </div>
         )}
 
-        {/* History tabs */}
         <div className="flex justify-center gap-2 mb-4">
           <button
             onClick={() => setTab('given')}
             className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${
               tab === 'given'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-board-blue text-white'
                 : 'bg-gray-800 text-gray-400 hover:text-white'
             }`}
           >
@@ -137,7 +134,6 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {/* Given tab */}
         {tab === 'given' && (
           cluesGiven.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesGiven}</p>
@@ -151,22 +147,22 @@ export default function ProfilePage() {
                   <div
                     key={clue.id}
                     onClick={() => openGivenModal(clue)}
-                    className={`bg-gray-800 rounded-lg p-4 border border-gray-700 flex items-center justify-between transition-colors ${
-                      canOpen ? 'cursor-pointer hover:border-gray-500' : ''
+                    className={`bg-gray-800/60 rounded-lg p-4 border border-gray-700/30 flex items-center justify-between transition-colors ${
+                      canOpen ? 'cursor-pointer hover:border-gray-600' : ''
                     }`}
                   >
                     <div>
                       <span className="font-bold text-white uppercase">{clue.word}</span>
                       <span className="ml-2 text-white font-bold">{clue.number}</span>
                       <p className="text-xs text-gray-500 mt-1">
-                        {clue.boardSize} &middot; {clue.wordPack} &middot;{' '}
+                        {clue.boardSize} &middot;{' '}
                         {new Date(clue.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       {badge ? (
                         solved ? (
-                          <span className="text-xs font-semibold text-blue-400 bg-blue-900/30 px-2 py-0.5 rounded">
+                          <span className="text-xs font-semibold text-board-blue bg-board-blue/10 px-2 py-0.5 rounded">
                             {t.profile.solved}
                           </span>
                         ) : (
@@ -176,7 +172,7 @@ export default function ProfilePage() {
                             </span>
                             <button
                               onClick={(e) => handleTry(e, clue.id)}
-                              className="text-xs font-bold text-blue-400 bg-blue-900/30 px-2.5 py-0.5 rounded hover:bg-blue-800/40 transition-colors"
+                              className="text-xs font-bold text-board-blue bg-board-blue/10 px-2.5 py-0.5 rounded hover:bg-board-blue/20 transition-colors"
                             >
                               {t.profile.tryIt}
                             </button>
@@ -195,7 +191,6 @@ export default function ProfilePage() {
           )
         )}
 
-        {/* Solved tab */}
         {tab === 'solved' && (
           solvedEntries.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesSolved}</p>
@@ -210,8 +205,8 @@ export default function ProfilePage() {
                   <div
                     key={i}
                     onClick={() => openSolvedModal(entry)}
-                    className={`bg-gray-800 rounded-lg p-4 border border-gray-700 flex items-center justify-between transition-colors ${
-                      canOpen ? 'cursor-pointer hover:border-gray-500' : ''
+                    className={`bg-gray-800/60 rounded-lg p-4 border border-gray-700/30 flex items-center justify-between transition-colors ${
+                      canOpen ? 'cursor-pointer hover:border-gray-600' : ''
                     }`}
                   >
                     <div>
@@ -223,10 +218,9 @@ export default function ProfilePage() {
                       </span>
                       <p className="text-xs text-gray-500 mt-1">
                         {entry.clue?.boardSize ?? entry.result.boardSize ?? '?'} &middot;{' '}
-                        {entry.clue?.wordPack ?? '?'} &middot;{' '}
                         {new Date(entry.result.timestamp).toLocaleDateString()}
                         {entry.clue && (
-                          <span className="text-blue-400"> &middot; {entry.clue.userId}</span>
+                          <span className="text-board-blue"> &middot; {entry.clue.userId}</span>
                         )}
                       </p>
                     </div>
@@ -238,14 +232,14 @@ export default function ProfilePage() {
                           </span>
                           <button
                             onClick={(e) => handleTry(e, clueId)}
-                            className="text-xs font-bold text-blue-400 bg-blue-900/30 px-2.5 py-0.5 rounded hover:bg-blue-800/40 transition-colors"
+                            className="text-xs font-bold text-board-blue bg-board-blue/10 px-2.5 py-0.5 rounded hover:bg-board-blue/20 transition-colors"
                           >
                             {t.profile.tryIt}
                           </button>
                         </>
                       )}
                       {badge && solved && (
-                        <span className="text-xs font-semibold text-blue-400 bg-blue-900/30 px-2 py-0.5 rounded">
+                        <span className="text-xs font-semibold text-board-blue bg-board-blue/10 px-2 py-0.5 rounded">
                           {t.profile.solved}
                         </span>
                       )}
@@ -264,7 +258,6 @@ export default function ProfilePage() {
         )}
       </div>
 
-      {/* Board review modal */}
       {modalClue && (
         <BoardReviewModal
           clue={modalClue}

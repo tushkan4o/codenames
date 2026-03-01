@@ -1,6 +1,4 @@
-import type { TranslationKeys } from './en';
-
-export const ru: TranslationKeys = {
+export const ru = {
   app: {
     title: 'CODENAMES',
     subtitle: 'Одиночный режим',
@@ -32,9 +30,6 @@ export const ru: TranslationKeys = {
     clueingDesc: 'Смотрите поле и давайте подсказки',
     guessing: 'Разведчик',
     guessingDesc: 'Разгадывайте подсказки других игроков',
-    wordPack: 'Набор слов',
-    english: 'Английский',
-    russian: 'Русский',
     boardSize: 'Размер поля',
     rules: 'Правила',
     default: 'Стандартные',
@@ -69,6 +64,14 @@ export const ru: TranslationKeys = {
     clueNotFound: 'Подсказка не найдена',
     loading: 'Загрузка...',
     findingClue: 'Поиск подсказки...',
+    avoidMode: 'Подсказка 0',
+    avoidPhase: 'Отметьте слова-ловушки',
+    avoidPhaseHint: 'Выберите слова НЕ вашей команды, связанные с подсказкой',
+    targetPhase: 'Теперь отметьте целевые слова',
+    targetPhaseHint: 'Выберите красные слова, которые нужно угадать',
+    switchToTargets: 'Далее: выбрать цели',
+    avoidHint: 'Избегайте {n} слов, связанных с подсказкой',
+    nulled: 'ловушек',
   },
   clue: {
     word: 'Слово-подсказка',
@@ -78,6 +81,8 @@ export const ru: TranslationKeys = {
     errorMultiWord: 'Подсказка должна быть одним словом',
     errorOnBoard: 'Подсказка не может быть словом на поле',
     errorNumber: 'Число должно быть от 0 до {max}',
+    errorNeedsNulls: 'Отметьте хотя бы одно слово-ловушку',
+    errorNeedsTargets: 'Отметьте хотя бы одно целевое слово',
   },
   results: {
     title: 'Результаты',
@@ -87,10 +92,10 @@ export const ru: TranslationKeys = {
     score: 'Счёт',
     close: 'Закрыть',
     backHome: 'На главную',
-    pickedRedClued: 'Взятые красные загаданные',
-    pickedRedUnclued: 'Взятые красные незагаданные',
+    pickedRedClued: 'Угаданные',
+    pickedRedUnclued: 'Красные незагаданные',
     missedClued: 'Пропущенные',
-    pickedWrong: 'Взятые неправильно',
+    pickedWrong: 'Неправильные',
     clueBy: 'Подсказка от',
     attempts: 'попыток',
     avgScoreLabel: 'Ср. счёт',
@@ -137,3 +142,5 @@ export const ru: TranslationKeys = {
     cancel: 'Отмена',
   },
 };
+
+export type TranslationKeys = typeof ru;

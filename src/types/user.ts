@@ -1,4 +1,4 @@
-import type { BoardSize, Language, WordPack } from './game';
+import type { BoardSize } from './game';
 
 export interface User {
   id: string;
@@ -8,15 +8,11 @@ export interface User {
 }
 
 export interface UserPreferences {
-  language: Language;
-  defaultWordPack: WordPack;
   defaultBoardSize: BoardSize;
   animationEnabled: boolean;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
-  language: 'en',
-  defaultWordPack: 'ru',
   defaultBoardSize: '5x5',
   animationEnabled: true,
 };

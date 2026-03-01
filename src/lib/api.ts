@@ -1,4 +1,4 @@
-import type { BoardSize, Clue, GuessResult, WordPack } from '../types/game';
+import type { BoardSize, Clue, GuessResult } from '../types/game';
 import type { UserStats } from '../types/user';
 
 async function post<T>(url: string, body: unknown): Promise<T> {
@@ -16,7 +16,6 @@ async function get<T>(url: string): Promise<T> {
 }
 
 export const api = {
-  // --- Clues ---
   async saveClue(clue: Clue): Promise<void> {
     await post('/api/clues', clue);
   },
@@ -24,7 +23,7 @@ export const api = {
   async getRandomClue(
     userId: string,
     excludeIds: string[] = [],
-    wordPack?: WordPack,
+    wordPack?: string,
     boardSize?: BoardSize,
   ): Promise<Clue | null> {
     const params = new URLSearchParams({ userId });
@@ -42,7 +41,6 @@ export const api = {
     return get(`/api/clues?userId=${encodeURIComponent(userId)}`);
   },
 
-  // --- Guess Results ---
   async saveGuessResult(result: GuessResult): Promise<void> {
     await post('/api/results', result);
   },
@@ -55,25 +53,21 @@ export const api = {
     return get(`/api/clues/${encodeURIComponent(clueId)}?stats=true`);
   },
 
-  // --- Ratings ---
   async saveRating(clueId: string, userId: string, rating: number): Promise<void> {
     await post('/api/ratings', { clueId, userId, rating });
   },
 
-  // --- User Stats ---
   async getUserStats(userId: string): Promise<UserStats> {
     return get(`/api/users/${encodeURIComponent(userId)}/stats`);
   },
 
-  // --- Clue Count ---
-  async getClueCount(userId: string, wordPack?: WordPack, boardSize?: BoardSize): Promise<{ available: number; total: number }> {
+  async getClueCount(userId: string, wordPack?: string, boardSize?: BoardSize): Promise<{ available: number; total: number }> {
     const params = new URLSearchParams({ userId, countOnly: 'true' });
     if (wordPack) params.set('wordPack', wordPack);
     if (boardSize) params.set('boardSize', boardSize);
     return get(`/api/clues/random?${params}`);
   },
 
-  // --- Leaderboard ---
   async getLeaderboard(boardSize?: BoardSize): Promise<{
     spymasters: { userId: string; cluesGiven: number; avgWordsPerClue: number; avgScoreOnClues: number }[];
     guessers: { userId: string; cluesSolved: number; avgWordsPicked: number; avgScore: number }[];

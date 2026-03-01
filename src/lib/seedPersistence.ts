@@ -1,8 +1,7 @@
-import type { BoardSize, WordPack } from '../types/game';
+import type { BoardSize } from '../types/game';
 
 interface PendingClueState {
   seed: string;
-  wordPack: WordPack;
   boardSize: BoardSize;
 }
 

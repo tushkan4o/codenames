@@ -1,14 +1,14 @@
 import { createSeededRandom, hashString } from './seededRandom';
-import { getWordList } from './wordPacks';
-import type { BoardConfig, BoardState, CardColor, CardState, WordPack } from '../types/game';
+import { WORD_LIST_RU } from '../data/words-ru';
+import type { BoardConfig, BoardState, CardColor, CardState } from '../types/game';
 
-export function generateBoard(seed: string, config: BoardConfig, wordPack: WordPack): BoardState {
+export function generateBoard(seed: string, config: BoardConfig, _wordPack?: string): BoardState {
   const numericSeed = hashString(seed);
   const random = createSeededRandom(numericSeed);
 
   const startingTeam: 'red' | 'blue' = random() < 0.5 ? 'red' : 'blue';
 
-  const words = getWordList(wordPack);
+  const words = WORD_LIST_RU;
   const shuffled = [...words];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
@@ -16,8 +16,6 @@ export function generateBoard(seed: string, config: BoardConfig, wordPack: WordP
   }
   const selectedWords = shuffled.slice(0, config.totalCards);
 
-  // Build color array from config
-  // Starting team gets redCount, other team gets blueCount
   const startCount = startingTeam === 'red' ? config.redCount : config.blueCount;
   const otherCount = startingTeam === 'red' ? config.blueCount : config.redCount;
   const otherTeam: CardColor = startingTeam === 'red' ? 'blue' : 'red';

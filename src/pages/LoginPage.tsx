@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from '../i18n/useTranslation';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
@@ -12,15 +14,15 @@ export default function LoginPage() {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Please enter a username');
+      setError(t.login.errorEmpty);
       return;
     }
     if (trimmed.length < 2) {
-      setError('Username must be at least 2 characters');
+      setError(t.login.errorShort);
       return;
     }
     if (trimmed.length > 20) {
-      setError('Username must be 20 characters or less');
+      setError(t.login.errorLong);
       return;
     }
     await login(trimmed);
@@ -29,29 +31,29 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
-      <h1 className="text-5xl font-bold text-white mb-2 tracking-tight">CODENAMES</h1>
-      <p className="text-gray-400 mb-8">Enter your username to start</p>
+      <h1 className="text-5xl font-extrabold text-white mb-2 tracking-tight">CODENAMES</h1>
+      <p className="text-gray-400 mb-8">{t.login.prompt}</p>
 
       <form onSubmit={handleSubmit} className="w-full max-w-xs">
         <input
           type="text"
           value={name}
           onChange={(e) => { setName(e.target.value); setError(''); }}
-          placeholder="Username"
+          placeholder={t.login.placeholder}
           autoFocus
-          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg focus:outline-none focus:border-blue-500 mb-3"
+          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg focus:outline-none focus:border-board-blue mb-3"
         />
-        {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
+        {error && <p className="text-board-red text-sm mb-3">{error}</p>}
         <button
           type="submit"
-          className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg transition-colors"
+          className="w-full py-3 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold text-lg transition-colors"
         >
-          Enter
+          {t.login.enter}
         </button>
       </form>
 
       <p className="text-gray-600 text-xs mt-6">
-        Discord & Google login coming soon
+        {t.login.oauthSoon}
       </p>
     </div>
   );

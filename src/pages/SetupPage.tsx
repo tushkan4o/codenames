@@ -5,7 +5,7 @@ import { useTranslation } from '../i18n/useTranslation';
 import { generateSeed } from '../lib/boardGenerator';
 import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
-import type { BoardSize, GameMode, RuleSet, WordPack } from '../types/game';
+import type { BoardSize, GameMode, RuleSet } from '../types/game';
 
 export default function SetupPage() {
   const navigate = useNavigate();
@@ -13,7 +13,6 @@ export default function SetupPage() {
   const { t } = useTranslation();
 
   const [mode, setMode] = useState<GameMode>('clue-giving');
-  const [wordPack, setWordPack] = useState<WordPack>(user?.preferences.defaultWordPack ?? 'ru');
   const [boardSize, setBoardSize] = useState<BoardSize>(user?.preferences.defaultBoardSize ?? '5x5');
   const [ruleSet, setRuleSet] = useState<RuleSet>('default');
   const [loading, setLoading] = useState(false);
@@ -24,19 +23,19 @@ export default function SetupPage() {
       setPuzzleCount(null);
       return;
     }
-    api.getClueCount(user.id, wordPack, boardSize).then(setPuzzleCount).catch(() => setPuzzleCount(null));
-  }, [user, mode, wordPack, boardSize]);
+    api.getClueCount(user.id, 'ru', boardSize).then(setPuzzleCount).catch(() => setPuzzleCount(null));
+  }, [user, mode, boardSize]);
 
   async function handleStart() {
     if (!user) return;
 
     if (mode === 'clue-giving') {
       const seed = generateSeed();
-      navigate(`/give-clue/${encodeURIComponent(seed)}?pack=${wordPack}&size=${boardSize}&rules=${ruleSet}`);
+      navigate(`/give-clue/${encodeURIComponent(seed)}?size=${boardSize}&rules=${ruleSet}`);
     } else {
       setLoading(true);
       try {
-        const clue = await api.getRandomClue(user.id, [], wordPack, boardSize);
+        const clue = await api.getRandomClue(user.id, [], 'ru', boardSize);
         if (clue) {
           navigate(`/guess/${clue.id}`);
         } else {
@@ -54,7 +53,7 @@ export default function SetupPage() {
     <div className="min-h-screen">
       <NavBar />
       <div className="max-w-lg mx-auto px-4 pt-10">
-        <h1 className="text-2xl font-bold text-white mb-8 text-center">{t.setup.title}</h1>
+        <h1 className="text-2xl font-extrabold text-white mb-8 text-center">{t.setup.title}</h1>
 
         {/* Mode */}
         <div className="mb-6">
@@ -64,7 +63,7 @@ export default function SetupPage() {
               onClick={() => setMode('clue-giving')}
               className={`p-4 rounded-lg border-2 transition-colors text-left ${
                 mode === 'clue-giving'
-                  ? 'border-blue-500 bg-blue-900/30'
+                  ? 'border-board-blue/60 bg-board-blue/10'
                   : 'border-gray-700 bg-gray-800 hover:border-gray-600'
               }`}
             >
@@ -75,39 +74,12 @@ export default function SetupPage() {
               onClick={() => setMode('guessing')}
               className={`p-4 rounded-lg border-2 transition-colors text-left ${
                 mode === 'guessing'
-                  ? 'border-blue-500 bg-blue-900/30'
+                  ? 'border-board-blue/60 bg-board-blue/10'
                   : 'border-gray-700 bg-gray-800 hover:border-gray-600'
               }`}
             >
               <p className="font-bold text-white">{t.setup.guessing}</p>
               <p className="text-xs text-gray-400 mt-1">{t.setup.guessingDesc}</p>
-            </button>
-          </div>
-        </div>
-
-        {/* Word Pack */}
-        <div className="mb-6">
-          <label className="block text-sm text-gray-400 mb-2">{t.setup.wordPack}</label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setWordPack('ru')}
-              className={`p-3 rounded-lg border-2 transition-colors font-bold ${
-                wordPack === 'ru'
-                  ? 'border-blue-500 bg-blue-900/30 text-white'
-                  : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
-              }`}
-            >
-              {t.setup.russian}
-            </button>
-            <button
-              onClick={() => setWordPack('en')}
-              className={`p-3 rounded-lg border-2 transition-colors font-bold ${
-                wordPack === 'en'
-                  ? 'border-blue-500 bg-blue-900/30 text-white'
-                  : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
-              }`}
-            >
-              {t.setup.english}
             </button>
           </div>
         </div>
@@ -120,7 +92,7 @@ export default function SetupPage() {
               onClick={() => setBoardSize('4x4')}
               className={`p-3 rounded-lg border-2 transition-colors text-center ${
                 boardSize === '4x4'
-                  ? 'border-blue-500 bg-blue-900/30'
+                  ? 'border-board-blue/60 bg-board-blue/10'
                   : 'border-gray-700 bg-gray-800 hover:border-gray-600'
               }`}
             >
@@ -131,7 +103,7 @@ export default function SetupPage() {
               onClick={() => setBoardSize('5x5')}
               className={`p-3 rounded-lg border-2 transition-colors text-center ${
                 boardSize === '5x5'
-                  ? 'border-blue-500 bg-blue-900/30'
+                  ? 'border-board-blue/60 bg-board-blue/10'
                   : 'border-gray-700 bg-gray-800 hover:border-gray-600'
               }`}
             >
@@ -149,7 +121,7 @@ export default function SetupPage() {
               onClick={() => setRuleSet('default')}
               className={`p-3 rounded-lg border-2 transition-colors font-bold ${
                 ruleSet === 'default'
-                  ? 'border-blue-500 bg-blue-900/30 text-white'
+                  ? 'border-board-blue/60 bg-board-blue/10 text-white'
                   : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
               }`}
             >
@@ -159,7 +131,7 @@ export default function SetupPage() {
               onClick={() => setRuleSet('strict')}
               className={`p-3 rounded-lg border-2 transition-colors font-bold ${
                 ruleSet === 'strict'
-                  ? 'border-blue-500 bg-blue-900/30 text-white'
+                  ? 'border-board-blue/60 bg-board-blue/10 text-white'
                   : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
               }`}
             >
@@ -168,9 +140,9 @@ export default function SetupPage() {
           </div>
         </div>
 
-        {/* Puzzle count (guessing mode only) */}
+        {/* Puzzle count */}
         {mode === 'guessing' && puzzleCount && (
-          <p className={`text-center text-sm mb-4 ${puzzleCount.available > 0 ? 'text-gray-400' : 'text-red-400'}`}>
+          <p className={`text-center text-sm mb-4 ${puzzleCount.available > 0 ? 'text-gray-400' : 'text-board-red'}`}>
             {puzzleCount.available > 0
               ? t.setup.availablePuzzles.replace('{available}', String(puzzleCount.available)).replace('{total}', String(puzzleCount.total))
               : t.setup.noPuzzlesAvailable}
@@ -180,7 +152,7 @@ export default function SetupPage() {
         <button
           onClick={handleStart}
           disabled={loading || (mode === 'guessing' && puzzleCount?.available === 0)}
-          className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg transition-colors disabled:opacity-50"
+          className="w-full py-4 rounded-xl bg-board-blue hover:brightness-110 text-white font-bold text-lg transition-colors disabled:opacity-50"
         >
           {loading ? t.game.findingClue : t.setup.start}
         </button>

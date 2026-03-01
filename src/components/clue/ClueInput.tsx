@@ -37,21 +37,21 @@ export default function ClueInput({ boardCards, targetCount, onSubmit }: ClueInp
               setWord(e.target.value);
               setError('');
             }}
-            placeholder="Enter clue..."
-            className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg focus:outline-none focus:border-blue-500 w-48"
+            placeholder="..."
+            className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg focus:outline-none focus:border-board-blue w-44 sm:w-48"
           />
         </div>
-        <div className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg">
+        <div className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg font-bold min-w-[2.5rem] text-center">
           {targetCount}
         </div>
         <button
           type="submit"
-          className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors"
+          className="px-4 sm:px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold transition-colors"
         >
           {t.clue.submit}
         </button>
       </div>
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p className="text-board-red text-sm">{error}</p>}
     </form>
   );
 }

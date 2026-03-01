@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS clues (
   number INT NOT NULL,
   board_seed TEXT NOT NULL,
   target_indices INT[] NOT NULL,
+  null_indices INT[] DEFAULT '{}',
   created_at BIGINT NOT NULL,
   user_id TEXT NOT NULL REFERENCES users(id),
   word_pack TEXT NOT NULL,

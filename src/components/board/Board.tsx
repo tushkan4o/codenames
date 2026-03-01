@@ -7,10 +7,11 @@ interface BoardProps {
   showColors: boolean;
   selectedIndices: number[];
   targetIndices?: number[];
+  nullIndices?: number[];
   onCardClick?: (index: number) => void;
   disabled?: boolean;
   pickOrder?: number[];
-  flippingIndex?: number;
+  revealDelays?: Record<number, number>;
 }
 
 const gridColsClass: Record<number, string> = {
@@ -24,13 +25,14 @@ export default function Board({
   showColors,
   selectedIndices,
   targetIndices = [],
+  nullIndices = [],
   onCardClick,
   disabled,
   pickOrder,
-  flippingIndex,
+  revealDelays,
 }: BoardProps) {
   return (
-    <div className={`grid ${gridColsClass[columns] || 'grid-cols-5'} gap-2 max-w-2xl mx-auto`}>
+    <div className={`grid ${gridColsClass[columns] || 'grid-cols-5'} gap-1.5 sm:gap-2 w-full max-w-[min(100%,640px)] mx-auto px-1`}>
       {cards.map((card, index) => {
         const orderIdx = pickOrder?.indexOf(index);
         const order = orderIdx !== undefined && orderIdx >= 0 ? orderIdx + 1 : undefined;
@@ -46,8 +48,9 @@ export default function Board({
             onClick={onCardClick ? () => onCardClick(index) : undefined}
             disabled={disabled}
             targetMarked={targetIndices.includes(index)}
+            nullMarked={nullIndices.includes(index)}
             pickOrder={order}
-            flipping={flippingIndex === index}
+            revealDelay={revealDelays?.[index]}
           />
         );
       })}

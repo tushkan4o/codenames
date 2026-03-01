@@ -40,24 +40,18 @@ export default function LeaderboardPage() {
   useEffect(() => {
     loadData(sizeFilter);
   }, [sizeFilter, loadData]);
-
-  function handleSizeFilter(size: SizeFilter) {
-    setSizeFilter(size);
-  }
-
   return (
     <div className="min-h-screen">
       <NavBar />
       <div className="max-w-2xl mx-auto px-4 pt-8">
-        <h1 className="text-2xl font-bold text-white mb-6 text-center">{t.leaderboard.title}</h1>
+        <h1 className="text-2xl font-extrabold text-white mb-6 text-center">{t.leaderboard.title}</h1>
 
-        {/* Role toggle */}
         <div className="flex justify-center gap-2 mb-4">
           <button
             onClick={() => setTab('spymasters')}
             className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${
               tab === 'spymasters'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-board-blue text-white'
                 : 'bg-gray-800 text-gray-400 hover:text-white'
             }`}
           >
@@ -75,15 +69,14 @@ export default function LeaderboardPage() {
           </button>
         </div>
 
-        {/* Board size toggle */}
         <div className="flex justify-center gap-2 mb-6">
           {(['all', '4x4', '5x5'] as SizeFilter[]).map((size) => (
             <button
               key={size}
-              onClick={() => handleSizeFilter(size)}
+              onClick={() => setSizeFilter(size)}
               className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-colors ${
                 sizeFilter === size
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-board-blue text-white'
                   : 'bg-gray-800 text-gray-400 hover:text-white'
               }`}
             >
@@ -98,7 +91,7 @@ export default function LeaderboardPage() {
           ) : (
             <table className="w-full text-sm table-fixed">
               <thead>
-                <tr className="text-gray-400 border-b border-gray-700">
+                <tr className="text-gray-400 border-b border-gray-700/50">
                   <th className="py-2 text-left w-[8%]">{t.leaderboard.rank}</th>
                   <th className="py-2 text-left w-[30%]">{t.leaderboard.player}</th>
                   <th className="py-2 text-right w-[18%]">{t.leaderboard.cluesGiven}</th>
@@ -108,10 +101,10 @@ export default function LeaderboardPage() {
               </thead>
               <tbody>
                 {spymasters.map((s, i) => (
-                  <tr key={s.userId} className="border-b border-gray-800 text-gray-300">
+                  <tr key={s.userId} className="border-b border-gray-800/50 text-gray-300">
                     <td className="py-2">{i + 1}</td>
                     <td className="py-2 font-semibold truncate">
-                      <button onClick={() => navigate(`/profile/${s.userId}`)} className="text-blue-400 hover:text-blue-300 transition-colors">{s.userId}</button>
+                      <button onClick={() => navigate(`/profile/${s.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{s.userId}</button>
                     </td>
                     <td className="py-2 text-right">{s.cluesGiven}</td>
                     <td className="py-2 text-right">{s.avgWordsPerClue}</td>
@@ -129,7 +122,7 @@ export default function LeaderboardPage() {
           ) : (
             <table className="w-full text-sm table-fixed">
               <thead>
-                <tr className="text-gray-400 border-b border-gray-700">
+                <tr className="text-gray-400 border-b border-gray-700/50">
                   <th className="py-2 text-left w-[8%]">{t.leaderboard.rank}</th>
                   <th className="py-2 text-left w-[30%]">{t.leaderboard.player}</th>
                   <th className="py-2 text-right w-[18%]">{t.leaderboard.cluesSolved}</th>
@@ -139,10 +132,10 @@ export default function LeaderboardPage() {
               </thead>
               <tbody>
                 {guessers.map((g, i) => (
-                  <tr key={g.userId} className="border-b border-gray-800 text-gray-300">
+                  <tr key={g.userId} className="border-b border-gray-800/50 text-gray-300">
                     <td className="py-2">{i + 1}</td>
                     <td className="py-2 font-semibold truncate">
-                      <button onClick={() => navigate(`/profile/${g.userId}`)} className="text-blue-400 hover:text-blue-300 transition-colors">{g.userId}</button>
+                      <button onClick={() => navigate(`/profile/${g.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{g.userId}</button>
                     </td>
                     <td className="py-2 text-right">{g.cluesSolved}</td>
                     <td className="py-2 text-right">{g.avgWordsPicked}</td>

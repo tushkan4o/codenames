@@ -1,8 +1,6 @@
 export type CardColor = 'red' | 'blue' | 'neutral' | 'assassin';
 export type BoardSize = '4x4' | '5x5';
-export type WordPack = 'en' | 'ru';
 export type RuleSet = 'default' | 'strict';
-export type Language = 'en' | 'ru';
 
 export interface BoardConfig {
   size: BoardSize;
@@ -40,7 +38,6 @@ export interface BoardState {
 
 export interface GameConfig {
   mode: GameMode;
-  wordPack: WordPack;
   boardSize: BoardSize;
   ruleSet: RuleSet;
 }
@@ -51,9 +48,10 @@ export interface Clue {
   number: number;
   boardSeed: string;
   targetIndices: number[];
+  nullIndices: number[];
   createdAt: number;
   userId: string;
-  wordPack: WordPack;
+  wordPack: string;
   boardSize: BoardSize;
   reshuffleCount: number;
 }

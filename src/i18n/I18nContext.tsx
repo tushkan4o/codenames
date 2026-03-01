@@ -1,31 +1,15 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import type { Language } from '../types/game';
-import { en, type TranslationKeys } from './en';
-import { ru } from './ru';
-
-const translations: Record<Language, TranslationKeys> = { en, ru };
+import { createContext, useContext, type ReactNode } from 'react';
+import { ru, type TranslationKeys } from './ru';
 
 interface I18nContextValue {
-  language: Language;
-  setLanguage: (lang: Language) => void;
   translations: TranslationKeys;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>(() => {
-    const stored = localStorage.getItem('codenames_language');
-    return (stored === 'ru' ? 'ru' : 'en') as Language;
-  });
-
-  function handleSetLanguage(lang: Language) {
-    setLanguage(lang);
-    localStorage.setItem('codenames_language', lang);
-  }
-
   return (
-    <I18nContext.Provider value={{ language, setLanguage: handleSetLanguage, translations: translations[language] }}>
+    <I18nContext.Provider value={{ translations: ru }}>
       {children}
     </I18nContext.Provider>
   );

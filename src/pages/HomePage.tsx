@@ -22,12 +22,12 @@ export default function HomePage() {
     <div className="min-h-screen">
       <NavBar />
       <div className="flex flex-col items-center justify-center px-4 pt-20">
-        <h1 className="text-5xl font-bold text-white mb-2 tracking-tight">{t.app.title}</h1>
+        <h1 className="text-5xl font-extrabold text-white mb-2 tracking-tight">{t.app.title}</h1>
         <p className="text-gray-400 mb-10">{t.app.subtitle}</p>
 
         <button
           onClick={() => navigate('/setup')}
-          className="px-12 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xl transition-colors mb-8"
+          className="px-12 py-4 rounded-xl bg-board-blue hover:brightness-110 text-white font-bold text-xl transition-colors mb-8"
         >
           {t.home.startGame}
         </button>

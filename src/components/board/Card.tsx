@@ -9,15 +9,32 @@ interface CardProps {
   onClick?: () => void;
   disabled?: boolean;
   targetMarked?: boolean;
+  nullMarked?: boolean;
   pickOrder?: number;
-  flipping?: boolean;
+  revealDelay?: number;
 }
 
-const colorClasses: Record<CardColor, string> = {
-  red: 'bg-red-600/50 text-white border-red-700/50',
-  blue: 'bg-blue-600/50 text-white border-blue-700/50',
-  neutral: 'bg-gray-300 text-gray-800 border-gray-400',
-  assassin: 'bg-gray-900/60 text-white border-gray-700/60',
+const colorConfig: Record<CardColor, { bg: string; text: string; glow: string }> = {
+  red: {
+    bg: 'bg-board-red',
+    text: 'text-gray-900',
+    glow: 'shadow-[0_0_18px_rgba(239,83,80,0.5)]',
+  },
+  blue: {
+    bg: 'bg-board-blue',
+    text: 'text-gray-900',
+    glow: 'shadow-[0_0_18px_rgba(66,165,245,0.5)]',
+  },
+  neutral: {
+    bg: 'bg-board-neutral',
+    text: 'text-gray-300',
+    glow: '',
+  },
+  assassin: {
+    bg: 'bg-board-assassin',
+    text: 'text-gray-500',
+    glow: 'shadow-[0_0_12px_rgba(0,0,0,0.8)]',
+  },
 };
 
 export default function Card({
@@ -29,47 +46,62 @@ export default function Card({
   onClick,
   disabled,
   targetMarked,
+  nullMarked,
   pickOrder,
-  flipping,
+  revealDelay,
 }: CardProps) {
   const shouldShowColor = showColor || revealed;
+  const cfg = colorConfig[color];
 
-  const baseClasses =
-    'relative flex items-center justify-center p-2 rounded-lg font-bold text-sm uppercase tracking-wide select-none min-h-[3.5rem]';
-
-  const colorClass = shouldShowColor
-    ? colorClasses[color]
-    : 'bg-slate-600 text-slate-100 border-slate-500';
+  const bgClass = shouldShowColor ? cfg.bg : 'bg-board-card';
+  const textClass = shouldShowColor ? cfg.text : 'text-gray-200';
+  const glowClass = shouldShowColor ? cfg.glow : '';
 
   const interactiveClass =
-    !disabled && onClick
-      ? 'cursor-pointer hover:brightness-125 hover:shadow-lg active:brightness-90'
-      : '';
+    !disabled && onClick ? 'card-interactive cursor-pointer' : '';
 
-  // High-contrast selection frame (skip for neutral cards)
-  const selectedClass = selected && shouldShowColor && color !== 'neutral'
-    ? 'border-4 border-white shadow-[0_0_12px_rgba(255,255,255,0.5)]'
-    : 'border-2';
+  // Selection: subtle colored ring instead of white border
+  let ringClass = '';
+  if (selected && shouldShowColor && color === 'red') {
+    ringClass = 'ring-2 ring-board-red/70 ring-offset-1 ring-offset-board-bg';
+  } else if (selected && shouldShowColor && color === 'blue') {
+    ringClass = 'ring-2 ring-board-blue/70 ring-offset-1 ring-offset-board-bg';
+  } else if (selected && shouldShowColor && color === 'assassin') {
+    ringClass = 'ring-2 ring-gray-500/70 ring-offset-1 ring-offset-board-bg';
+  }
 
-  // Master's target words: blue ring
+  // Spymaster target ring
   const targetClass = targetMarked
-    ? 'ring-3 ring-blue-400 ring-offset-2 ring-offset-gray-900'
+    ? 'ring-2 ring-blue-400/80 ring-offset-1 ring-offset-board-bg'
     : '';
 
-  const flipClass = flipping ? 'card-flip' : 'transition-all duration-200';
+  // Null/avoid ring (amber)
+  const nullClass = nullMarked
+    ? 'ring-2 ring-amber-400/80 ring-offset-1 ring-offset-board-bg'
+    : '';
+
+  const style = revealDelay !== undefined
+    ? { transitionDelay: `${revealDelay}ms` }
+    : undefined;
 
   return (
     <button
-      className={`${baseClasses} ${colorClass} ${interactiveClass} ${selectedClass} ${targetClass} ${flipClass}`}
+      className={`
+        card-reveal relative flex items-center justify-center
+        aspect-[4/3] rounded-lg font-bold uppercase tracking-wide select-none
+        text-[clamp(0.55rem,2.5vw,0.85rem)] p-1 sm:p-2 border border-white/5
+        ${bgClass} ${textClass} ${glowClass} ${interactiveClass}
+        ${ringClass} ${targetClass} ${nullClass}
+      `}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       type="button"
+      style={style}
     >
-      <span className="text-center leading-tight break-all">{word}</span>
+      <span className="text-center leading-tight break-all hyphens-auto">{word}</span>
 
-      {/* Pick order badge in bottom-left corner */}
       {pickOrder !== undefined && (
-        <span className="absolute bottom-0.5 left-0.5 w-5 h-5 rounded-full bg-white text-gray-900 text-xs flex items-center justify-center font-bold">
+        <span className="absolute bottom-0.5 left-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white/80 text-gray-900 text-[0.6rem] sm:text-xs flex items-center justify-center font-bold">
           {pickOrder}
         </span>
       )}
