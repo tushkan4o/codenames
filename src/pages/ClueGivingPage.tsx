@@ -50,15 +50,20 @@ export default function ClueGivingPage() {
     );
   }
 
+  function handleReset() {
+    setSelectedTargets([]);
+    setSelectedNulls([]);
+    setTargetError('');
+    if (avoidMode) setAvoidPhase('nulls');
+  }
+
   function toggleAvoidMode() {
     setAvoidMode((prev) => {
       if (!prev) {
-        // Entering avoid mode: reset selections
         setSelectedTargets([]);
         setSelectedNulls([]);
         setAvoidPhase('nulls');
       } else {
-        // Leaving avoid mode: reset nulls
         setSelectedNulls([]);
         setSelectedTargets([]);
       }
@@ -70,20 +75,17 @@ export default function ClueGivingPage() {
   function handleCardClick(index: number) {
     if (avoidMode) {
       if (avoidPhase === 'nulls') {
-        // In null phase: can click any NON-red card
         if (board.cards[index].color === 'red') return;
         setSelectedNulls((prev) =>
           prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
         );
       } else {
-        // In target phase: can click red cards
         if (board.cards[index].color !== 'red') return;
         setSelectedTargets((prev) =>
           prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
         );
       }
     } else {
-      // Normal mode: only allow selecting red cards
       if (board.cards[index].color !== 'red') return;
       setSelectedTargets((prev) =>
         prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
@@ -180,18 +182,7 @@ export default function ClueGivingPage() {
   }
 
   const clueNumber = avoidMode ? 0 : selectedTargets.length;
-
-  // Phase hint text
-  let phaseHint = '';
-  if (avoidMode) {
-    if (avoidPhase === 'nulls') {
-      phaseHint = `${t.game.avoidPhase} (${selectedNulls.length} ${t.game.nulled})`;
-    } else {
-      phaseHint = `${t.game.targetPhase} (${selectedTargets.length} ${t.game.selected})`;
-    }
-  } else {
-    phaseHint = `${t.game.selectTargets} (${selectedTargets.length} ${t.game.selected})`;
-  }
+  const hasSelections = selectedTargets.length > 0 || selectedNulls.length > 0;
 
   return (
     <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-6">
@@ -207,12 +198,12 @@ export default function ClueGivingPage() {
         </button>
         <button
           onClick={handleReshuffle}
-          className="px-3 py-1.5 rounded-lg bg-board-red/80 hover:bg-board-red text-white text-sm font-semibold transition-colors"
+          className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors"
           title={t.game.reshuffleWarning}
         >
           {t.game.reshuffle}
           {reshuffleCount > 0 && (
-            <span className="ml-1 text-red-200">({reshuffleCount})</span>
+            <span className="ml-1 text-gray-300">({reshuffleCount})</span>
           )}
         </button>
         <button
@@ -225,20 +216,39 @@ export default function ClueGivingPage() {
         >
           {t.game.avoidMode}
         </button>
+        {hasSelections && (
+          <button
+            onClick={handleReset}
+            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors"
+          >
+            {t.game.reset}
+          </button>
+        )}
       </div>
 
       {reshuffleCount > 0 && (
         <p className="text-center text-board-red text-xs mb-2">{t.game.reshuffleWarning}</p>
       )}
 
-      <p className="text-center text-gray-400 text-sm mb-1">{phaseHint}</p>
-      {avoidMode && (
-        <p className="text-center text-gray-500 text-xs mb-1">
-          {avoidPhase === 'nulls' ? t.game.avoidPhaseHint : t.game.targetPhaseHint}
-        </p>
-      )}
-      {!avoidMode && (
-        <p className="text-center text-gray-500 text-xs mb-1">{t.game.selectTargetsHint}</p>
+      {/* Phase hints */}
+      {avoidMode ? (
+        <>
+          <p className="text-center text-gray-400 text-sm mb-1">
+            {avoidPhase === 'nulls'
+              ? `${t.game.avoidPhase} (${selectedNulls.length} ${t.game.nulled})`
+              : `${t.game.targetPhase} (${selectedTargets.length} ${t.game.selected})`}
+          </p>
+          <p className="text-center text-gray-500 text-xs mb-1">
+            {avoidPhase === 'nulls' ? t.game.avoidPhaseHint : t.game.targetPhaseHint}
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-center text-gray-400 text-sm mb-1">
+            {t.game.selectTargetsTeam} <span className="text-board-red font-semibold">{t.game.yourTeam}</span> ({selectedTargets.length} {t.game.selected})
+          </p>
+          <p className="text-center text-gray-500 text-xs mb-1">{t.game.selectTargetsHint}</p>
+        </>
       )}
       {targetError && (
         <p className="text-center text-board-red text-sm mb-2">{targetError}</p>

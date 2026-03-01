@@ -25,12 +25,26 @@ export default function HomePage() {
         <h1 className="text-5xl font-extrabold text-white mb-2 tracking-tight">{t.app.title}</h1>
         <p className="text-gray-400 mb-10">{t.app.subtitle}</p>
 
-        <button
-          onClick={() => navigate('/setup')}
-          className="px-12 py-4 rounded-xl bg-board-blue hover:brightness-110 text-white font-bold text-xl transition-colors mb-8"
-        >
-          {t.home.startGame}
-        </button>
+        <div className="flex flex-col gap-3 w-full max-w-xs mb-8">
+          <button
+            onClick={() => navigate('/setup')}
+            className="w-full py-4 rounded-xl bg-board-blue hover:brightness-110 text-white font-bold text-xl transition-colors"
+          >
+            {t.home.startGame}
+          </button>
+          <button
+            onClick={() => navigate('/leaderboard')}
+            className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg transition-colors"
+          >
+            {t.nav.leaderboard}
+          </button>
+          <button
+            onClick={() => navigate('/profile')}
+            className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg transition-colors"
+          >
+            {t.nav.profile}
+          </button>
+        </div>
 
         {stats && (stats.cluesGiven > 0 || stats.cluesSolved > 0) && (
           <div className="flex gap-6 text-center">

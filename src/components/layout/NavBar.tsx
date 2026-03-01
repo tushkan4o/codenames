@@ -22,18 +22,6 @@ export default function NavBar() {
       </button>
 
       <div className="flex items-center gap-3">
-        <button
-          onClick={() => navigate('/leaderboard')}
-          className="text-sm text-gray-400 hover:text-white transition-colors"
-        >
-          {t.nav.leaderboard}
-        </button>
-        <button
-          onClick={() => navigate('/profile')}
-          className="text-sm text-gray-400 hover:text-white transition-colors"
-        >
-          {t.nav.profile}
-        </button>
         {user?.isAdmin && (
           <button
             onClick={() => navigate('/admin')}

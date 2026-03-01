@@ -32,7 +32,7 @@ export default function Board({
   revealDelays,
 }: BoardProps) {
   return (
-    <div className={`grid ${gridColsClass[columns] || 'grid-cols-5'} gap-1.5 sm:gap-2 w-full max-w-[min(100%,640px)] mx-auto px-1`}>
+    <div className={`grid ${gridColsClass[columns] || 'grid-cols-5'} gap-1 sm:gap-1.5 w-full max-w-[min(100%,780px)] mx-auto px-1`}>
       {cards.map((card, index) => {
         const orderIdx = pickOrder?.indexOf(index);
         const order = orderIdx !== undefined && orderIdx >= 0 ? orderIdx + 1 : undefined;

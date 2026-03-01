@@ -5,7 +5,15 @@ import { useTranslation } from '../i18n/useTranslation';
 import { generateSeed } from '../lib/boardGenerator';
 import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
-import type { BoardSize, GameMode, RuleSet } from '../types/game';
+import { BOARD_CONFIGS } from '../types/game';
+import type { BoardSize, GameMode } from '../types/game';
+
+const COLOR_CONFIG = [
+  { key: 'red' as const, bg: 'bg-board-red' },
+  { key: 'blue' as const, bg: 'bg-board-blue' },
+  { key: 'neutral' as const, bg: 'bg-board-neutral' },
+  { key: 'assassin' as const, bg: 'bg-board-assassin border border-gray-600' },
+];
 
 export default function SetupPage() {
   const navigate = useNavigate();
@@ -14,9 +22,23 @@ export default function SetupPage() {
 
   const [mode, setMode] = useState<GameMode>('clue-giving');
   const [boardSize, setBoardSize] = useState<BoardSize>(user?.preferences.defaultBoardSize ?? '5x5');
-  const [ruleSet, setRuleSet] = useState<RuleSet>('default');
   const [loading, setLoading] = useState(false);
   const [puzzleCount, setPuzzleCount] = useState<{ available: number; total: number } | null>(null);
+
+  const defaults = BOARD_CONFIGS[boardSize];
+  const [redCount, setRedCount] = useState(defaults.redCount);
+  const [blueCount, setBlueCount] = useState(defaults.blueCount);
+  const [assassinCount, setAssassinCount] = useState(defaults.assassinCount);
+
+  const totalCards = defaults.totalCards;
+  const neutralCount = totalCards - redCount - blueCount - assassinCount;
+
+  useEffect(() => {
+    const cfg = BOARD_CONFIGS[boardSize];
+    setRedCount(cfg.redCount);
+    setBlueCount(cfg.blueCount);
+    setAssassinCount(cfg.assassinCount);
+  }, [boardSize]);
 
   useEffect(() => {
     if (!user || mode !== 'guessing') {
@@ -26,12 +48,62 @@ export default function SetupPage() {
     api.getClueCount(user.id, 'ru', boardSize).then(setPuzzleCount).catch(() => setPuzzleCount(null));
   }, [user, mode, boardSize]);
 
+  function canAdjust(key: string, delta: number): boolean {
+    if (key === 'red') {
+      const newVal = redCount + delta;
+      if (newVal < 1) return false;
+      return totalCards - newVal - blueCount - assassinCount >= 0;
+    }
+    if (key === 'blue') {
+      const newVal = blueCount + delta;
+      if (newVal < 1) return false;
+      return totalCards - redCount - newVal - assassinCount >= 0;
+    }
+    if (key === 'assassin') {
+      const newVal = assassinCount + delta;
+      if (newVal < 0) return false;
+      return totalCards - redCount - blueCount - newVal >= 0;
+    }
+    return false;
+  }
+
+  function adjust(key: string, delta: number) {
+    if (!canAdjust(key, delta)) return;
+    if (key === 'red') setRedCount((v) => v + delta);
+    if (key === 'blue') setBlueCount((v) => v + delta);
+    if (key === 'assassin') setAssassinCount((v) => v + delta);
+  }
+
+  function resetConfig() {
+    const cfg = BOARD_CONFIGS[boardSize];
+    setRedCount(cfg.redCount);
+    setBlueCount(cfg.blueCount);
+    setAssassinCount(cfg.assassinCount);
+  }
+
+  function toggleSize() {
+    setBoardSize((s) => (s === '5x5' ? '4x4' : '5x5'));
+  }
+
+  const counts: Record<string, number> = {
+    red: redCount,
+    blue: blueCount,
+    neutral: neutralCount,
+    assassin: assassinCount,
+  };
+
   async function handleStart() {
     if (!user) return;
 
     if (mode === 'clue-giving') {
       const seed = generateSeed();
-      navigate(`/give-clue/${encodeURIComponent(seed)}?size=${boardSize}&rules=${ruleSet}`);
+      const params = new URLSearchParams({ size: boardSize });
+      if (redCount !== defaults.redCount || blueCount !== defaults.blueCount || assassinCount !== defaults.assassinCount) {
+        params.set('r', String(redCount));
+        params.set('b', String(blueCount));
+        params.set('a', String(assassinCount));
+      }
+      navigate(`/give-clue/${encodeURIComponent(seed)}?${params}`);
     } else {
       setLoading(true);
       try {
@@ -84,58 +156,60 @@ export default function SetupPage() {
           </div>
         </div>
 
-        {/* Board Size */}
-        <div className="mb-6">
-          <label className="block text-sm text-gray-400 mb-2">{t.setup.boardSize}</label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setBoardSize('4x4')}
-              className={`p-3 rounded-lg border-2 transition-colors text-center ${
-                boardSize === '4x4'
-                  ? 'border-board-blue/60 bg-board-blue/10'
-                  : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-              }`}
-            >
-              <p className="font-bold text-white">4 x 4</p>
-              <p className="text-xs text-gray-400">6 / 5 / 4 / 1</p>
-            </button>
-            <button
-              onClick={() => setBoardSize('5x5')}
-              className={`p-3 rounded-lg border-2 transition-colors text-center ${
-                boardSize === '5x5'
-                  ? 'border-board-blue/60 bg-board-blue/10'
-                  : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-              }`}
-            >
-              <p className="font-bold text-white">5 x 5</p>
-              <p className="text-xs text-gray-400">10 / 9 / 5 / 1</p>
-            </button>
-          </div>
-        </div>
-
-        {/* Rules */}
+        {/* Board Size + Color Config */}
         <div className="mb-8">
-          <label className="block text-sm text-gray-400 mb-2">{t.setup.rules}</label>
-          <div className="grid grid-cols-2 gap-3">
+          <label className="block text-sm text-gray-400 mb-2">{t.setup.boardSize}</label>
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setRuleSet('default')}
-              className={`p-3 rounded-lg border-2 transition-colors font-bold ${
-                ruleSet === 'default'
-                  ? 'border-board-blue/60 bg-board-blue/10 text-white'
-                  : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
-              }`}
+              onClick={toggleSize}
+              className="px-4 py-3 rounded-lg border-2 border-board-blue/60 bg-board-blue/10 text-white font-bold text-lg min-w-[4.5rem] text-center transition-colors hover:bg-board-blue/20"
             >
-              {t.setup.default}
+              {boardSize === '5x5' ? '5×5' : '4×4'}
             </button>
+
+            <div className="flex items-center gap-2 flex-1">
+              {COLOR_CONFIG.map(({ key, bg }) => {
+                const count = counts[key];
+                const isNeutral = key === 'neutral';
+                return (
+                  <div key={key} className="flex flex-col items-center gap-0.5">
+                    {!isNeutral ? (
+                      <button
+                        onClick={() => adjust(key, 1)}
+                        disabled={!canAdjust(key, 1)}
+                        className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
+                      >
+                        ▲
+                      </button>
+                    ) : (
+                      <span className="text-xs text-transparent leading-none">▲</span>
+                    )}
+                    <div
+                      className={`w-10 h-10 sm:w-11 sm:h-11 rounded-md ${bg} flex items-center justify-center text-white font-bold text-lg`}
+                    >
+                      {count}
+                    </div>
+                    {!isNeutral ? (
+                      <button
+                        onClick={() => adjust(key, -1)}
+                        disabled={!canAdjust(key, -1)}
+                        className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
+                      >
+                        ▼
+                      </button>
+                    ) : (
+                      <span className="text-xs text-transparent leading-none">▼</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
             <button
-              onClick={() => setRuleSet('strict')}
-              className={`p-3 rounded-lg border-2 transition-colors font-bold ${
-                ruleSet === 'strict'
-                  ? 'border-board-blue/60 bg-board-blue/10 text-white'
-                  : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
-              }`}
+              onClick={resetConfig}
+              className="px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors"
             >
-              {t.setup.strict}
+              {t.setup.resetConfig}
             </button>
           </div>
         </div>

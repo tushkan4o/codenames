@@ -46,7 +46,7 @@ export default function ClueInput({ boardCards, targetCount, onSubmit }: ClueInp
         </div>
         <button
           type="submit"
-          className="px-4 sm:px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold transition-colors"
+          className="px-4 sm:px-5 py-2 rounded-lg bg-board-red hover:brightness-110 text-white font-bold transition-colors"
         >
           {t.clue.submit}
         </button>

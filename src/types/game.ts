@@ -1,6 +1,5 @@
 export type CardColor = 'red' | 'blue' | 'neutral' | 'assassin';
 export type BoardSize = '4x4' | '5x5';
-export type RuleSet = 'default' | 'strict';
 
 export interface BoardConfig {
   size: BoardSize;
@@ -39,7 +38,6 @@ export interface BoardState {
 export interface GameConfig {
   mode: GameMode;
   boardSize: BoardSize;
-  ruleSet: RuleSet;
 }
 
 export interface Clue {

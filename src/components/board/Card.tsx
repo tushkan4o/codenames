@@ -88,8 +88,8 @@ export default function Card({
     <button
       className={`
         card-reveal relative flex items-center justify-center
-        aspect-[4/3] rounded-lg font-bold uppercase tracking-wide select-none
-        text-[clamp(0.55rem,2.5vw,0.85rem)] p-1 sm:p-2 border border-white/5
+        aspect-[5/3] rounded-lg font-bold uppercase tracking-wide select-none
+        text-[clamp(0.6rem,2.8vw,0.95rem)] p-1 sm:p-2 border border-white/5
         ${bgClass} ${textClass} ${glowClass} ${interactiveClass}
         ${ringClass} ${targetClass} ${nullClass}
       `}
@@ -98,7 +98,7 @@ export default function Card({
       type="button"
       style={style}
     >
-      <span className="text-center leading-tight break-all hyphens-auto">{word}</span>
+      <span className="text-center leading-tight hyphens-auto" lang="ru" style={{ overflowWrap: 'break-word' }}>{word}</span>
 
       {pickOrder !== undefined && (
         <span className="absolute bottom-0.5 left-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white/80 text-gray-900 text-[0.6rem] sm:text-xs flex items-center justify-center font-bold">
