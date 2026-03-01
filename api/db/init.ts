@@ -71,16 +71,18 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
 
     // Rename invalid ".." user to Mysyk
-    await sql`UPDATE users SET id = 'mysyk', display_name = 'Mysyk' WHERE id = '..'`
-      .catch(() => { /* user may not exist or already renamed */ });
-    await sql`UPDATE clues SET user_id = 'mysyk' WHERE user_id = '..'`
-      .catch(() => {});
-    await sql`UPDATE results SET user_id = 'mysyk' WHERE user_id = '..'`
-      .catch(() => {});
-    await sql`UPDATE ratings SET user_id = 'mysyk' WHERE user_id = '..'`
-      .catch(() => {});
-    await sql`UPDATE reports SET user_id = 'mysyk' WHERE user_id = '..'`
-      .catch(() => {});
+    const dotUser = await sql`SELECT * FROM users WHERE id = '..'`;
+    if (dotUser.length > 0) {
+      const u = dotUser[0];
+      await sql`INSERT INTO users (id, display_name, created_at, preferences, password, is_admin)
+        VALUES ('mysyk', 'Mysyk', ${u.created_at}, ${u.preferences || '{}'}, ${u.password || null}, ${u.is_admin || false})
+        ON CONFLICT (id) DO NOTHING`;
+      await sql`UPDATE clues SET user_id = 'mysyk' WHERE user_id = '..'`;
+      await sql`UPDATE results SET user_id = 'mysyk' WHERE user_id = '..'`;
+      await sql`UPDATE ratings SET user_id = 'mysyk' WHERE user_id = '..'`;
+      await sql`UPDATE reports SET user_id = 'mysyk' WHERE user_id = '..'`.catch(() => {});
+      await sql`DELETE FROM users WHERE id = '..'`;
+    }
 
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

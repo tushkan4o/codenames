@@ -205,7 +205,7 @@ export default function GuessingPage() {
   return (
     <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-6">
       <GameHeader mode="guessing" config={config} />
-      <ClueDisplay word={clue.word} number={clue.number} nullCount={clue.nullIndices?.length || 0} />
+      <ClueDisplay word={clue.word} number={clue.number} />
 
       <p className="text-center text-gray-400 text-sm mt-3 mb-1">
         {assassinHit
@@ -213,16 +213,9 @@ export default function GuessingPage() {
           : phase === 'done'
             ? t.game.resultsRevealed
             : clue.number === 0
-              ? <>{t.game.selectWordsClue0} — {redPickedCount} / ? <span className="text-board-red">{t.game.redFound}</span></>
+              ? <>{t.game.avoidHintClue0} — <span className="text-board-red">{redPickedCount} / ? красных</span> найдено</>
               : `${t.game.selectWords} — ${redPickedCount} / ${effectiveTargetCount} ${t.game.pickedRedCount}`}
       </p>
-
-      {/* Avoid hint for clue-0 */}
-      {clue.number === 0 && clue.nullIndices?.length > 0 && phase === 'picking' && (
-        <p className="text-center text-amber-400 text-xs mb-1">
-          {t.game.avoidHintClue0}
-        </p>
-      )}
 
       {isPicking && (
         <div className="flex flex-wrap justify-center gap-2 mb-3 mt-2">
