@@ -60,14 +60,13 @@ export default function Card({
   const interactiveClass =
     !disabled && onClick ? 'card-interactive cursor-pointer' : '';
 
-  // Selection: subtle colored ring instead of white border
+  // Selection ring: only in spymaster mode (showColor && !revealed means spymaster view)
+  // In guessing mode, revealed cards should not have selection rings
   let ringClass = '';
-  if (selected && shouldShowColor && color === 'red') {
-    ringClass = 'ring-2 ring-board-red/70 ring-offset-1 ring-offset-board-bg';
-  } else if (selected && shouldShowColor && color === 'blue') {
-    ringClass = 'ring-2 ring-board-blue/70 ring-offset-1 ring-offset-board-bg';
-  } else if (selected && shouldShowColor && color === 'assassin') {
-    ringClass = 'ring-2 ring-gray-500/70 ring-offset-1 ring-offset-board-bg';
+  if (selected && showColor && !revealed) {
+    if (color === 'red') ringClass = 'ring-2 ring-board-red/70 ring-offset-1 ring-offset-board-bg';
+    else if (color === 'blue') ringClass = 'ring-2 ring-board-blue/70 ring-offset-1 ring-offset-board-bg';
+    else if (color === 'assassin') ringClass = 'ring-2 ring-gray-500/70 ring-offset-1 ring-offset-board-bg';
   }
 
   // Spymaster target marker: thick white border
