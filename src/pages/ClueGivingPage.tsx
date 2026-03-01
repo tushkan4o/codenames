@@ -20,7 +20,20 @@ export default function ClueGivingPage() {
   const { t } = useTranslation();
 
   const boardSize = (searchParams.get('size') as BoardSize) || '5x5';
-  const config = BOARD_CONFIGS[boardSize];
+  const baseConfig = BOARD_CONFIGS[boardSize];
+  const config = useMemo(() => {
+    const r = searchParams.get('r');
+    const b = searchParams.get('b');
+    const a = searchParams.get('a');
+    if (r || b || a) {
+      const redCount = r ? Number(r) : baseConfig.redCount;
+      const blueCount = b ? Number(b) : baseConfig.blueCount;
+      const assassinCount = a ? Number(a) : baseConfig.assassinCount;
+      const neutralCount = baseConfig.totalCards - redCount - blueCount - assassinCount;
+      return { ...baseConfig, redCount, blueCount, assassinCount, neutralCount };
+    }
+    return baseConfig;
+  }, [searchParams, baseConfig]);
 
   const [currentSeed, setCurrentSeed] = useState(rawSeed ? decodeURIComponent(rawSeed) : generateSeed());
   const [selectedTargets, setSelectedTargets] = useState<number[]>([]);
@@ -46,7 +59,7 @@ export default function ClueGivingPage() {
     window.history.replaceState(
       null,
       '',
-      `/give-clue/${encodeURIComponent(newSeed)}?size=${boardSize}`,
+      `/give-clue/${encodeURIComponent(newSeed)}?${searchParams}`,
     );
   }
 
@@ -154,7 +167,7 @@ export default function ClueGivingPage() {
     window.history.replaceState(
       null,
       '',
-      `/give-clue/${encodeURIComponent(newSeed)}?size=${boardSize}`,
+      `/give-clue/${encodeURIComponent(newSeed)}?${searchParams}`,
     );
   }
 
@@ -236,7 +249,7 @@ export default function ClueGivingPage() {
           <p className="text-center text-gray-400 text-sm mb-1">
             {avoidPhase === 'nulls'
               ? `${t.game.avoidPhase} (${selectedNulls.length} ${t.game.nulled})`
-              : `${t.game.targetPhase} (${selectedTargets.length} ${t.game.selected})`}
+              : <>Теперь отметьте <span className="text-board-red font-semibold">целевые слова</span> ({selectedTargets.length} {t.game.selected})</>}
           </p>
           <p className="text-center text-gray-500 text-xs mb-1">
             {avoidPhase === 'nulls' ? t.game.avoidPhaseHint : t.game.targetPhaseHint}
