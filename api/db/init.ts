@@ -74,13 +74,18 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     const dotUser = await sql`SELECT * FROM users WHERE id = '..'`;
     if (dotUser.length > 0) {
       const u = dotUser[0];
+      // Ensure mysyk user exists
       await sql`INSERT INTO users (id, display_name, created_at, preferences, password, is_admin)
         VALUES ('mysyk', 'Mysyk', ${u.created_at}, ${u.preferences || '{}'}, ${u.password || null}, ${u.is_admin || false})
         ON CONFLICT (id) DO NOTHING`;
-      await sql`UPDATE clues SET user_id = 'mysyk' WHERE user_id = '..'`;
-      await sql`UPDATE results SET user_id = 'mysyk' WHERE user_id = '..'`;
+      // Delete conflicting rows in tables with unique constraints involving user_id
+      await sql`DELETE FROM ratings WHERE user_id = '..' AND clue_id IN (SELECT clue_id FROM ratings WHERE user_id = 'mysyk')`;
+      await sql`DELETE FROM results WHERE user_id = '..' AND clue_id IN (SELECT clue_id FROM results WHERE user_id = 'mysyk')`;
+      // Now safe to update remaining rows
       await sql`UPDATE ratings SET user_id = 'mysyk' WHERE user_id = '..'`;
+      await sql`UPDATE results SET user_id = 'mysyk' WHERE user_id = '..'`;
       await sql`UPDATE reports SET user_id = 'mysyk' WHERE user_id = '..'`.catch(() => {});
+      await sql`UPDATE clues SET user_id = 'mysyk' WHERE user_id = '..'`;
       await sql`DELETE FROM users WHERE id = '..'`;
     }
 
