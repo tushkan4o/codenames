@@ -123,7 +123,7 @@ export default function SetupPage() {
 
   return (
     <div className="min-h-screen">
-      <NavBar />
+      <NavBar showBack />
       <div className="max-w-lg mx-auto px-4 pt-10">
         <h1 className="text-2xl font-extrabold text-white mb-8 text-center">{t.setup.title}</h1>
 

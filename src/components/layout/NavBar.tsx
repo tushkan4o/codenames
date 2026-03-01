@@ -2,7 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../i18n/useTranslation';
 
-export default function NavBar() {
+interface NavBarProps {
+  showBack?: boolean;
+}
+
+export default function NavBar({ showBack }: NavBarProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { t } = useTranslation();
@@ -14,12 +18,24 @@ export default function NavBar() {
 
   return (
     <nav className="flex items-center justify-between px-4 py-3 bg-gray-900/80 border-b border-gray-800/50 backdrop-blur-sm">
-      <button
-        onClick={() => navigate('/')}
-        className="text-lg font-extrabold text-white hover:text-board-blue transition-colors tracking-tight"
-      >
-        CODENAMES
-      </button>
+      <div className="flex items-center gap-2">
+        {showBack && (
+          <button
+            onClick={() => navigate(-1)}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+        )}
+        <button
+          onClick={() => navigate('/')}
+          className="text-lg font-extrabold text-white hover:text-board-blue transition-colors tracking-tight"
+        >
+          CODENAMES
+        </button>
+      </div>
 
       <div className="flex items-center gap-3">
         {user?.isAdmin && (

@@ -104,7 +104,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen">
-      <NavBar />
+      <NavBar showBack />
       <div className="max-w-2xl mx-auto px-4 pt-8">
         <h1 className="text-2xl font-extrabold text-white mb-1 text-center">{t.profile.title}</h1>
         <p className="text-center text-gray-400 mb-6">{profileId}</p>

@@ -66,7 +66,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen">
-      <NavBar />
+      <NavBar showBack />
       <div className="max-w-4xl mx-auto px-4 pt-8">
         <h1 className="text-2xl font-extrabold text-white mb-6 text-center">
           {t.admin.title}
