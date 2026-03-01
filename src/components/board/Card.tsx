@@ -70,14 +70,14 @@ export default function Card({
     ringClass = 'ring-2 ring-gray-500/70 ring-offset-1 ring-offset-board-bg';
   }
 
-  // Spymaster target ring
+  // Spymaster target marker: thick white border
   const targetClass = targetMarked
-    ? 'ring-2 ring-blue-400/80 ring-offset-1 ring-offset-board-bg'
+    ? 'ring-[3px] ring-white ring-offset-1 ring-offset-board-bg'
     : '';
 
-  // Null/avoid ring (amber)
+  // Null/avoid marker: black fill with thin white edges
   const nullClass = nullMarked
-    ? 'ring-2 ring-amber-400/80 ring-offset-1 ring-offset-board-bg'
+    ? 'ring-[2px] ring-white/60 ring-offset-1 ring-offset-board-bg'
     : '';
 
   const style = revealDelay !== undefined

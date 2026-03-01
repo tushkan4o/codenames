@@ -212,13 +212,15 @@ export default function GuessingPage() {
           ? t.game.gameOverAssassin
           : phase === 'done'
             ? t.game.resultsRevealed
-            : `${t.game.selectWords} — ${redPickedCount} / ${effectiveTargetCount} ${t.game.pickedRedCount}`}
+            : clue.number === 0
+              ? <>{t.game.selectWordsClue0} — {redPickedCount} / ? <span className="text-board-red">{t.game.redFound}</span></>
+              : `${t.game.selectWords} — ${redPickedCount} / ${effectiveTargetCount} ${t.game.pickedRedCount}`}
       </p>
 
       {/* Avoid hint for clue-0 */}
       {clue.number === 0 && clue.nullIndices?.length > 0 && phase === 'picking' && (
         <p className="text-center text-amber-400 text-xs mb-1">
-          {t.game.avoidHint.replace('{n}', String(clue.nullIndices.length))}
+          {t.game.avoidHintClue0}
         </p>
       )}
 
