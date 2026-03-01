@@ -212,7 +212,7 @@ export default function GuessingPage() {
   return (
     <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-6">
       <GameHeader mode="guessing" config={config} />
-      <ClueDisplay word={clue.word} number={clue.number} />
+      <ClueDisplay word={clue.word} number={clue.number} teamColor="red" />
 
       <p className="text-center text-gray-400 text-sm mt-3 mb-1">
         {assassinHit
