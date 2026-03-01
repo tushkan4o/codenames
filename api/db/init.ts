@@ -70,6 +70,18 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     // Seed tushkan as admin with password
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
 
+    // Rename invalid ".." user to Mysyk
+    await sql`UPDATE users SET id = 'mysyk', display_name = 'Mysyk' WHERE id = '..'`
+      .catch(() => { /* user may not exist or already renamed */ });
+    await sql`UPDATE clues SET user_id = 'mysyk' WHERE user_id = '..'`
+      .catch(() => {});
+    await sql`UPDATE results SET user_id = 'mysyk' WHERE user_id = '..'`
+      .catch(() => {});
+    await sql`UPDATE ratings SET user_id = 'mysyk' WHERE user_id = '..'`
+      .catch(() => {});
+    await sql`UPDATE reports SET user_id = 'mysyk' WHERE user_id = '..'`
+      .catch(() => {});
+
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
