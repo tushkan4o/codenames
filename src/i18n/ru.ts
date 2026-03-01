@@ -50,6 +50,8 @@ export const ru = {
     anotherClue: 'Другая подсказка',
     nextPuzzle: 'Следующий пазл',
     endTurn: 'Завершить ход',
+    finish: 'Закончить',
+    confirmEnd: 'Вы уверены? Найдены не все слова',
     finishReveal: 'Завершить и открыть',
     selectTargets: 'Нажмите на слова вашей команды',
     selectTargetsTeam: 'Нажмите на слова',

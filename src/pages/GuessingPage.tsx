@@ -30,6 +30,7 @@ export default function GuessingPage() {
   const [score, setScore] = useState(0);
   const [showNoClues, setShowNoClues] = useState(false);
   const [revealDelays, setRevealDelays] = useState<Record<number, number>>({});
+  const [confirmEnd, setConfirmEnd] = useState(false);
 
   useEffect(() => {
     async function loadClue() {
@@ -95,6 +96,7 @@ export default function GuessingPage() {
 
     const newPicked = [...pickedIndices, index];
     setPickedIndices(newPicked);
+    setConfirmEnd(false);
 
     const card = board.cards[index];
 
@@ -137,6 +139,11 @@ export default function GuessingPage() {
   );
 
   function handleEndTurn() {
+    if (redPickedCount < effectiveTargetCount && !confirmEnd) {
+      setConfirmEnd(true);
+      return;
+    }
+    setConfirmEnd(false);
     finishGame(pickedIndices, false);
   }
 
@@ -231,14 +238,6 @@ export default function GuessingPage() {
           >
             {t.game.anotherClue}
           </button>
-          {pickedIndices.length > 0 && (
-            <button
-              onClick={handleEndTurn}
-              className="px-3 py-1.5 rounded-lg bg-board-red/80 hover:bg-board-red text-white text-sm font-semibold transition-colors"
-            >
-              {t.game.endTurn}
-            </button>
-          )}
         </div>
       )}
 
@@ -254,6 +253,21 @@ export default function GuessingPage() {
         pickOrder={pickedIndices}
         revealDelays={phase === 'revealing' ? revealDelays : undefined}
       />
+
+      {/* End turn button below board */}
+      {isPicking && pickedIndices.length > 0 && (
+        <div className="flex flex-col items-center gap-1 mt-3">
+          {confirmEnd && (
+            <p className="text-amber-400 text-xs">{t.game.confirmEnd}</p>
+          )}
+          <button
+            onClick={handleEndTurn}
+            className="px-4 py-1.5 rounded-lg bg-board-red/80 hover:bg-board-red text-white text-sm font-semibold transition-colors"
+          >
+            {t.game.finish}
+          </button>
+        </div>
+      )}
 
       {phase === 'done' && (
         <div className="animate-slide-up">

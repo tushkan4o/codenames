@@ -12,8 +12,8 @@ export default {
           card: '#2a2a35',
           red: '#EF5350',
           blue: '#42A5F5',
-          neutral: '#6b6b6b',
-          assassin: '#2d2d2d',
+          neutral: '#b0b0b0',
+          assassin: '#3a3a3a',
         }
       },
       fontFamily: {

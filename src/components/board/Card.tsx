@@ -27,13 +27,13 @@ const colorConfig: Record<CardColor, { bg: string; text: string; glow: string }>
   },
   neutral: {
     bg: 'bg-board-neutral',
-    text: 'text-gray-300',
+    text: 'text-gray-900',
     glow: '',
   },
   assassin: {
     bg: 'bg-board-assassin',
-    text: 'text-gray-500',
-    glow: 'shadow-[0_0_12px_rgba(0,0,0,0.8)]',
+    text: 'text-gray-400',
+    glow: 'shadow-[0_0_12px_rgba(0,0,0,0.6)]',
   },
 };
 
