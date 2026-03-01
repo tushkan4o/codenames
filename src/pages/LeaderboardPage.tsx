@@ -36,9 +36,9 @@ function Pagination({ page, pageCount, onChange }: { page: number; pageCount: nu
   if (pageCount <= 1) return null;
   return (
     <div className="flex justify-center gap-2 mt-4">
-      <button onClick={() => onChange(Math.max(0, page - 1))} disabled={page === 0} className="px-3 py-1 rounded bg-gray-800 text-gray-400 text-sm font-bold disabled:opacity-30 hover:bg-gray-700 transition-colors">&lsaquo;</button>
-      <span className="text-gray-500 text-sm py-1">{page + 1} / {pageCount}</span>
-      <button onClick={() => onChange(Math.min(pageCount - 1, page + 1))} disabled={page >= pageCount - 1} className="px-3 py-1 rounded bg-gray-800 text-gray-400 text-sm font-bold disabled:opacity-30 hover:bg-gray-700 transition-colors">&rsaquo;</button>
+      <button onClick={() => onChange(Math.max(0, page - 1))} disabled={page === 0} className="px-3 py-1 rounded bg-gray-800 text-gray-400 text-xs sm:text-sm font-bold disabled:opacity-30 hover:bg-gray-700 transition-colors">&lsaquo;</button>
+      <span className="text-gray-500 text-xs sm:text-sm py-1">{page + 1} / {pageCount}</span>
+      <button onClick={() => onChange(Math.min(pageCount - 1, page + 1))} disabled={page >= pageCount - 1} className="px-3 py-1 rounded bg-gray-800 text-gray-400 text-xs sm:text-sm font-bold disabled:opacity-30 hover:bg-gray-700 transition-colors">&rsaquo;</button>
     </div>
   );
 }
@@ -88,10 +88,13 @@ export default function LeaderboardPage() {
   };
 
   const tabBtnClass = (active: boolean, color: string) =>
-    `px-4 py-2 rounded-lg font-bold text-sm transition-colors ${active ? `${color} text-white` : 'bg-gray-800 text-gray-400 hover:text-white'}`;
+    `px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${active ? `${color} text-white` : 'bg-gray-800 text-gray-400 hover:text-white'}`;
+
+  const thClass = 'py-2 text-xs sm:text-sm';
+  const tdClass = 'py-2 text-xs sm:text-sm';
 
   const thSortClass = (active: boolean) =>
-    `py-2 text-right cursor-pointer hover:text-white transition-colors ${active ? 'text-board-blue' : ''}`;
+    `${thClass} text-right cursor-pointer hover:text-white transition-colors ${active ? 'text-board-blue' : ''}`;
 
   return (
     <div className="min-h-screen">
@@ -123,26 +126,26 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <>
-              <table className="w-full text-sm table-fixed">
+              <table className="w-full table-fixed">
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className="py-2 text-left w-[8%]">{t.leaderboard.rank}</th>
-                    <th className="py-2 text-left w-[30%]">{t.leaderboard.player}</th>
-                    <th className={`${thSortClass(spySort === 'cluesGiven')} w-[18%]`} onClick={() => { setSpySort('cluesGiven'); setPage(0); }}>{t.leaderboard.cluesGiven}</th>
-                    <th className={`${thSortClass(spySort === 'avgWordsPerClue')} w-[22%]`} onClick={() => { setSpySort('avgWordsPerClue'); setPage(0); }}>{t.leaderboard.avgWordsPerClue}</th>
-                    <th className={`${thSortClass(spySort === 'avgScoreOnClues')} w-[22%]`} onClick={() => { setSpySort('avgScoreOnClues'); setPage(0); }}>{t.leaderboard.avgScoreOnClues}</th>
+                    <th className={`${thClass} text-left w-[6%]`}>{t.leaderboard.rank}</th>
+                    <th className={`${thClass} text-left w-[32%]`}>{t.leaderboard.player}</th>
+                    <th className={`${thSortClass(spySort === 'cluesGiven')} w-[20%]`} onClick={() => { setSpySort('cluesGiven'); setPage(0); }}>{t.leaderboard.cluesGiven}</th>
+                    <th className={`${thSortClass(spySort === 'avgWordsPerClue')} w-[21%]`} onClick={() => { setSpySort('avgWordsPerClue'); setPage(0); }}>{t.leaderboard.avgWordsPerClue}</th>
+                    <th className={`${thSortClass(spySort === 'avgScoreOnClues')} w-[21%]`} onClick={() => { setSpySort('avgScoreOnClues'); setPage(0); }}>{t.leaderboard.avgScoreOnClues}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paged.map((s, i) => (
                     <tr key={s.userId} className="border-b border-gray-800/50 text-gray-300">
-                      <td className="py-2">{page * PAGE_SIZE + i + 1}</td>
-                      <td className="py-2 font-semibold truncate">
+                      <td className={tdClass}>{page * PAGE_SIZE + i + 1}</td>
+                      <td className={`${tdClass} font-semibold truncate`}>
                         <button onClick={() => navigate(`/profile/${s.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{s.userId}</button>
                       </td>
-                      <td className="py-2 text-right">{s.cluesGiven}</td>
-                      <td className="py-2 text-right">{s.avgWordsPerClue.toFixed(1)}</td>
-                      <td className="py-2 text-right">{s.avgScoreOnClues.toFixed(1)}</td>
+                      <td className={`${tdClass} text-right`}>{s.cluesGiven}</td>
+                      <td className={`${tdClass} text-right`}>{s.avgWordsPerClue.toFixed(1)}</td>
+                      <td className={`${tdClass} text-right`}>{s.avgScoreOnClues.toFixed(1)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -158,26 +161,26 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <>
-              <table className="w-full text-sm table-fixed">
+              <table className="w-full table-fixed">
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className="py-2 text-left w-[8%]">{t.leaderboard.rank}</th>
-                    <th className="py-2 text-left w-[30%]">{t.leaderboard.player}</th>
-                    <th className={`${thSortClass(guesserSort === 'cluesSolved')} w-[18%]`} onClick={() => { setGuesserSort('cluesSolved'); setPage(0); }}>{t.leaderboard.cluesSolved}</th>
-                    <th className={`${thSortClass(guesserSort === 'avgWordsPicked')} w-[22%]`} onClick={() => { setGuesserSort('avgWordsPicked'); setPage(0); }}>{t.leaderboard.avgWordsPicked}</th>
-                    <th className={`${thSortClass(guesserSort === 'avgScore')} w-[22%]`} onClick={() => { setGuesserSort('avgScore'); setPage(0); }}>{t.leaderboard.avgScore}</th>
+                    <th className={`${thClass} text-left w-[6%]`}>{t.leaderboard.rank}</th>
+                    <th className={`${thClass} text-left w-[32%]`}>{t.leaderboard.player}</th>
+                    <th className={`${thSortClass(guesserSort === 'cluesSolved')} w-[20%]`} onClick={() => { setGuesserSort('cluesSolved'); setPage(0); }}>{t.leaderboard.cluesSolved}</th>
+                    <th className={`${thSortClass(guesserSort === 'avgWordsPicked')} w-[21%]`} onClick={() => { setGuesserSort('avgWordsPicked'); setPage(0); }}>{t.leaderboard.avgWordsPicked}</th>
+                    <th className={`${thSortClass(guesserSort === 'avgScore')} w-[21%]`} onClick={() => { setGuesserSort('avgScore'); setPage(0); }}>{t.leaderboard.avgScore}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paged.map((g, i) => (
                     <tr key={g.userId} className="border-b border-gray-800/50 text-gray-300">
-                      <td className="py-2">{page * PAGE_SIZE + i + 1}</td>
-                      <td className="py-2 font-semibold truncate">
+                      <td className={tdClass}>{page * PAGE_SIZE + i + 1}</td>
+                      <td className={`${tdClass} font-semibold truncate`}>
                         <button onClick={() => navigate(`/profile/${g.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{g.userId}</button>
                       </td>
-                      <td className="py-2 text-right">{g.cluesSolved}</td>
-                      <td className="py-2 text-right">{g.avgWordsPicked.toFixed(1)}</td>
-                      <td className="py-2 text-right">{g.avgScore.toFixed(1)}</td>
+                      <td className={`${tdClass} text-right`}>{g.cluesSolved}</td>
+                      <td className={`${tdClass} text-right`}>{g.avgWordsPicked.toFixed(1)}</td>
+                      <td className={`${tdClass} text-right`}>{g.avgScore.toFixed(1)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -193,26 +196,28 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <>
-              <table className="w-full text-sm table-fixed">
+              <table className="w-full table-fixed">
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className="py-2 text-left w-[35%]">{t.leaderboard.clueWord}</th>
-                    <th className="py-2 text-left w-[27%]">{t.leaderboard.author}</th>
-                    <th className={`${thSortClass(clueSort === 'attempts')} w-[19%]`} onClick={() => { setClueSort('attempts'); setPage(0); }}>{t.leaderboard.attempts}</th>
-                    <th className={`${thSortClass(clueSort === 'avgScore')} w-[19%]`} onClick={() => { setClueSort('avgScore'); setPage(0); }}>{t.leaderboard.avgScore}</th>
+                    <th className={`${thClass} text-left w-[6%]`}>{t.leaderboard.rank}</th>
+                    <th className={`${thClass} text-left w-[32%]`}>{t.leaderboard.clueWord}</th>
+                    <th className={`${thClass} text-left w-[20%]`}>{t.leaderboard.author}</th>
+                    <th className={`${thSortClass(clueSort === 'attempts')} w-[21%]`} onClick={() => { setClueSort('attempts'); setPage(0); }}>{t.leaderboard.attempts}</th>
+                    <th className={`${thSortClass(clueSort === 'avgScore')} w-[21%]`} onClick={() => { setClueSort('avgScore'); setPage(0); }}>{t.leaderboard.avgScore}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paged.map((c, i) => (
                     <tr key={`${c.word}-${i}`} className="border-b border-gray-800/50 text-gray-300">
-                      <td className="py-2 font-bold uppercase">
-                        {c.word} <span className="text-gray-500 font-normal">{c.number}</span>
+                      <td className={tdClass}>{page * PAGE_SIZE + i + 1}</td>
+                      <td className={`${tdClass} font-bold uppercase truncate`}>
+                        {c.word} <span className="text-gray-500 font-semibold">{c.number}</span>
                       </td>
-                      <td className="py-2 truncate">
+                      <td className={`${tdClass} truncate`}>
                         <button onClick={() => navigate(`/profile/${c.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{c.userId}</button>
                       </td>
-                      <td className="py-2 text-right">{c.attempts}</td>
-                      <td className="py-2 text-right">{c.avgScore.toFixed(1)}</td>
+                      <td className={`${tdClass} text-right`}>{c.attempts}</td>
+                      <td className={`${tdClass} text-right`}>{c.avgScore.toFixed(1)}</td>
                     </tr>
                   ))}
                 </tbody>

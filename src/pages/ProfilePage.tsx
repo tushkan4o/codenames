@@ -57,7 +57,6 @@ export default function ProfilePage() {
     api.getUserStats(profileId).then(setStats);
     api.getCluesByUser(profileId).then((clues) => {
       setCluesGiven(clues);
-      // Fetch stats for each clue
       clues.forEach((clue) => {
         api.getClueStats(clue.id).then((s) => {
           setClueStatsMap((prev) => ({ ...prev, [clue.id]: { attempts: s.attempts, avgScore: s.avgScore } }));
@@ -72,7 +71,6 @@ export default function ProfilePage() {
         }),
       );
       setSolvedEntries(entries);
-      // Fetch stats for solved clues too
       entries.forEach((entry) => {
         if (entry.clue && !clueStatsMap[entry.clue.id]) {
           api.getClueStats(entry.clue.id).then((s) => {
@@ -175,6 +173,9 @@ export default function ProfilePage() {
       active ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-500 hover:text-white'
     }`;
 
+  const thClass = 'py-2 text-xs sm:text-sm';
+  const tdClass = 'py-2 text-xs sm:text-sm';
+
   return (
     <div className="min-h-screen">
       <NavBar showBack />
@@ -216,13 +217,13 @@ export default function ProfilePage() {
         <div className="flex justify-center gap-2 mb-4">
           <button
             onClick={() => { setTab('given'); setGivenPage(0); }}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${tab === 'given' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+            className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'given' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.profile.givenTab}
           </button>
           <button
             onClick={() => { setTab('solved'); setSolvedPage(0); }}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${tab === 'solved' ? 'bg-gray-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+            className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'solved' ? 'bg-gray-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.profile.solvedTab}
           </button>
@@ -246,68 +247,78 @@ export default function ProfilePage() {
             <p className="text-center text-gray-500">{t.profile.noCluesGiven}</p>
           ) : (
             <>
-              <div className="space-y-3">
-                {pagedGiven.map((clue) => {
-                  const canOpen = canRevealClue(clue);
-                  const badge = shouldShowBadge(clue);
-                  const solved = mySolvedClueIds.has(clue.id);
-                  const cStats = clueStatsMap[clue.id];
-                  return (
-                    <div
-                      key={clue.id}
-                      onClick={() => openGivenModal(clue)}
-                      className={`bg-gray-800/60 rounded-lg p-4 border border-gray-700/30 flex items-center justify-between transition-colors ${canOpen ? 'cursor-pointer hover:border-gray-600' : ''}`}
-                    >
-                      <div>
-                        <span className="font-bold text-white uppercase">{clue.word}</span>
-                        <span className="ml-2 text-white font-bold">{clue.number}</span>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {clue.boardSize} &middot; {new Date(clue.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {badge ? (
-                          solved ? (
-                            <span className="text-xs font-semibold text-board-blue bg-board-blue/10 px-2 py-0.5 rounded">{t.profile.solved}</span>
-                          ) : (
-                            <>
-                              <span className="text-xs font-semibold text-gray-500 bg-gray-700/50 px-2 py-0.5 rounded">{t.profile.notSolved}</span>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); navigate(`/guess/${clue.id}`); }}
-                                className="text-xs font-bold text-board-blue bg-board-blue/10 px-2.5 py-0.5 rounded hover:bg-board-blue/20 transition-colors"
-                              >
-                                {t.profile.tryIt}
-                              </button>
-                            </>
-                          )
-                        ) : null}
-                        {cStats && (
-                          <div className="text-right ml-1">
-                            <p className="text-xs text-gray-500">{t.profile.solveCount}: {cStats.attempts}</p>
-                            <p className="text-xs text-gray-500">{t.leaderboard.avgScore}: {cStats.avgScore}</p>
+              <table className="w-full table-fixed">
+                <thead>
+                  <tr className="text-gray-400 border-b border-gray-700/50">
+                    <th className={`${thClass} text-left w-[38%]`}>{t.leaderboard.clueWord}</th>
+                    <th className={`${thClass} text-left w-[14%]`}>{t.leaderboard.rank === '#' ? '' : ''}</th>
+                    <th className={`${thClass} text-right w-[16%]`}>{t.profile.solveCount}</th>
+                    <th className={`${thClass} text-right w-[16%]`}>{t.leaderboard.avgScore}</th>
+                    <th className={`${thClass} text-right w-[16%]`}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedGiven.map((clue) => {
+                    const canOpen = canRevealClue(clue);
+                    const badge = shouldShowBadge(clue);
+                    const solved = mySolvedClueIds.has(clue.id);
+                    const cStats = clueStatsMap[clue.id];
+                    return (
+                      <tr
+                        key={clue.id}
+                        onClick={() => openGivenModal(clue)}
+                        className={`border-b border-gray-800/50 text-gray-300 ${canOpen ? 'cursor-pointer hover:bg-gray-800/40' : ''}`}
+                      >
+                        <td className={`${tdClass} truncate`}>
+                          <span className="font-bold text-white uppercase">{clue.word}</span>
+                          <span className="ml-1 text-gray-500 font-semibold">{clue.number}</span>
+                        </td>
+                        <td className={`${tdClass} text-gray-500`}>
+                          {clue.boardSize}
+                        </td>
+                        <td className={`${tdClass} text-right`}>
+                          {cStats?.attempts ?? '—'}
+                        </td>
+                        <td className={`${tdClass} text-right`}>
+                          {cStats ? cStats.avgScore.toFixed(1) : '—'}
+                        </td>
+                        <td className={`${tdClass} text-right`}>
+                          <div className="flex items-center justify-end gap-1">
+                            {badge ? (
+                              solved ? (
+                                <span className="text-xs font-semibold text-board-blue bg-board-blue/10 px-1.5 py-0.5 rounded">{t.profile.solved}</span>
+                              ) : (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); navigate(`/guess/${clue.id}`); }}
+                                  className="text-xs font-bold text-board-blue bg-board-blue/10 px-1.5 py-0.5 rounded hover:bg-board-blue/20 transition-colors"
+                                >
+                                  {t.profile.tryIt}
+                                </button>
+                              )
+                            ) : null}
+                            {user?.isAdmin && (
+                              confirmDeleteClue === clue.id ? (
+                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                  <button onClick={(e) => { e.stopPropagation(); handleAdminDeleteClue(clue.id); }} className="px-1.5 py-0.5 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
+                                  <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteClue(null); }} className="px-1.5 py-0.5 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setConfirmDeleteClue(clue.id); }}
+                                  className="px-1 py-0.5 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors"
+                                  title={t.admin.deleteClue}
+                                >
+                                  &times;
+                                </button>
+                              )
+                            )}
                           </div>
-                        )}
-                        {user?.isAdmin && (
-                          confirmDeleteClue === clue.id ? (
-                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                              <button onClick={(e) => { e.stopPropagation(); handleAdminDeleteClue(clue.id); }} className="px-2 py-0.5 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
-                              <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteClue(null); }} className="px-2 py-0.5 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setConfirmDeleteClue(clue.id); }}
-                              className="px-1.5 py-0.5 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors"
-                              title={t.admin.deleteClue}
-                            >
-                              &times;
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
               {givenPageCount > 1 && (
                 <Pagination page={givenPage} pageCount={givenPageCount} onChange={setGivenPage} />
               )}
@@ -320,57 +331,61 @@ export default function ProfilePage() {
             <p className="text-center text-gray-500">{t.profile.noCluesSolved}</p>
           ) : (
             <>
-              <div className="space-y-3">
-                {pagedSolved.map((entry, i) => {
-                  const canOpen = entry.clue ? canRevealClue(entry.clue) : false;
-                  const cStats = entry.clue ? clueStatsMap[entry.clue.id] : undefined;
-                  return (
-                    <div
-                      key={i}
-                      onClick={() => canOpen ? openSolvedModal(entry) : undefined}
-                      className={`bg-gray-800/60 rounded-lg p-4 border border-gray-700/30 flex items-center justify-between transition-colors ${canOpen ? 'cursor-pointer hover:border-gray-600' : ''}`}
-                    >
-                      <div>
-                        <span className="font-bold text-white uppercase">
-                          {entry.clue?.word ?? entry.result.clueId.slice(0, 20)}
-                        </span>
-                        <span className="ml-2 text-white font-bold">
-                          {entry.clue?.number ?? entry.result.totalTargets}
-                        </span>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {entry.clue?.boardSize ?? entry.result.boardSize ?? '?'} &middot;{' '}
-                          {new Date(entry.result.timestamp).toLocaleDateString()}
+              <table className="w-full table-fixed">
+                <thead>
+                  <tr className="text-gray-400 border-b border-gray-700/50">
+                    <th className={`${thClass} text-left w-[32%]`}>{t.leaderboard.clueWord}</th>
+                    <th className={`${thClass} text-left w-[22%]`}>{t.leaderboard.author}</th>
+                    <th className={`${thClass} text-right w-[16%]`}>{t.profile.solveCount}</th>
+                    <th className={`${thClass} text-right w-[14%]`}>{t.leaderboard.avgScore}</th>
+                    <th className={`${thClass} text-right w-[16%]`}>{t.profile.sortScore}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedSolved.map((entry, i) => {
+                    const canOpen = entry.clue ? canRevealClue(entry.clue) : false;
+                    const cStats = entry.clue ? clueStatsMap[entry.clue.id] : undefined;
+                    return (
+                      <tr
+                        key={i}
+                        onClick={() => canOpen ? openSolvedModal(entry) : undefined}
+                        className={`border-b border-gray-800/50 text-gray-300 ${canOpen ? 'cursor-pointer hover:bg-gray-800/40' : ''}`}
+                      >
+                        <td className={`${tdClass} truncate`}>
+                          <span className="font-bold text-white uppercase">
+                            {entry.clue?.word ?? entry.result.clueId.slice(0, 12)}
+                          </span>
+                          <span className="ml-1 text-gray-500 font-semibold">
+                            {entry.clue?.number ?? entry.result.totalTargets}
+                          </span>
+                        </td>
+                        <td className={`${tdClass} truncate`}>
                           {entry.clue && (
-                            <>
-                              {' '}&middot;{' '}
-                              <button
-                                onClick={(e) => { e.stopPropagation(); navigate(`/profile/${entry.clue!.userId}`); }}
-                                className="text-board-blue hover:text-blue-300 transition-colors"
-                              >
-                                {entry.clue.userId}
-                              </button>
-                            </>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); navigate(`/profile/${entry.clue!.userId}`); }}
+                              className="text-board-blue hover:text-blue-300 transition-colors"
+                            >
+                              {entry.clue.userId}
+                            </button>
                           )}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {cStats && (
-                          <div className="text-right mr-1">
-                            <p className="text-xs text-gray-500">{t.profile.solveCount}: {cStats.attempts}</p>
-                            <p className="text-xs text-gray-500">{t.leaderboard.avgScore}: {cStats.avgScore}</p>
-                          </div>
-                        )}
-                        <div className="text-right">
-                          <span className="text-xl font-bold text-white">{entry.result.score ?? 0}</span>
-                          <p className="text-xs text-gray-500">
-                            {entry.result.correctCount}/{entry.result.totalTargets}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                        </td>
+                        <td className={`${tdClass} text-right`}>
+                          {cStats?.attempts ?? '—'}
+                        </td>
+                        <td className={`${tdClass} text-right`}>
+                          {cStats ? cStats.avgScore.toFixed(1) : '—'}
+                        </td>
+                        <td className={`${tdClass} text-right font-bold text-white`}>
+                          {entry.result.score ?? 0}
+                          <span className="text-gray-500 font-normal ml-0.5 text-xs">
+                            ({entry.result.correctCount}/{entry.result.totalTargets})
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
               {solvedPageCount > 1 && (
                 <Pagination page={solvedPage} pageCount={solvedPageCount} onChange={setSolvedPage} />
               )}
@@ -392,15 +407,15 @@ function Pagination({ page, pageCount, onChange }: { page: number; pageCount: nu
       <button
         onClick={() => onChange(Math.max(0, page - 1))}
         disabled={page === 0}
-        className="px-3 py-1 rounded bg-gray-800 text-gray-400 text-sm font-bold disabled:opacity-30 hover:bg-gray-700 transition-colors"
+        className="px-3 py-1 rounded bg-gray-800 text-gray-400 text-xs sm:text-sm font-bold disabled:opacity-30 hover:bg-gray-700 transition-colors"
       >
         &lsaquo;
       </button>
-      <span className="text-gray-500 text-sm py-1">{page + 1} / {pageCount}</span>
+      <span className="text-gray-500 text-xs sm:text-sm py-1">{page + 1} / {pageCount}</span>
       <button
         onClick={() => onChange(Math.min(pageCount - 1, page + 1))}
         disabled={page >= pageCount - 1}
-        className="px-3 py-1 rounded bg-gray-800 text-gray-400 text-sm font-bold disabled:opacity-30 hover:bg-gray-700 transition-colors"
+        className="px-3 py-1 rounded bg-gray-800 text-gray-400 text-xs sm:text-sm font-bold disabled:opacity-30 hover:bg-gray-700 transition-colors"
       >
         &rsaquo;
       </button>
