@@ -10,8 +10,6 @@ import Board from '../components/board/Board';
 import GameHeader from '../components/game/GameHeader';
 import ClueInput from '../components/clue/ClueInput';
 
-type AvoidPhase = 'nulls' | 'targets';
-
 export default function ClueGivingPage() {
   const { seed: rawSeed } = useParams<{ seed: string }>();
   const [searchParams] = useSearchParams();
@@ -41,12 +39,13 @@ export default function ClueGivingPage() {
   const [submitted, setSubmitted] = useState(false);
   const [reshuffleCount, setReshuffleCount] = useState(0);
   const [targetError, setTargetError] = useState('');
-  const [avoidMode, setAvoidMode] = useState(false);
-  const [avoidPhase, setAvoidPhase] = useState<AvoidPhase>('nulls');
 
   const board = useMemo(() => {
     return generateBoard(currentSeed, config);
   }, [currentSeed, config]);
+
+  // Auto-detect clue-0: if any non-red cards are selected as nulls
+  const isClueZero = selectedNulls.length > 0;
 
   function handleReshuffle() {
     const newSeed = generateSeed();
@@ -55,7 +54,6 @@ export default function ClueGivingPage() {
     setSelectedNulls([]);
     setTargetError('');
     setReshuffleCount((prev) => prev + 1);
-    setAvoidPhase('nulls');
     window.history.replaceState(
       null,
       '',
@@ -67,50 +65,19 @@ export default function ClueGivingPage() {
     setSelectedTargets([]);
     setSelectedNulls([]);
     setTargetError('');
-    if (avoidMode) setAvoidPhase('nulls');
-  }
-
-  function handleAvoidButton() {
-    if (!avoidMode) {
-      // Enter avoid mode → nulls phase
-      setAvoidMode(true);
-      setSelectedTargets([]);
-      setSelectedNulls([]);
-      setAvoidPhase('nulls');
-      setTargetError('');
-    } else if (avoidPhase === 'nulls') {
-      // Advance to targets phase (validate nulls selected)
-      if (selectedNulls.length === 0) {
-        setTargetError(t.clue.errorNeedsNulls);
-        return;
-      }
-      setAvoidPhase('targets');
-      setTargetError('');
-    } else {
-      // Exit avoid mode
-      setAvoidMode(false);
-      setSelectedNulls([]);
-      setSelectedTargets([]);
-      setTargetError('');
-    }
   }
 
   function handleCardClick(index: number) {
-    if (avoidMode) {
-      if (avoidPhase === 'nulls') {
-        if (board.cards[index].color === 'red') return;
-        setSelectedNulls((prev) =>
-          prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
-        );
-      } else {
-        if (board.cards[index].color !== 'red') return;
-        setSelectedTargets((prev) =>
-          prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
-        );
-      }
-    } else {
-      if (board.cards[index].color !== 'red') return;
+    const card = board.cards[index];
+
+    if (card.color === 'red') {
+      // Red cards → target selection (toggle)
       setSelectedTargets((prev) =>
+        prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
+      );
+    } else {
+      // Non-red cards → null selection (auto-enters clue-0 mode)
+      setSelectedNulls((prev) =>
         prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
       );
     }
@@ -119,11 +86,7 @@ export default function ClueGivingPage() {
 
   async function handleSubmitClue(word: string, number: number) {
     if (!user) return;
-    if (avoidMode) {
-      if (selectedNulls.length === 0) {
-        setTargetError(t.clue.errorNeedsNulls);
-        return;
-      }
+    if (isClueZero) {
       if (selectedTargets.length === 0) {
         setTargetError(t.clue.errorNeedsTargets);
         return;
@@ -137,7 +100,7 @@ export default function ClueGivingPage() {
     const clue = {
       id: `${currentSeed}-${Date.now()}`,
       word,
-      number: avoidMode ? 0 : number,
+      number: isClueZero ? 0 : number,
       boardSeed: currentSeed,
       targetIndices: selectedTargets,
       nullIndices: selectedNulls,
@@ -163,8 +126,6 @@ export default function ClueGivingPage() {
     setTargetError('');
     setSubmitted(false);
     setReshuffleCount(0);
-    setAvoidMode(false);
-    setAvoidPhase('nulls');
     window.history.replaceState(
       null,
       '',
@@ -195,8 +156,7 @@ export default function ClueGivingPage() {
     );
   }
 
-  const clueNumber = avoidMode ? 0 : selectedTargets.length;
-  const hasSelections = selectedTargets.length > 0 || selectedNulls.length > 0;
+  const clueNumber = isClueZero ? 0 : selectedTargets.length;
 
   return (
     <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-6">
@@ -221,41 +181,24 @@ export default function ClueGivingPage() {
           )}
         </button>
         <button
-          onClick={handleAvoidButton}
-          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-            avoidMode
-              ? 'bg-amber-600 hover:bg-amber-500 text-white'
-              : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-          }`}
+          onClick={handleReset}
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors"
         >
-          {t.game.avoidMode}
+          {t.game.reset}
         </button>
-        {hasSelections && (
-          <button
-            onClick={handleReset}
-            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors"
-          >
-            {t.game.reset}
-          </button>
-        )}
       </div>
 
       {reshuffleCount > 0 && (
         <p className="text-center text-board-red text-xs mb-2">{t.game.reshuffleWarning}</p>
       )}
 
-      {/* Phase hints */}
-      {avoidMode ? (
-        <p className="text-center text-gray-400 text-sm mb-1">
-          {avoidPhase === 'nulls'
-            ? <>{t.game.avoidPhaseNulls} ({selectedNulls.length} {t.game.nulled})</>
-            : <>Теперь отметьте <span className="text-board-red font-semibold">целевые слова</span> ({selectedTargets.length} {t.game.selected})</>}
-        </p>
-      ) : (
-        <p className="text-center text-gray-400 text-sm mb-1">
-          {t.game.selectTargetsTeam} <span className="text-board-red font-semibold">{t.game.yourTeam}</span> ({selectedTargets.length} {t.game.selected})
-        </p>
-      )}
+      {/* Main hint */}
+      <p className="text-center text-gray-400 text-sm mb-1">
+        {t.game.selectTargetsTeam} <span className="text-board-red font-semibold">{t.game.yourTeam}</span> ({selectedTargets.length} {t.game.selected})
+      </p>
+      <p className="text-center text-gray-500 text-xs mb-1">
+        {t.game.clueZeroHint}
+      </p>
       {targetError && (
         <p className="text-center text-board-red text-sm mb-2">{targetError}</p>
       )}
@@ -270,7 +213,7 @@ export default function ClueGivingPage() {
         onCardClick={handleCardClick}
       />
 
-      {/* Clue input: always visible */}
+      {/* Clue input */}
       <div className="mt-4">
         <ClueInput boardCards={board.cards} targetCount={clueNumber} onSubmit={handleSubmitClue} />
       </div>
