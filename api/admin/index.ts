@@ -1,0 +1,113 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { neon } from '@neondatabase/serverless';
+
+async function checkAdmin(sql: ReturnType<typeof neon>, adminId: string): Promise<boolean> {
+  const rows = await sql`SELECT is_admin FROM users WHERE id = ${adminId}`;
+  return rows.length > 0 && rows[0].is_admin === true;
+}
+
+async function deleteClueCascade(sql: ReturnType<typeof neon>, clueId: string) {
+  await sql`DELETE FROM reports WHERE clue_id = ${clueId}`;
+  await sql`DELETE FROM ratings WHERE clue_id = ${clueId}`;
+  await sql`DELETE FROM results WHERE clue_id = ${clueId}`;
+  await sql`DELETE FROM clues WHERE id = ${clueId}`;
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const sql = neon(process.env.DATABASE_URL!);
+  const { action, adminId } = req.query;
+
+  if (!adminId || typeof adminId !== 'string') {
+    return res.status(400).json({ error: 'adminId required' });
+  }
+
+  const isAdmin = await checkAdmin(sql, adminId);
+  if (!isAdmin) {
+    return res.status(403).json({ error: 'Not authorized' });
+  }
+
+  if (req.method === 'GET') {
+    if (action === 'clues') {
+      const rows = await sql`
+        SELECT c.*,
+          COALESCE(r.report_count, 0) as report_count
+        FROM clues c
+        LEFT JOIN (
+          SELECT clue_id, COUNT(*)::int as report_count
+          FROM reports
+          GROUP BY clue_id
+        ) r ON r.clue_id = c.id
+        ORDER BY c.created_at DESC
+      `;
+      return res.json(rows.map((row: Record<string, unknown>) => ({
+        id: row.id,
+        word: row.word,
+        number: row.number,
+        userId: row.user_id,
+        boardSize: row.board_size,
+        boardSeed: row.board_seed,
+        createdAt: Number(row.created_at),
+        targetIndices: row.target_indices,
+        nullIndices: row.null_indices || [],
+        reportCount: Number(row.report_count) || 0,
+      })));
+    }
+
+    if (action === 'reports') {
+      const { clueId } = req.query;
+      if (!clueId || typeof clueId !== 'string') {
+        return res.status(400).json({ error: 'clueId required' });
+      }
+      const rows = await sql`
+        SELECT * FROM reports WHERE clue_id = ${clueId} ORDER BY created_at DESC
+      `;
+      return res.json(rows.map((row: Record<string, unknown>) => ({
+        id: row.id,
+        clueId: row.clue_id,
+        userId: row.user_id,
+        reason: row.reason,
+        createdAt: Number(row.created_at),
+      })));
+    }
+
+    return res.status(400).json({ error: 'Unknown action' });
+  }
+
+  if (req.method === 'DELETE') {
+    if (action === 'deleteClue') {
+      const { clueId } = req.query;
+      if (!clueId || typeof clueId !== 'string') {
+        return res.status(400).json({ error: 'clueId required' });
+      }
+      await deleteClueCascade(sql, clueId);
+      return res.json({ ok: true });
+    }
+
+    if (action === 'deleteUser') {
+      const { userId } = req.query;
+      if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ error: 'userId required' });
+      }
+
+      // Get all clues by this user and delete them with cascade
+      const userClues = await sql`SELECT id FROM clues WHERE user_id = ${userId}`;
+      for (const clue of userClues) {
+        await deleteClueCascade(sql, clue.id as string);
+      }
+
+      // Delete user's own activity on other clues
+      await sql`DELETE FROM reports WHERE user_id = ${userId}`;
+      await sql`DELETE FROM ratings WHERE user_id = ${userId}`;
+      await sql`DELETE FROM results WHERE user_id = ${userId}`;
+
+      // Delete user
+      await sql`DELETE FROM users WHERE id = ${userId}`;
+
+      return res.json({ ok: true });
+    }
+
+    return res.status(400).json({ error: 'Unknown action' });
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
+}

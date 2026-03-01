@@ -5,6 +5,7 @@ export interface User {
   displayName: string;
   createdAt: number;
   preferences: UserPreferences;
+  isAdmin: boolean;
 }
 
 export interface UserPreferences {

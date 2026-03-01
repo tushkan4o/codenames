@@ -7,7 +7,7 @@ const CACHED_USER_KEY = 'codenames_cached_user';
 
 interface AuthContextValue {
   user: User | null;
-  login: (displayName: string) => Promise<User>;
+  login: (displayName: string, password?: string) => Promise<User>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
 }
@@ -18,7 +18,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     const userId = localStorage.getItem(CURRENT_USER_KEY);
     if (!userId) return null;
-    // Load cached user data for instant render
     const cached = localStorage.getItem(CACHED_USER_KEY);
     if (cached) {
       try { return JSON.parse(cached); } catch { /* ignore */ }
@@ -26,14 +25,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
-  async function login(displayName: string): Promise<User> {
+  async function login(displayName: string, password?: string): Promise<User> {
     const preferences = { ...DEFAULT_PREFERENCES };
 
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ displayName: displayName.trim(), preferences }),
+      body: JSON.stringify({ displayName: displayName.trim(), preferences, password }),
     });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+
     const dbUser = await res.json();
 
     const localUser: User = {
@@ -41,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       displayName: dbUser.display_name,
       createdAt: Number(dbUser.created_at),
       preferences: dbUser.preferences || preferences,
+      isAdmin: dbUser.is_admin || false,
     };
 
     localStorage.setItem(CURRENT_USER_KEY, localUser.id);
@@ -60,7 +66,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const updated = { ...user, ...updates };
     localStorage.setItem(CACHED_USER_KEY, JSON.stringify(updated));
     setUser(updated);
-    // Also update preferences on server
     if (updates.preferences) {
       fetch('/api/auth/login', {
         method: 'POST',

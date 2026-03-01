@@ -131,8 +131,12 @@ export default function ClueGivingPage() {
       boardSize,
       reshuffleCount,
     };
-    await api.saveClue(clue);
-    setSubmitted(true);
+    try {
+      await api.saveClue(clue);
+      setSubmitted(true);
+    } catch (err) {
+      setTargetError(err instanceof Error ? err.message : 'Ошибка сохранения');
+    }
   }
 
   function handleGiveAnother() {

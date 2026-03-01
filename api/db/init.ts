@@ -54,6 +54,22 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     // Migration: add null_indices column if not exists
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS null_indices INT[] DEFAULT '{}'`;
 
+    // Migration: add password and is_admin columns to users
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false`;
+
+    // Create reports table
+    await sql`CREATE TABLE IF NOT EXISTS reports (
+      id SERIAL PRIMARY KEY,
+      clue_id TEXT NOT NULL REFERENCES clues(id),
+      user_id TEXT NOT NULL REFERENCES users(id),
+      reason TEXT NOT NULL,
+      created_at BIGINT NOT NULL
+    )`;
+
+    // Seed tushkan as admin with password
+    await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
+
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

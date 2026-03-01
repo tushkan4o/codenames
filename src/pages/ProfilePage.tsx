@@ -30,6 +30,8 @@ export default function ProfilePage() {
   const [tab, setTab] = useState<Tab>('given');
   const [modalClue, setModalClue] = useState<Clue | null>(null);
   const [modalResult, setModalResult] = useState<GuessResult | undefined>(undefined);
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState(false);
+  const [confirmDeleteClue, setConfirmDeleteClue] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profileId) return;
@@ -75,6 +77,19 @@ export default function ProfilePage() {
     setModalResult(undefined);
   }
 
+  async function handleAdminDeleteUser() {
+    if (!user?.isAdmin || !profileId) return;
+    await api.adminDeleteUser(user.id, profileId);
+    navigate('/');
+  }
+
+  async function handleAdminDeleteClue(clueId: string) {
+    if (!user?.isAdmin) return;
+    await api.adminDeleteClue(user.id, clueId);
+    setCluesGiven((prev) => prev.filter((c) => c.id !== clueId));
+    setConfirmDeleteClue(null);
+  }
+
   function handleTry(e: React.MouseEvent, clueId: string) {
     e.stopPropagation();
     navigate(`/guess/${clueId}`);
@@ -93,6 +108,35 @@ export default function ProfilePage() {
       <div className="max-w-2xl mx-auto px-4 pt-8">
         <h1 className="text-2xl font-extrabold text-white mb-1 text-center">{t.profile.title}</h1>
         <p className="text-center text-gray-400 mb-6">{profileId}</p>
+
+        {user?.isAdmin && !isOwnProfile && (
+          <div className="flex justify-center mb-6">
+            {confirmDeleteUser ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-red-400">{t.admin.confirmDeleteUser}</span>
+                <button
+                  onClick={handleAdminDeleteUser}
+                  className="px-3 py-1 text-sm font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors"
+                >
+                  {t.admin.confirm}
+                </button>
+                <button
+                  onClick={() => setConfirmDeleteUser(false)}
+                  className="px-3 py-1 text-sm font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+                >
+                  {t.admin.cancel}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDeleteUser(true)}
+                className="px-4 py-2 text-sm font-bold text-white bg-board-red/80 hover:bg-board-red rounded-lg transition-colors"
+              >
+                {t.admin.deleteUser}
+              </button>
+            )}
+          </div>
+        )}
 
         {stats && (
           <div className="grid grid-cols-3 gap-4 mb-8">
@@ -182,6 +226,33 @@ export default function ProfilePage() {
                         <span className="text-xs text-gray-400">
                           {clue.targetIndices.length} targets
                         </span>
+                      )}
+                      {user?.isAdmin && (
+                        confirmDeleteClue === clue.id ? (
+                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-xs text-red-400">{t.admin.confirmDeleteClue}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleAdminDeleteClue(clue.id); }}
+                              className="px-2 py-0.5 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors"
+                            >
+                              {t.admin.confirm}
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setConfirmDeleteClue(null); }}
+                              className="px-2 py-0.5 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+                            >
+                              {t.admin.cancel}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setConfirmDeleteClue(clue.id); }}
+                            className="px-1.5 py-0.5 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors"
+                            title={t.admin.deleteClue}
+                          >
+                            &times;
+                          </button>
+                        )
                       )}
                     </div>
                   </div>

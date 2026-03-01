@@ -9,6 +9,7 @@ import GuessingPage from './pages/GuessingPage';
 import ResultsPage from './pages/ResultsPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
+import AdminPage from './pages/AdminPage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/leaderboard" element={<RequireAuth><LeaderboardPage /></RequireAuth>} />
           <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
           <Route path="/profile/:userId" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+          <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
         </Routes>
       </GameProvider>
     </BrowserRouter>

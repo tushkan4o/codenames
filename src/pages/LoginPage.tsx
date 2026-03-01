@@ -8,6 +8,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [needsPassword, setNeedsPassword] = useState(false);
   const [error, setError] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
@@ -25,8 +27,21 @@ export default function LoginPage() {
       setError(t.login.errorLong);
       return;
     }
-    await login(trimmed);
-    navigate('/');
+
+    try {
+      await login(trimmed, needsPassword ? password : undefined);
+      navigate('/');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg === 'password_required') {
+        setNeedsPassword(true);
+        setError('');
+      } else if (msg === 'wrong_password') {
+        setError(t.login.errorPassword);
+      } else {
+        setError(msg || 'Ошибка входа');
+      }
+    }
   }
 
   return (
@@ -38,11 +53,21 @@ export default function LoginPage() {
         <input
           type="text"
           value={name}
-          onChange={(e) => { setName(e.target.value); setError(''); }}
+          onChange={(e) => { setName(e.target.value); setError(''); setNeedsPassword(false); setPassword(''); }}
           placeholder={t.login.placeholder}
           autoFocus
           className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg focus:outline-none focus:border-board-blue mb-3"
         />
+        {needsPassword && (
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); setError(''); }}
+            placeholder={t.login.password}
+            autoFocus
+            className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg focus:outline-none focus:border-board-blue mb-3"
+          />
+        )}
         {error && <p className="text-board-red text-sm mb-3">{error}</p>}
         <button
           type="submit"

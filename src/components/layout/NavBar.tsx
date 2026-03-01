@@ -34,6 +34,14 @@ export default function NavBar() {
         >
           {t.nav.profile}
         </button>
+        {user?.isAdmin && (
+          <button
+            onClick={() => navigate('/admin')}
+            className="text-sm text-amber-400 hover:text-amber-300 transition-colors font-semibold"
+          >
+            {t.nav.admin}
+          </button>
+        )}
         {user && (
           <button
             onClick={() => navigate('/profile')}

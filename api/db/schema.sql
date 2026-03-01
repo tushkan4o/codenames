@@ -2,7 +2,9 @@ CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   display_name TEXT NOT NULL,
   created_at BIGINT NOT NULL,
-  preferences JSONB DEFAULT '{}'
+  preferences JSONB DEFAULT '{}',
+  password TEXT,
+  is_admin BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS clues (
@@ -37,4 +39,12 @@ CREATE TABLE IF NOT EXISTS ratings (
   user_id TEXT NOT NULL REFERENCES users(id),
   rating INT NOT NULL,
   PRIMARY KEY (clue_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS reports (
+  id SERIAL PRIMARY KEY,
+  clue_id TEXT NOT NULL REFERENCES clues(id),
+  user_id TEXT NOT NULL REFERENCES users(id),
+  reason TEXT NOT NULL,
+  created_at BIGINT NOT NULL
 );
