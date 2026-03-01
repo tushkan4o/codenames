@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let results: Record<string, unknown>[];
 
   if (boardSize && typeof boardSize === 'string') {
-    clues = await sql`SELECT id, user_id, number FROM clues WHERE board_size = ${boardSize}`;
+    clues = await sql`SELECT id, user_id, number, word FROM clues WHERE board_size = ${boardSize}`;
     const clueIds = clues.map((c) => c.id as string);
     if (clueIds.length > 0) {
       results = await sql`SELECT clue_id, user_id, score, guessed_indices FROM results WHERE (board_size = ${boardSize} OR clue_id = ANY(${clueIds}))`;
@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       results = await sql`SELECT clue_id, user_id, score, guessed_indices FROM results WHERE board_size = ${boardSize}`;
     }
   } else {
-    clues = await sql`SELECT id, user_id, number FROM clues`;
+    clues = await sql`SELECT id, user_id, number, word FROM clues`;
     results = await sql`SELECT clue_id, user_id, score, guessed_indices FROM results`;
   }
 
@@ -68,5 +68,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
   }).sort((a, b) => b.avgScore - a.avgScore);
 
-  res.json({ spymasters, guessers });
+  // Per-clue stats
+  const resultsByClue = new Map<string, typeof results>();
+  for (const r of results) {
+    const cid = r.clue_id as string;
+    if (!resultsByClue.has(cid)) resultsByClue.set(cid, []);
+    resultsByClue.get(cid)!.push(r);
+  }
+
+  const clueStats = clues.map((c) => {
+    const clueResults = resultsByClue.get(c.id as string) || [];
+    const attempts = clueResults.length;
+    const avgScore = attempts > 0
+      ? Math.round(clueResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / attempts * 10) / 10
+      : 0;
+    return {
+      word: c.word as string,
+      number: Number(c.number),
+      userId: c.user_id as string,
+      attempts,
+      avgScore,
+    };
+  }).sort((a, b) => b.attempts - a.attempts);
+
+  res.json({ spymasters, guessers, clueStats });
 }

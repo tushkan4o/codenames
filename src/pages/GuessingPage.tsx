@@ -147,13 +147,9 @@ export default function GuessingPage() {
   );
 
   function handleEndTurn() {
-    // For clue-0: always confirm (user doesn't know target count)
+    // For clue-0: no confirmation (target count unknown)
     // For normal: confirm if not all reds found
-    const needsConfirm = clue?.number === 0
-      ? pickedIndices.length > 0
-      : redPickedCount < effectiveTargetCount;
-
-    if (needsConfirm && !confirmEnd) {
+    if (clue?.number !== 0 && redPickedCount < effectiveTargetCount && !confirmEnd) {
       setConfirmEnd(true);
       return;
     }

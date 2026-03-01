@@ -69,8 +69,9 @@ export const api = {
     return get(`/api/clues/random?${params}`);
   },
 
-  async getClueById(id: string): Promise<Clue | null> {
-    return get(`/api/clues/${encodeURIComponent(id)}`);
+  async getClueById(id: string, reveal = false): Promise<Clue | null> {
+    const params = reveal ? '?reveal=true' : '';
+    return get(`/api/clues/${encodeURIComponent(id)}${params}`);
   },
 
   async getCluesByUser(userId: string): Promise<Clue[]> {
