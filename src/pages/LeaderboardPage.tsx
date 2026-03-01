@@ -107,8 +107,8 @@ export default function LeaderboardPage() {
                       <button onClick={() => navigate(`/profile/${s.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{s.userId}</button>
                     </td>
                     <td className="py-2 text-right">{s.cluesGiven}</td>
-                    <td className="py-2 text-right">{s.avgWordsPerClue}</td>
-                    <td className="py-2 text-right">{s.avgScoreOnClues}</td>
+                    <td className="py-2 text-right">{s.avgWordsPerClue.toFixed(2)}</td>
+                    <td className="py-2 text-right">{s.avgScoreOnClues.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -138,8 +138,8 @@ export default function LeaderboardPage() {
                       <button onClick={() => navigate(`/profile/${g.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{g.userId}</button>
                     </td>
                     <td className="py-2 text-right">{g.cluesSolved}</td>
-                    <td className="py-2 text-right">{g.avgWordsPicked}</td>
-                    <td className="py-2 text-right">{g.avgScore}</td>
+                    <td className="py-2 text-right">{g.avgWordsPicked.toFixed(2)}</td>
+                    <td className="py-2 text-right">{g.avgScore.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
