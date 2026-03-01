@@ -60,13 +60,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (candidates.length === 0) return res.json(null);
 
     const row = candidates[0];
+    // Don't include targetIndices/nullIndices — prevents cheating via F12
     res.json({
       id: row.id,
       word: row.word,
       number: row.number,
       boardSeed: row.board_seed,
-      targetIndices: row.target_indices,
-      nullIndices: row.null_indices || [],
       createdAt: Number(row.created_at),
       userId: row.user_id,
       wordPack: row.word_pack,

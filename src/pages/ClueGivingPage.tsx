@@ -70,19 +70,29 @@ export default function ClueGivingPage() {
     if (avoidMode) setAvoidPhase('nulls');
   }
 
-  function toggleAvoidMode() {
-    setAvoidMode((prev) => {
-      if (!prev) {
-        setSelectedTargets([]);
-        setSelectedNulls([]);
-        setAvoidPhase('nulls');
-      } else {
-        setSelectedNulls([]);
-        setSelectedTargets([]);
+  function handleAvoidButton() {
+    if (!avoidMode) {
+      // Enter avoid mode → nulls phase
+      setAvoidMode(true);
+      setSelectedTargets([]);
+      setSelectedNulls([]);
+      setAvoidPhase('nulls');
+      setTargetError('');
+    } else if (avoidPhase === 'nulls') {
+      // Advance to targets phase (validate nulls selected)
+      if (selectedNulls.length === 0) {
+        setTargetError(t.clue.errorNeedsNulls);
+        return;
       }
-      return !prev;
-    });
-    setTargetError('');
+      setAvoidPhase('targets');
+      setTargetError('');
+    } else {
+      // Exit avoid mode
+      setAvoidMode(false);
+      setSelectedNulls([]);
+      setSelectedTargets([]);
+      setTargetError('');
+    }
   }
 
   function handleCardClick(index: number) {
@@ -104,15 +114,6 @@ export default function ClueGivingPage() {
         prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
       );
     }
-    setTargetError('');
-  }
-
-  function handleAdvanceToTargets() {
-    if (selectedNulls.length === 0) {
-      setTargetError(t.clue.errorNeedsNulls);
-      return;
-    }
-    setAvoidPhase('targets');
     setTargetError('');
   }
 
@@ -220,7 +221,7 @@ export default function ClueGivingPage() {
           )}
         </button>
         <button
-          onClick={toggleAvoidMode}
+          onClick={handleAvoidButton}
           className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
             avoidMode
               ? 'bg-amber-600 hover:bg-amber-500 text-white'
@@ -245,23 +246,15 @@ export default function ClueGivingPage() {
 
       {/* Phase hints */}
       {avoidMode ? (
-        <>
-          <p className="text-center text-gray-400 text-sm mb-1">
-            {avoidPhase === 'nulls'
-              ? `${t.game.avoidPhase} (${selectedNulls.length} ${t.game.nulled})`
-              : <>Теперь отметьте <span className="text-board-red font-semibold">целевые слова</span> ({selectedTargets.length} {t.game.selected})</>}
-          </p>
-          <p className="text-center text-gray-500 text-xs mb-1">
-            {avoidPhase === 'nulls' ? t.game.avoidPhaseHint : t.game.targetPhaseHint}
-          </p>
-        </>
+        <p className="text-center text-gray-400 text-sm mb-1">
+          {avoidPhase === 'nulls'
+            ? <>{t.game.avoidPhaseNulls} ({selectedNulls.length} {t.game.nulled})</>
+            : <>Теперь отметьте <span className="text-board-red font-semibold">целевые слова</span> ({selectedTargets.length} {t.game.selected})</>}
+        </p>
       ) : (
-        <>
-          <p className="text-center text-gray-400 text-sm mb-1">
-            {t.game.selectTargetsTeam} <span className="text-board-red font-semibold">{t.game.yourTeam}</span> ({selectedTargets.length} {t.game.selected})
-          </p>
-          <p className="text-center text-gray-500 text-xs mb-1">{t.game.selectTargetsHint}</p>
-        </>
+        <p className="text-center text-gray-400 text-sm mb-1">
+          {t.game.selectTargetsTeam} <span className="text-board-red font-semibold">{t.game.yourTeam}</span> ({selectedTargets.length} {t.game.selected})
+        </p>
       )}
       {targetError && (
         <p className="text-center text-board-red text-sm mb-2">{targetError}</p>
@@ -277,24 +270,10 @@ export default function ClueGivingPage() {
         onCardClick={handleCardClick}
       />
 
-      {/* Avoid mode: advance button */}
-      {avoidMode && avoidPhase === 'nulls' && (
-        <div className="flex justify-center mt-4">
-          <button
-            onClick={handleAdvanceToTargets}
-            className="px-6 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold transition-colors"
-          >
-            {t.game.switchToTargets}
-          </button>
-        </div>
-      )}
-
-      {/* Clue input: show when not in nulls phase of avoid mode */}
-      {(!avoidMode || avoidPhase === 'targets') && (
-        <div className="mt-4">
-          <ClueInput boardCards={board.cards} targetCount={clueNumber} onSubmit={handleSubmitClue} />
-        </div>
-      )}
+      {/* Clue input: always visible */}
+      <div className="mt-4">
+        <ClueInput boardCards={board.cards} targetCount={clueNumber} onSubmit={handleSubmitClue} />
+      </div>
     </div>
   );
 }

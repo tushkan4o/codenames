@@ -77,8 +77,8 @@ export const api = {
     return get(`/api/clues?userId=${encodeURIComponent(userId)}`);
   },
 
-  async saveGuessResult(result: GuessResult): Promise<void> {
-    await post('/api/results', result);
+  async saveGuessResult(result: Omit<GuessResult, 'correctCount' | 'totalTargets'>): Promise<{ targetIndices: number[]; nullIndices: number[] }> {
+    return post('/api/results', result);
   },
 
   async getResultsByUser(userId: string): Promise<GuessResult[]> {

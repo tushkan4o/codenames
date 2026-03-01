@@ -32,6 +32,10 @@ export default function GuessingPage() {
   const [revealDelays, setRevealDelays] = useState<Record<number, number>>({});
   const [confirmEnd, setConfirmEnd] = useState(false);
 
+  // Revealed targets — only populated after game ends (security: not sent initially)
+  const [revealedTargets, setRevealedTargets] = useState<number[]>([]);
+  const [revealedNulls, setRevealedNulls] = useState<number[]>([]);
+
   useEffect(() => {
     async function loadClue() {
       if (!clueId) return;
@@ -40,6 +44,8 @@ export default function GuessingPage() {
       setAssassinHit(false);
       setScore(0);
       setRevealDelays({});
+      setRevealedTargets([]);
+      setRevealedNulls([]);
       setLoading(true);
       const found = await api.getClueById(clueId);
       setClue(found);
@@ -61,10 +67,10 @@ export default function GuessingPage() {
 
   const animationEnabled = user?.preferences.animationEnabled ?? true;
 
-  // Effective target count: use targetIndices length for clue-0
+  // For clue-0, we don't know the target count (hidden for security), so no auto-end
   const effectiveTargetCount = useMemo(() => {
     if (!clue) return 0;
-    return clue.number === 0 ? clue.targetIndices.length : clue.number;
+    return clue.number; // 0 for clue-0 (no auto-end), N for normal clues
   }, [clue]);
 
   const redPickedCount = useMemo(() => {
@@ -107,9 +113,12 @@ export default function GuessingPage() {
       return;
     }
 
-    const newRedCount = newPicked.filter((i) => board.cards[i].color === 'red').length;
-    if (newRedCount >= effectiveTargetCount) {
-      setTimeout(() => finishGame(newPicked, false), 400);
+    // Auto-end only for non-zero clues when all reds found
+    if (effectiveTargetCount > 0) {
+      const newRedCount = newPicked.filter((i) => board.cards[i].color === 'red').length;
+      if (newRedCount >= effectiveTargetCount) {
+        setTimeout(() => finishGame(newPicked, false), 400);
+      }
     }
   }
 
@@ -120,26 +129,31 @@ export default function GuessingPage() {
       const computedScore = isAssassin ? 0 : computeGuessScore(finalPicked, board.cards);
       setScore(computedScore);
 
-      const correctCount = finalPicked.filter((i) => clue.targetIndices.includes(i)).length;
-
-      await api.saveGuessResult({
+      // Server computes correctCount and returns targetIndices for reveal
+      const result = await api.saveGuessResult({
         clueId: clue.id,
         guessedIndices: finalPicked,
-        correctCount,
-        totalTargets: clue.targetIndices.length,
         score: computedScore,
         timestamp: Date.now(),
         userId: user.id,
         boardSize: clue.boardSize,
       });
 
+      setRevealedTargets(result.targetIndices);
+      setRevealedNulls(result.nullIndices);
       runRevealAnimation(finalPicked);
     },
     [clue, board, user],
   );
 
   function handleEndTurn() {
-    if (redPickedCount < effectiveTargetCount && !confirmEnd) {
+    // For clue-0: always confirm (user doesn't know target count)
+    // For normal: confirm if not all reds found
+    const needsConfirm = clue?.number === 0
+      ? pickedIndices.length > 0
+      : redPickedCount < effectiveTargetCount;
+
+    if (needsConfirm && !confirmEnd) {
       setConfirmEnd(true);
       return;
     }
@@ -190,7 +204,7 @@ export default function GuessingPage() {
           onClick={() => navigate('/')}
           className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors"
         >
-          {t.game.home}
+          {t.results.backHome}
         </button>
       </div>
     );
@@ -205,9 +219,9 @@ export default function GuessingPage() {
 
   const isPicking = phase === 'picking' && !assassinHit;
 
-  // For done phase: show target markers on spymaster's intended words
-  const doneTargetIndices = phase === 'done' ? clue.targetIndices : [];
-  const doneNullIndices = phase === 'done' && clue.nullIndices?.length > 0 ? clue.nullIndices : [];
+  // For done phase: show target markers using revealed data (not from initial clue load)
+  const doneTargetIndices = phase === 'done' ? revealedTargets : [];
+  const doneNullIndices = phase === 'done' && revealedNulls.length > 0 ? revealedNulls : [];
 
   return (
     <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-6">
@@ -220,7 +234,7 @@ export default function GuessingPage() {
           : phase === 'done'
             ? t.game.resultsRevealed
             : clue.number === 0
-              ? <>{t.game.avoidHintClue0} — <span className="text-board-red">{redPickedCount} / ? красных</span> найдено</>
+              ? <>{t.game.avoidHintClue0} — <span className="text-board-red">{redPickedCount} / ? {t.game.redFound}</span></>
               : `${t.game.selectWords} — ${redPickedCount} / ${effectiveTargetCount} ${t.game.pickedRedCount}`}
       </p>
 
@@ -230,7 +244,7 @@ export default function GuessingPage() {
             onClick={handleHome}
             className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors"
           >
-            {t.game.home}
+            {t.results.backHome}
           </button>
           <button
             onClick={handleAnotherClue}
@@ -276,7 +290,7 @@ export default function GuessingPage() {
               onClick={handleHome}
               className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold transition-colors"
             >
-              {t.game.home}
+              {t.results.backHome}
             </button>
             <button
               onClick={handleAnotherClue}
@@ -288,9 +302,8 @@ export default function GuessingPage() {
           <RevealOverlay
             cards={board.cards}
             guessedIndices={pickedIndices}
-            targetIndices={clue.targetIndices}
+            targetIndices={revealedTargets}
             score={score}
-            onClose={() => navigate('/')}
           />
           <div className="max-w-md mx-auto mt-4">
             <ClueStatsPanel clueId={clue.id} spymasterUserId={clue.userId} />
@@ -312,7 +325,7 @@ export default function GuessingPage() {
               onClick={() => navigate('/')}
               className="mt-4 px-6 py-3 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold transition-colors"
             >
-              {t.game.home}
+              {t.results.backHome}
             </button>
           </div>
         </div>

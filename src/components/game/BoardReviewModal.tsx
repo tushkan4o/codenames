@@ -61,7 +61,6 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
             guessedIndices={guessedIndices}
             targetIndices={clue.targetIndices}
             score={result.score ?? 0}
-            onClose={onClose}
           />
         )}
 

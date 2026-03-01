@@ -29,16 +29,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!result?.clueId || !result?.userId) return res.status(400).json({ error: 'Invalid result data' });
 
     try {
+      // Fetch clue to compute correctCount server-side and return targets for reveal
+      const clueRows = await sql`SELECT target_indices, null_indices FROM clues WHERE id = ${result.clueId}`;
+      if (clueRows.length === 0) return res.status(404).json({ error: 'Clue not found' });
+
+      const targetIndices: number[] = clueRows[0].target_indices as number[];
+      const nullIndices: number[] = (clueRows[0].null_indices as number[]) || [];
+      const guessedSet = new Set(result.guessedIndices as number[]);
+      const correctCount = targetIndices.filter((i: number) => guessedSet.has(i)).length;
+
       await sql`INSERT INTO users (id, display_name, created_at)
         VALUES (${result.userId}, ${result.userId}, ${result.timestamp})
         ON CONFLICT (id) DO NOTHING`;
 
       await sql`INSERT INTO results (clue_id, user_id, guessed_indices, correct_count, total_targets, score, timestamp, board_size)
-        VALUES (${result.clueId}, ${result.userId}, ${result.guessedIndices}, ${result.correctCount}, ${result.totalTargets}, ${result.score}, ${result.timestamp}, ${result.boardSize || null})`;
-      return res.json({ ok: true });
+        VALUES (${result.clueId}, ${result.userId}, ${result.guessedIndices}, ${correctCount}, ${targetIndices.length}, ${result.score}, ${result.timestamp}, ${result.boardSize || null})`;
+
+      // Return targetIndices/nullIndices for the reveal phase
+      return res.json({ ok: true, targetIndices, nullIndices });
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err && (err as Record<string, unknown>).code === '23505') {
-        return res.json({ ok: true, duplicate: true });
+        // Duplicate — still return targets for reveal
+        const clueRows = await sql`SELECT target_indices, null_indices FROM clues WHERE id = ${result.clueId}`;
+        const targetIndices = clueRows.length > 0 ? clueRows[0].target_indices : [];
+        const nullIndices = clueRows.length > 0 ? (clueRows[0].null_indices || []) : [];
+        return res.json({ ok: true, duplicate: true, targetIndices, nullIndices });
       }
       const message = err instanceof Error ? err.message : String(err);
       return res.status(500).json({ error: message });
