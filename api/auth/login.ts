@@ -7,7 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { displayName, preferences, password } = req.body;
   if (!displayName) return res.status(400).json({ error: 'displayName required' });
 
-  const validName = /^[a-zA-Zа-яА-ЯёЁ0-9_\- ]+$/;
+  const validName = /^[a-zA-Zа-яА-ЯёЁ ]+$/;
   if (!validName.test(displayName.trim())) {
     return res.status(400).json({ error: 'invalid_chars' });
   }
