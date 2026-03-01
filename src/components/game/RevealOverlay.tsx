@@ -11,7 +11,7 @@ interface RevealOverlayProps {
 const colorClassMap: Record<CardColor, string> = {
   red: 'text-board-red',
   blue: 'text-board-blue',
-  neutral: 'text-board-neutral',
+  neutral: 'text-white',
   assassin: 'text-gray-500',
 };
 
@@ -59,25 +59,25 @@ export default function RevealOverlay({
       <div className="space-y-2 text-sm">
         {pickedRedClued.length > 0 && (
           <div className="flex gap-2">
-            <span className="text-board-red font-semibold whitespace-nowrap">{t.results.pickedRedClued}:</span>
+            <span className="text-gray-400 font-semibold whitespace-nowrap">{t.results.pickedRedClued}:</span>
             <ColoredWords indices={pickedRedClued} cards={cards} />
           </div>
         )}
         {pickedRedUnclued.length > 0 && (
           <div className="flex gap-2">
-            <span className="text-board-red font-semibold whitespace-nowrap">{t.results.pickedRedUnclued}:</span>
+            <span className="text-gray-400 font-semibold whitespace-nowrap">{t.results.pickedRedUnclued}:</span>
             <ColoredWords indices={pickedRedUnclued} cards={cards} />
           </div>
         )}
         {missedClued.length > 0 && (
           <div className="flex gap-2">
-            <span className="text-white font-semibold whitespace-nowrap">{t.results.missedClued}:</span>
+            <span className="text-gray-400 font-semibold whitespace-nowrap">{t.results.missedClued}:</span>
             <ColoredWords indices={missedClued} cards={cards} />
           </div>
         )}
         {pickedWrong.length > 0 && (
           <div className="flex gap-2">
-            <span className="text-board-blue font-semibold whitespace-nowrap">{t.results.pickedWrong}:</span>
+            <span className="text-gray-400 font-semibold whitespace-nowrap">{t.results.pickedWrong}:</span>
             <ColoredWords indices={pickedWrong} cards={cards} />
           </div>
         )}

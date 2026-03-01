@@ -25,24 +25,26 @@ export default function ClueRating({ onRate, onReport }: ClueRatingProps) {
     setShowReportInput(false);
   }
 
-  if (rated) {
-    return <p className="text-blue-400 text-sm text-center">{t.rating.thanks}</p>;
-  }
-
   return (
     <div className="flex flex-col items-center gap-2 mt-3">
-      <p className="text-gray-400 text-sm">{t.rating.rateClue}</p>
-      <div className="flex gap-2">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            onClick={() => handleRate(n)}
-            className="w-8 h-8 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold transition-colors"
-          >
-            {n}
-          </button>
-        ))}
-      </div>
+      {rated ? (
+        <p className="text-blue-400 text-sm">{t.rating.thanks}</p>
+      ) : (
+        <>
+          <p className="text-gray-400 text-sm">{t.rating.rateClue}</p>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                onClick={() => handleRate(n)}
+                className="w-8 h-8 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold transition-colors"
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {reported ? (
         <p className="text-red-400 text-xs mt-1">{t.rating.reportSent}</p>

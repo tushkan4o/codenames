@@ -105,7 +105,7 @@ export const ru = {
     close: 'Закрыть',
     backHome: 'На главную',
     pickedRedClued: 'Угаданные',
-    pickedRedUnclued: 'Зарандомленные',
+    pickedRedUnclued: 'Не загаданные',
     missedClued: 'Пропущенные',
     pickedWrong: 'Неправильные',
     clueBy: 'Подсказка от',
