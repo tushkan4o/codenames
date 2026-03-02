@@ -60,7 +60,7 @@ export default function Board({
             onClick={onCardClick ? () => onCardClick(index) : undefined}
             disabled={disabled}
             targetMarked={!highlightTargets && targetIndices.includes(index)}
-            nullMarked={!highlightTargets && nullIndices.includes(index)}
+            nullMarked={nullIndices.includes(index)}
             dimmed={hasHighlight ? !isHighlighted : false}
             glowing={hasHighlight ? !!isTarget : false}
             pickPercent={pickPercents?.[index]}
