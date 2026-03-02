@@ -310,8 +310,7 @@ export default function AdminPage() {
                     </div>
 
                     {/* Right: game board preview */}
-                    <div className="md:w-[420px] shrink-0">
-                      <h3 className="text-sm font-bold text-white mb-2">{t.admin.board}</h3>
+                    <div className="md:w-[600px] shrink-0">
                       <MiniBoard clue={clue} />
                       <p className="text-xs text-gray-500 mt-1 text-center">
                         {clue.word} {clue.number}
