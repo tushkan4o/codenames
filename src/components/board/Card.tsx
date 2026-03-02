@@ -105,6 +105,9 @@ export default function Card({
   const highlightGlow = glowing ? glowColors[color] : '';
   const brightnessClass = glowing ? 'brightness-125' : '';
 
+  // No border on dimmed cards
+  const borderClass = dimmed ? 'border border-transparent' : 'border border-white/5';
+
   const style: React.CSSProperties = {
     ...(revealDelay !== undefined ? { transitionDelay: `${revealDelay}ms` } : {}),
     ...(revealing && revealDuration ? { '--reveal-duration': `${revealDuration}ms` } as React.CSSProperties : {}),
@@ -113,12 +116,15 @@ export default function Card({
   // Show null × marker whenever nullMarked (clue-giving + reveal modes)
   const showNullX = !!nullMarked;
 
+  // Percent text color: dark on bright (glowing) cards, light on dimmed cards
+  const percentTextClass = dimmed ? 'text-gray-300' : 'text-gray-900';
+
   return (
     <button
       className={`
         card-reveal relative flex items-center justify-center overflow-hidden w-full
         h-[3.2rem] sm:h-[3.8rem] rounded-lg font-card font-bold uppercase tracking-wide select-none
-        ${fontSizeMap[fontSize || 'md']} p-1 sm:p-2 border border-white/5
+        ${fontSizeMap[fontSize || 'md']} p-1 sm:p-2 ${borderClass}
         transition-all duration-300
         ${bgClass} ${textClass} ${glowClass} ${interactiveClass}
         ${ringClass} ${targetClass}
@@ -146,16 +152,12 @@ export default function Card({
 
       {pickPercent !== undefined && pickPercent > 0 && (
         <span
-          className="absolute flex items-start justify-end text-white text-[0.6rem] sm:text-[0.7rem]"
+          className={`absolute ${percentTextClass} text-[0.55rem] sm:text-[0.6rem]`}
           style={{
-            top: 0, right: 0,
-            width: '2rem', height: '2rem',
-            clipPath: 'polygon(20% 0, 100% 0, 100% 80%)',
-            background: 'rgba(249,115,22,0.85)',
-            paddingTop: '0.1rem', paddingRight: '0.15rem',
+            top: '0.05rem', right: '0.15rem',
             zIndex: 3,
             fontFamily: 'system-ui, -apple-system, sans-serif',
-            fontWeight: 600,
+            fontWeight: 700,
             letterSpacing: '-0.02em',
           }}
         >
@@ -168,10 +170,10 @@ export default function Card({
           className="absolute flex items-end justify-start text-gray-900 font-bold text-[0.6rem] sm:text-xs"
           style={{
             bottom: 0, left: 0,
-            width: '1.7rem', height: '1.7rem',
-            clipPath: 'polygon(0 20%, 80% 100%, 0 100%)',
+            width: '1.9rem', height: '1.9rem',
+            clipPath: 'polygon(0 25%, 75% 100%, 0 100%)',
             background: 'rgba(255,255,255,0.85)',
-            paddingBottom: '0.05rem', paddingLeft: '0.2rem',
+            paddingBottom: '0.05rem', paddingLeft: '0.25rem',
             zIndex: 3,
           }}
         >

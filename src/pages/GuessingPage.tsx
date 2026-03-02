@@ -398,8 +398,7 @@ export default function GuessingPage() {
         disabled={!isPicking}
         pickOrder={viewingAttemptPicks && viewingAttemptPicks.length > 0 ? viewingAttemptPicks : pickedIndices}
         revealDelays={phase === 'revealing' ? revealDelays : undefined}
-        highlightTargets={phase === 'done' && (!viewingAttemptPicks || viewingAttemptPicks.length === 0)}
-        dimUnpicked={!!(viewingAttemptPicks && viewingAttemptPicks.length > 0)}
+        highlightTargets={phase === 'done'}
         pickPercents={phase === 'done' && (!viewingAttemptPicks || viewingAttemptPicks.length === 0) ? pickPercents : undefined}
         revealingIndices={revealingIndices.size > 0 ? revealingIndices : undefined}
         revealDuration={revealDuration}
