@@ -154,7 +154,7 @@ export default function Card({
         <span
           className={`absolute ${percentTextClass} text-[0.55rem] sm:text-[0.6rem]`}
           style={{
-            top: '0.05rem', right: '0.15rem',
+            top: '0.05rem', left: '0.15rem',
             zIndex: 3,
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontWeight: 700,
@@ -167,13 +167,13 @@ export default function Card({
 
       {pickOrder !== undefined && (
         <span
-          className="absolute flex items-end justify-start text-gray-900 font-bold text-[0.6rem] sm:text-xs"
+          className="absolute flex items-end justify-end text-gray-900 font-bold text-[0.6rem] sm:text-xs"
           style={{
-            bottom: 0, left: 0,
+            bottom: 0, right: 0,
             width: '1.9rem', height: '1.9rem',
-            clipPath: 'polygon(0 25%, 75% 100%, 0 100%)',
+            clipPath: 'polygon(100% 25%, 25% 100%, 100% 100%)',
             background: 'rgba(255,255,255,0.85)',
-            paddingBottom: '0.05rem', paddingLeft: '0.25rem',
+            paddingBottom: '0.05rem', paddingRight: '0.25rem',
             zIndex: 3,
           }}
         >
