@@ -38,9 +38,14 @@ export const ru = {
     start: 'Начать',
     resetConfig: 'Сброс',
     ranked: 'Рейтинговая',
+    rankedDesc: 'Стандартное поле, результаты в рейтинге',
     casual: 'Обычная',
+    casualDesc: 'Свободная настройка поля, без рейтинга',
     availablePuzzles: '{available} пазлов доступно ({total} всего)',
     noPuzzlesAvailable: 'Нет доступных пазлов с этими настройками',
+    unfinishedGame: 'У вас есть незавершённая игра. Продолжить?',
+    continueGame: 'Продолжить',
+    newGame: 'Новая игра',
   },
   game: {
     spymasterMode: 'Режим капитана',
@@ -205,7 +210,7 @@ export const ru = {
   },
   settings: {
     title: 'Настройки',
-    revealDuration: 'Скорость раскрытия',
+    revealDuration: 'Время открытия слова',
     cardFontSize: 'Размер шрифта',
     fontSmall: 'Мелкий',
     fontMedium: 'Средний',

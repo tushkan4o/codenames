@@ -18,6 +18,30 @@ import SettingsPanel from '../components/settings/SettingsPanel';
 
 type GamePhase = 'picking' | 'revealing' | 'done';
 
+const ACTIVE_GUESS_KEY = 'codenames_active_guess';
+
+interface ActiveGuessState {
+  clueId: string;
+  pickedIndices: number[];
+  timestamp: number;
+}
+
+function saveActiveGuess(clueId: string, pickedIndices: number[]) {
+  localStorage.setItem(ACTIVE_GUESS_KEY, JSON.stringify({ clueId, pickedIndices, timestamp: Date.now() }));
+}
+
+function clearActiveGuess() {
+  localStorage.removeItem(ACTIVE_GUESS_KEY);
+}
+
+function loadActiveGuess(): ActiveGuessState | null {
+  try {
+    const raw = localStorage.getItem(ACTIVE_GUESS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
 export default function GuessingPage() {
   const { clueId } = useParams<{ clueId: string }>();
   const navigate = useNavigate();
@@ -43,7 +67,6 @@ export default function GuessingPage() {
   useEffect(() => {
     async function loadClue() {
       if (!clueId) return;
-      setPickedIndices([]);
       setPhase('picking');
       setAssassinHit(false);
       setScore(0);
@@ -54,6 +77,15 @@ export default function GuessingPage() {
       setLoading(true);
       const found = await api.getClueById(clueId);
       setClue(found);
+
+      // Restore in-progress game from localStorage
+      const saved = loadActiveGuess();
+      if (saved && saved.clueId === clueId && saved.pickedIndices.length > 0) {
+        setPickedIndices(saved.pickedIndices);
+      } else {
+        setPickedIndices([]);
+      }
+
       setLoading(false);
     }
     loadClue();
@@ -91,7 +123,7 @@ export default function GuessingPage() {
   async function handleAnotherClue() {
     if (!user) return;
     try {
-      const newClue = await api.getRandomClue(user.id, clue ? [clue.id] : []);
+      const newClue = await api.getRandomClue(user.id, clue ? [clue.id] : [], undefined, undefined, clue?.ranked);
       if (newClue) {
         navigate(`/guess/${newClue.id}`);
       } else {
@@ -123,8 +155,17 @@ export default function GuessingPage() {
 
     setConfirmEnd(false);
 
+    // Cancel any currently revealing cards (only one at a time)
+    if (revealingIndices.size > 0) {
+      revealingIndices.forEach((revIdx) => {
+        clearTimeout(revealTimers[revIdx]);
+      });
+      setRevealTimers({});
+      setRevealingIndices(new Set());
+    }
+
     // Start border trace animation
-    setRevealingIndices((prev) => new Set(prev).add(index));
+    setRevealingIndices(new Set([index]));
 
     // After animation completes, reveal the card
     const timer = setTimeout(() => {
@@ -142,6 +183,7 @@ export default function GuessingPage() {
         if (card.color === 'assassin') {
           setAssassinHit(true);
           setScore(0);
+          clearActiveGuess();
           setTimeout(() => finishGame(newPicked, true), 600);
           return newPicked;
         }
@@ -150,9 +192,14 @@ export default function GuessingPage() {
         if (effectiveTargetCount > 0) {
           const newRedCount = newPicked.filter((i) => board!.cards[i].color === 'red').length;
           if (newRedCount >= effectiveTargetCount) {
+            clearActiveGuess();
             setTimeout(() => finishGame(newPicked, false), 400);
+            return newPicked;
           }
         }
+
+        // Save in-progress state
+        if (clue) saveActiveGuess(clue.id, newPicked);
         return newPicked;
       });
     }, revealDuration);
@@ -163,6 +210,7 @@ export default function GuessingPage() {
     async (finalPicked: number[], isAssassin: boolean) => {
       if (!clue || !board || !user) return;
 
+      clearActiveGuess();
       const computedScore = isAssassin ? 0 : computeGuessScore(finalPicked, board.cards);
       setScore(computedScore);
 

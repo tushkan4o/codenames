@@ -20,7 +20,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!userId) return null;
     const cached = localStorage.getItem(CACHED_USER_KEY);
     if (cached) {
-      try { return JSON.parse(cached); } catch { /* ignore */ }
+      try {
+        const u = JSON.parse(cached);
+        if (u.preferences) u.preferences = { ...DEFAULT_PREFERENCES, ...u.preferences };
+        return u;
+      } catch { /* ignore */ }
     }
     return null;
   });
@@ -45,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: dbUser.id,
       displayName: dbUser.display_name,
       createdAt: Number(dbUser.created_at),
-      preferences: dbUser.preferences || preferences,
+      preferences: { ...DEFAULT_PREFERENCES, ...(dbUser.preferences || {}) },
       isAdmin: dbUser.is_admin || false,
     };
 

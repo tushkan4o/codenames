@@ -23,6 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       boardSize: row.board_size,
       reshuffleCount: row.reshuffle_count,
       disabled: row.disabled || false,
+      ranked: row.ranked ?? true,
     })));
   }
 
@@ -35,8 +36,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         VALUES (${clue.userId}, ${clue.userId}, ${clue.createdAt})
         ON CONFLICT (id) DO NOTHING`;
 
-      await sql`INSERT INTO clues (id, word, number, board_seed, target_indices, null_indices, created_at, user_id, word_pack, board_size, reshuffle_count)
-        VALUES (${clue.id}, ${clue.word}, ${clue.number}, ${clue.boardSeed}, ${clue.targetIndices}, ${clue.nullIndices || []}, ${clue.createdAt}, ${clue.userId}, ${clue.wordPack || 'ru'}, ${clue.boardSize}, ${clue.reshuffleCount || 0})
+      await sql`INSERT INTO clues (id, word, number, board_seed, target_indices, null_indices, created_at, user_id, word_pack, board_size, reshuffle_count, ranked)
+        VALUES (${clue.id}, ${clue.word}, ${clue.number}, ${clue.boardSeed}, ${clue.targetIndices}, ${clue.nullIndices || []}, ${clue.createdAt}, ${clue.userId}, ${clue.wordPack || 'ru'}, ${clue.boardSize}, ${clue.reshuffleCount || 0}, ${clue.ranked ?? true})
         ON CONFLICT (id) DO NOTHING`;
 
       return res.json({ ok: true });

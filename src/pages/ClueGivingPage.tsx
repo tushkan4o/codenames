@@ -5,7 +5,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { BOARD_CONFIGS } from '../types/game';
-import type { BoardSize } from '../types/game';
+import type { BoardSize, Clue } from '../types/game';
 import { useDragReorder } from '../hooks/useDragReorder';
 import { HomeIcon, ArrowPathIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import { BarsArrowDownIcon } from '@heroicons/react/24/solid';
@@ -22,6 +22,7 @@ export default function ClueGivingPage() {
   const { t } = useTranslation();
 
   const boardSize = (searchParams.get('size') as BoardSize) || '5x5';
+  const isRanked = searchParams.get('ranked') !== '0';
   const baseConfig = BOARD_CONFIGS[boardSize];
   const config = useMemo(() => {
     const r = searchParams.get('r');
@@ -163,9 +164,10 @@ export default function ClueGivingPage() {
       wordPack: 'ru',
       boardSize,
       reshuffleCount,
+      ranked: isRanked,
     };
     try {
-      await api.saveClue(clue);
+      await api.saveClue(clue as Clue);
       setSubmitted(true);
     } catch (err) {
       setTargetError(err instanceof Error ? err.message : 'Ошибка сохранения');

@@ -94,11 +94,13 @@ export const api = {
     excludeIds: string[] = [],
     wordPack?: string,
     boardSize?: BoardSize,
+    ranked?: boolean,
   ): Promise<Clue | null> {
     const params = new URLSearchParams({ userId });
     if (excludeIds.length > 0) params.set('exclude', excludeIds.join(','));
     if (wordPack) params.set('wordPack', wordPack);
     if (boardSize) params.set('boardSize', boardSize);
+    if (ranked !== undefined) params.set('ranked', String(ranked));
     return get(`/api/clues/random?${params}`);
   },
 
@@ -131,10 +133,11 @@ export const api = {
     return get(`/api/users/${encodeURIComponent(userId)}/stats`);
   },
 
-  async getClueCount(userId: string, wordPack?: string, boardSize?: BoardSize): Promise<{ available: number; total: number }> {
+  async getClueCount(userId: string, wordPack?: string, boardSize?: BoardSize, ranked?: boolean): Promise<{ available: number; total: number }> {
     const params = new URLSearchParams({ userId, countOnly: 'true' });
     if (wordPack) params.set('wordPack', wordPack);
     if (boardSize) params.set('boardSize', boardSize);
+    if (ranked !== undefined) params.set('ranked', String(ranked));
     return get(`/api/clues/random?${params}`);
   },
 

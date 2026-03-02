@@ -74,6 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     boardSize: row.board_size,
     reshuffleCount: row.reshuffle_count,
     disabled: row.disabled || false,
+    ranked: row.ranked ?? true,
     ...(includeTargets ? {
       targetIndices: row.target_indices,
       nullIndices: row.null_indices || [],

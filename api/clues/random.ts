@@ -4,8 +4,10 @@ import { neon } from '@neondatabase/serverless';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { userId, wordPack, boardSize, exclude, countOnly } = req.query;
+  const { userId, wordPack, boardSize, exclude, countOnly, ranked } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const isRanked = ranked === 'false' ? false : true;
 
   try {
     const sql = neon(process.env.DATABASE_URL!);
@@ -18,17 +20,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let totalRows;
 
       if (wordPack && boardSize) {
-        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE)`;
-        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE)`;
+        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
+        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
       } else if (wordPack) {
-        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND (disabled IS NOT TRUE)`;
-        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE word_pack = ${wordPack as string} AND (disabled IS NOT TRUE)`;
+        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
+        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE word_pack = ${wordPack as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
       } else if (boardSize) {
-        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE)`;
-        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE board_size = ${boardSize as string} AND (disabled IS NOT TRUE)`;
+        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
+        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
       } else {
-        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND (disabled IS NOT TRUE)`;
-        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE (disabled IS NOT TRUE)`;
+        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
+        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
       }
 
       const totalCount = Number(totalRows[0].cnt);
@@ -45,13 +47,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let rows;
     if (wordPack && boardSize) {
-      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) ORDER BY RANDOM() LIMIT 20`;
+      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked} ORDER BY RANDOM() LIMIT 20`;
     } else if (wordPack) {
-      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND (disabled IS NOT TRUE) ORDER BY RANDOM() LIMIT 20`;
+      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked} ORDER BY RANDOM() LIMIT 20`;
     } else if (boardSize) {
-      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) ORDER BY RANDOM() LIMIT 20`;
+      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked} ORDER BY RANDOM() LIMIT 20`;
     } else {
-      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND (disabled IS NOT TRUE) ORDER BY RANDOM() LIMIT 20`;
+      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked} ORDER BY RANDOM() LIMIT 20`;
     }
 
     const excludeSet = new Set(allExcluded);
@@ -71,6 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       wordPack: row.word_pack,
       boardSize: row.board_size,
       reshuffleCount: row.reshuffle_count,
+      ranked: row.ranked ?? true,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

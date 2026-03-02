@@ -198,7 +198,7 @@ export default function ProfilePage() {
   }
 
   const thBase = 'py-2 text-xs sm:text-sm';
-  const thSort = `${thBase} text-right cursor-pointer hover:text-white transition-colors select-none`;
+  const thSort = `${thBase} text-center cursor-pointer hover:text-white transition-colors select-none`;
   const td = 'py-2 text-xs sm:text-sm';
 
   return (
@@ -283,14 +283,14 @@ export default function ProfilePage() {
                           <span className="font-bold text-white uppercase">{clue.word}</span>
                           <span className="ml-1 text-gray-500 font-semibold">{clue.number}</span>
                         </td>
-                        <td className={`${td} text-right`}>
+                        <td className={`${td} text-center`}>
                           {cStats?.attempts ?? '—'}
                         </td>
-                        <td className={`${td} text-right`}>
+                        <td className={`${td} text-center`}>
                           {cStats ? cStats.avgScore.toFixed(1) : '—'}
                         </td>
-                        <td className={`${td} text-right`}>
-                          <div className="flex items-center justify-end gap-1">
+                        <td className={`${td} text-center`}>
+                          <div className="flex items-center justify-center gap-1">
                             {isOwnProfile ? (
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleToggleDisabled(clue); }}
@@ -374,20 +374,24 @@ export default function ProfilePage() {
                             </button>
                           )}
                         </td>
-                        <td className={`${td} text-right`}>
+                        <td className={`${td} text-center`}>
                           {entry.clue ? (clueStatsMap[entry.clue.id]?.attempts ?? '—') : '—'}
                         </td>
-                        <td className={`${td} text-right`}>
+                        <td className={`${td} text-center`}>
                           {entry.clue ? (clueStatsMap[entry.clue.id]?.avgScore?.toFixed(1) ?? '—') : '—'}
                         </td>
-                        <td className={`${td} text-right font-bold text-white`}>
+                        <td className={`${td} text-center font-bold text-white`}>
                           {entry.result.score ?? 0}
                           <span className="text-gray-500 font-normal ml-0.5 text-xs">
                             ({entry.result.correctCount}/{entry.result.totalTargets})
                           </span>
                         </td>
                         <td className={`${td} text-center`}>
-                          <span className="text-board-blue text-sm">✓</span>
+                          {(isOwnProfile || mySolvedClueIds.has(entry.result.clueId)) ? (
+                            <span className="text-board-blue text-sm">✓</span>
+                          ) : (
+                            <span className="text-gray-500 text-sm">–</span>
+                          )}
                         </td>
                       </tr>
                     );

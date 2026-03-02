@@ -53,6 +53,7 @@ export interface Clue {
   boardSize: BoardSize;
   reshuffleCount: number;
   disabled?: boolean;
+  ranked?: boolean;
 }
 
 export interface GuessResult {
