@@ -104,7 +104,6 @@ export default function Card({
   // Dim/glow mode for reveal views
   const highlightGlow = glowing ? glowColors[color] : '';
   const brightnessClass = glowing ? 'brightness-125' : '';
-  const dimClass = dimmed ? 'opacity-50' : '';
 
   const style: React.CSSProperties = {
     ...(revealDelay !== undefined ? { transitionDelay: `${revealDelay}ms` } : {}),
@@ -123,7 +122,7 @@ export default function Card({
         transition-all duration-300
         ${bgClass} ${textClass} ${glowClass} ${interactiveClass}
         ${ringClass} ${targetClass}
-        ${highlightGlow} ${brightnessClass} ${dimClass} ${revealingClass}
+        ${highlightGlow} ${brightnessClass} ${revealingClass}
       `}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
@@ -131,6 +130,11 @@ export default function Card({
       style={style}
     >
       <span className="text-center leading-tight hyphens-auto" lang="ru" style={{ overflowWrap: 'break-word' }}>{word}</span>
+
+      {/* Dim overlay — dims card but corners stay bright above it */}
+      {dimmed && (
+        <span className="absolute inset-0 bg-black/50 pointer-events-none rounded-lg" style={{ zIndex: 1 }} />
+      )}
 
       {showNullX && (
         <span className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
@@ -144,11 +148,11 @@ export default function Card({
         <span
           className="absolute flex items-start justify-end text-white text-[0.6rem] sm:text-[0.7rem]"
           style={{
-            top: 0, right: '-0.15rem',
+            top: 0, right: 0,
             width: '2rem', height: '2rem',
-            borderBottomLeftRadius: '100%',
+            clipPath: 'polygon(20% 0, 100% 0, 100% 80%)',
             background: 'rgba(249,115,22,0.85)',
-            paddingTop: '0.15rem', paddingRight: '0.2rem',
+            paddingTop: '0.1rem', paddingRight: '0.15rem',
             zIndex: 3,
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontWeight: 600,
@@ -163,11 +167,11 @@ export default function Card({
         <span
           className="absolute flex items-end justify-start text-gray-900 font-bold text-[0.6rem] sm:text-xs"
           style={{
-            bottom: 0, left: '-0.15rem',
+            bottom: 0, left: 0,
             width: '1.7rem', height: '1.7rem',
-            borderTopRightRadius: '100%',
+            clipPath: 'polygon(0 20%, 80% 100%, 0 100%)',
             background: 'rgba(255,255,255,0.85)',
-            paddingBottom: '0.1rem', paddingLeft: '0.3rem',
+            paddingBottom: '0.05rem', paddingLeft: '0.2rem',
             zIndex: 3,
           }}
         >
