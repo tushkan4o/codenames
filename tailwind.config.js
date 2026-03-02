@@ -18,6 +18,7 @@ export default {
       },
       fontFamily: {
         game: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        card: ['"PT Sans Narrow"', 'Arial Narrow', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out',

@@ -81,12 +81,9 @@ export default function Card({
     else if (color === 'assassin') ringClass = 'ring-2 ring-gray-500/70 ring-offset-1 ring-offset-board-bg';
   }
 
-  // Legacy ring markers (used in spymaster clue-giving mode)
+  // Target ring marker (used in spymaster clue-giving mode)
   const targetClass = !glowing && !dimmed && targetMarked
     ? 'ring-[3px] ring-white ring-offset-1 ring-offset-board-bg'
-    : '';
-  const nullClass = !glowing && !dimmed && nullMarked
-    ? 'ring-[2px] ring-white/60 ring-offset-1 ring-offset-board-bg'
     : '';
 
   // Dim/glow mode for reveal views
@@ -98,18 +95,18 @@ export default function Card({
     ? { transitionDelay: `${revealDelay}ms` }
     : undefined;
 
-  // Show null × marker in reveal mode (dimmed/glowing active)
-  const showNullX = nullMarked && (dimmed || glowing);
+  // Show null × marker whenever nullMarked (clue-giving + reveal modes)
+  const showNullX = !!nullMarked;
 
   return (
     <button
       className={`
         card-reveal relative flex items-center justify-center
-        h-[3.2rem] sm:h-[3.6rem] rounded-lg font-bold uppercase tracking-wide select-none
-        text-[clamp(0.55rem,2.5vw,0.85rem)] p-1 sm:p-2 border border-white/5
+        h-[3.2rem] sm:h-[3.6rem] rounded-lg font-card font-bold uppercase tracking-wide select-none
+        text-[clamp(0.6rem,2.8vw,0.9rem)] p-1 sm:p-2 border border-white/5
         transition-all duration-300
         ${bgClass} ${textClass} ${glowClass} ${interactiveClass}
-        ${ringClass} ${targetClass} ${nullClass}
+        ${ringClass} ${targetClass}
         ${highlightGlow} ${brightnessClass} ${dimClass}
       `}
       onClick={disabled ? undefined : onClick}
@@ -126,8 +123,11 @@ export default function Card({
       )}
 
       {showNullX && (
-        <span className="absolute bottom-0 left-0.5 text-board-red text-[0.7rem] sm:text-[0.85rem] font-black leading-none drop-shadow-sm">
-          &times;
+        <span
+          className="absolute bottom-0 left-0.5 text-board-red text-[0.85rem] sm:text-[1rem] leading-none drop-shadow-sm pointer-events-none"
+          style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 900, transform: 'rotate(-12deg)' }}
+        >
+          ✗
         </span>
       )}
 

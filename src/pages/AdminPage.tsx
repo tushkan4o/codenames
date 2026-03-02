@@ -66,21 +66,24 @@ function MiniBoard({ clue, pickPercents }: { clue: AdminClue; pickPercents?: Rec
         return (
           <div
             key={idx}
-            className={`${colorMap[card.color]} rounded px-1 py-1 text-center text-[0.6rem] leading-tight font-semibold uppercase truncate relative transition-opacity duration-300 ${
+            className={`${colorMap[card.color]} rounded px-1 flex items-center justify-center font-card font-bold uppercase text-[0.65rem] leading-tight relative transition-opacity duration-300 ${
               hasHighlight && !isHighlighted ? 'opacity-50' : ''
             } ${isTarget ? `${glowColorsAdmin[card.color] || ''} brightness-110` : ''}`}
-            style={{ minHeight: '1.6rem' }}
+            style={{ height: '2.2rem' }}
             title={card.word}
           >
-            {card.word}
+            <span className="text-center truncate">{card.word}</span>
             {pct !== undefined && pct > 0 && (
               <span className="absolute -top-0.5 -right-0.5 px-0.5 rounded-sm bg-orange-500/90 text-white text-[0.45rem] font-bold leading-none py-px">
                 {pct}%
               </span>
             )}
             {isNull && hasHighlight && (
-              <span className="absolute bottom-0 left-0.5 text-board-red text-[0.55rem] font-black leading-none">
-                &times;
+              <span
+                className="absolute bottom-0 left-0.5 text-board-red text-[0.7rem] leading-none pointer-events-none"
+                style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 900, transform: 'rotate(-12deg)' }}
+              >
+                ✗
               </span>
             )}
           </div>
