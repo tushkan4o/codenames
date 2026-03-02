@@ -14,30 +14,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const solvedRows = await sql`SELECT clue_id FROM results WHERE user_id = ${userId as string}`;
     const solvedIds = solvedRows.map((r: Record<string, unknown>) => r.clue_id as string);
+    const solvedSet = new Set(solvedIds);
 
     if (countOnly === 'true') {
-      let availableRows;
-      let totalRows;
-
+      // Get all matching clue IDs to accurately count available (excluding solved)
+      let clueRows;
       if (wordPack && boardSize) {
-        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
-        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
+        clueRows = await sql`SELECT id, user_id FROM clues WHERE word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
       } else if (wordPack) {
-        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
-        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE word_pack = ${wordPack as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
+        clueRows = await sql`SELECT id, user_id FROM clues WHERE word_pack = ${wordPack as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
       } else if (boardSize) {
-        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
-        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
+        clueRows = await sql`SELECT id, user_id FROM clues WHERE board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
       } else {
-        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
-        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
+        clueRows = await sql`SELECT id, user_id FROM clues WHERE (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
       }
 
-      const totalCount = Number(totalRows[0].cnt);
-      const availableCount = Number(availableRows[0].cnt) - solvedIds.length;
+      const totalCount = clueRows.length;
+      const availableCount = clueRows.filter((r: Record<string, unknown>) =>
+        r.user_id !== (userId as string) && !solvedSet.has(r.id as string)
+      ).length;
 
       return res.json({
-        available: Math.max(0, availableCount),
+        available: availableCount,
         total: totalCount,
       });
     }
@@ -74,6 +72,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       boardSize: row.board_size,
       reshuffleCount: row.reshuffle_count,
       ranked: row.ranked ?? true,
+      ...(row.red_count != null ? { redCount: row.red_count } : {}),
+      ...(row.blue_count != null ? { blueCount: row.blue_count } : {}),
+      ...(row.assassin_count != null ? { assassinCount: row.assassin_count } : {}),
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
