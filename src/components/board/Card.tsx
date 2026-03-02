@@ -104,8 +104,7 @@ export default function Card({
   // Dim/glow mode for reveal views
   const highlightGlow = glowing ? glowColors[color] : '';
   const brightnessClass = glowing ? 'brightness-125' : '';
-  // Dimming is now applied to word text only, not the whole card
-  const dimClass = '';
+  const dimClass = dimmed ? 'opacity-50' : '';
 
   const style: React.CSSProperties = {
     ...(revealDelay !== undefined ? { transitionDelay: `${revealDelay}ms` } : {}),
@@ -131,7 +130,7 @@ export default function Card({
       type="button"
       style={style}
     >
-      <span className={`text-center leading-tight hyphens-auto ${dimmed ? 'opacity-50' : ''}`} lang="ru" style={{ overflowWrap: 'break-word' }}>{word}</span>
+      <span className="text-center leading-tight hyphens-auto" lang="ru" style={{ overflowWrap: 'break-word' }}>{word}</span>
 
       {showNullX && (
         <span className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
