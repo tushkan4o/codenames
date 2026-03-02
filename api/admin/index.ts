@@ -105,6 +105,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }));
     }
 
+    if (action === 'results') {
+      const rows = await sql`
+        SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked
+        FROM results r
+        LEFT JOIN clues c ON c.id = r.clue_id
+        ORDER BY r.timestamp DESC
+      `;
+      return res.json(rows.map((row: Record<string, unknown>) => ({
+        clueId: row.clue_id,
+        userId: row.user_id,
+        score: row.score,
+        correctCount: row.correct_count,
+        totalTargets: row.total_targets,
+        timestamp: Number(row.timestamp),
+        boardSize: row.board_size || row.clue_board_size,
+        clueWord: row.clue_word || null,
+        clueNumber: row.clue_number ?? null,
+        ranked: row.clue_ranked ?? true,
+      })));
+    }
+
     if (action === 'reports') {
       const { clueId } = req.query;
       if (!clueId || typeof clueId !== 'string') {
@@ -132,6 +153,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'clueId required' });
       }
       await deleteClueCascade(sql, clueId);
+      return res.json({ ok: true });
+    }
+
+    if (action === 'deleteResult') {
+      const { clueId, userId: resultUserId, timestamp } = req.query;
+      if (!clueId || !resultUserId || !timestamp) {
+        return res.status(400).json({ error: 'clueId, userId, timestamp required' });
+      }
+      await sql`DELETE FROM results WHERE clue_id = ${clueId as string} AND user_id = ${resultUserId as string} AND timestamp = ${Number(timestamp)}`;
       return res.json({ ok: true });
     }
 

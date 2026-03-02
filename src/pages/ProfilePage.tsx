@@ -157,8 +157,8 @@ export default function ProfilePage() {
 
   function handleSolvedRowClick(entry: SolvedEntry) {
     if (!entry.clue) return;
-    const iSolved = isOwnProfile || mySolvedClueIds.has(entry.result.clueId);
-    if (iSolved) {
+    const canView = isOwnProfile || mySolvedClueIds.has(entry.result.clueId) || entry.clue.userId === user?.id;
+    if (canView) {
       setModalClue(entry.clue);
       setModalResult(entry.result);
     } else {
@@ -392,7 +392,7 @@ export default function ProfilePage() {
                           </span>
                         </td>
                         <td className={`${td} text-center`}>
-                          {(isOwnProfile || mySolvedClueIds.has(entry.result.clueId)) ? (
+                          {(isOwnProfile || mySolvedClueIds.has(entry.result.clueId) || entry.clue?.userId === user?.id) ? (
                             <span className="text-board-blue text-sm">✓</span>
                           ) : (
                             <span className="text-gray-500 text-sm">–</span>

@@ -17,8 +17,19 @@ interface BoardReviewModalProps {
 export default function BoardReviewModal({ clue, result, onClose }: BoardReviewModalProps) {
   const { t } = useTranslation();
   const [pickPercents, setPickPercents] = useState<Record<number, number>>({});
+  const [viewingAttemptPicks, setViewingAttemptPicks] = useState<number[] | null>(null);
 
-  const config = clue.boardSize ? BOARD_CONFIGS[clue.boardSize] : BOARD_CONFIG_LEGACY_5x5;
+  const config = useMemo(() => {
+    const base = clue.boardSize ? BOARD_CONFIGS[clue.boardSize] : BOARD_CONFIG_LEGACY_5x5;
+    if (clue.redCount != null || clue.blueCount != null || clue.assassinCount != null) {
+      const redCount = clue.redCount ?? base.redCount;
+      const blueCount = clue.blueCount ?? base.blueCount;
+      const assassinCount = clue.assassinCount ?? base.assassinCount;
+      const neutralCount = base.totalCards - redCount - blueCount - assassinCount;
+      return { ...base, redCount, blueCount, assassinCount, neutralCount };
+    }
+    return base;
+  }, [clue]);
 
   const board = useMemo(
     () => generateBoard(clue.boardSeed, config, clue.wordPack || 'ru'),
@@ -67,9 +78,9 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
           targetIndices={clue.targetIndices}
           nullIndices={clue.nullIndices || []}
           disabled={true}
-          pickOrder={guessedIndices}
+          pickOrder={viewingAttemptPicks && viewingAttemptPicks.length > 0 ? viewingAttemptPicks : guessedIndices}
           highlightTargets={true}
-          pickPercents={pickPercents}
+          pickPercents={!viewingAttemptPicks || viewingAttemptPicks.length === 0 ? pickPercents : undefined}
         />
 
         {result && (
@@ -82,7 +93,11 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
         )}
 
         <div className="mt-4">
-          <ClueStatsPanel clueId={clue.id} spymasterUserId={clue.userId} />
+          <ClueStatsPanel
+            clueId={clue.id}
+            spymasterUserId={clue.userId}
+            onShowAttemptPicks={(indices) => setViewingAttemptPicks(indices.length > 0 ? indices : null)}
+          />
         </div>
 
         <div className="mt-4 text-center">

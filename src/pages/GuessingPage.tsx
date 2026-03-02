@@ -324,6 +324,20 @@ export default function GuessingPage() {
     );
   }
 
+  if (clue.userId === user?.id) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-white gap-4">
+        <p>{t.game.cannotGuessOwn}</p>
+        <button
+          onClick={() => navigate('/')}
+          className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors"
+        >
+          {t.results.backHome}
+        </button>
+      </div>
+    );
+  }
+
   const displayCards: CardState[] = board.cards.map((card, idx) => {
     if (pickedIndices.includes(idx)) return { ...card, revealed: true };
     if (phase === 'done') return { ...card, revealed: true };

@@ -85,6 +85,19 @@ export interface Report {
   createdAt: number;
 }
 
+export interface AdminResult {
+  clueId: string;
+  userId: string;
+  score: number;
+  correctCount: number;
+  totalTargets: number;
+  timestamp: number;
+  boardSize: string;
+  clueWord: string | null;
+  clueNumber: number | null;
+  ranked: boolean;
+}
+
 export const api = {
   async saveClue(clue: Clue): Promise<void> {
     await post('/api/clues', clue);
@@ -189,5 +202,13 @@ export const api = {
 
   async adminDeleteUser(adminId: string, userId: string): Promise<void> {
     await del(`/api/admin?action=deleteUser&adminId=${encodeURIComponent(adminId)}&userId=${encodeURIComponent(userId)}`);
+  },
+
+  async adminGetAllResults(adminId: string): Promise<AdminResult[]> {
+    return get(`/api/admin?action=results&adminId=${encodeURIComponent(adminId)}`);
+  },
+
+  async adminDeleteResult(adminId: string, clueId: string, userId: string, timestamp: number): Promise<void> {
+    await del(`/api/admin?action=deleteResult&adminId=${encodeURIComponent(adminId)}&clueId=${encodeURIComponent(clueId)}&userId=${encodeURIComponent(userId)}&timestamp=${timestamp}`);
   },
 };

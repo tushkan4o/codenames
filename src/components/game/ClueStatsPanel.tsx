@@ -14,6 +14,7 @@ interface ClueStatsPanelProps {
   clueId: string;
   spymasterUserId: string;
   onShowAttemptPicks?: (guessedIndices: number[]) => void;
+  onDeleteAttempt?: (userId: string, timestamp: number) => void;
 }
 
 function formatDate(ts: number): string {
@@ -22,7 +23,7 @@ function formatDate(ts: number): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
 }
 
-export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptPicks }: ClueStatsPanelProps) {
+export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptPicks, onDeleteAttempt }: ClueStatsPanelProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [stats, setStats] = useState<{
@@ -113,6 +114,15 @@ export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptP
                       {detail.userId}
                     </button>
                     <span className="text-white font-semibold w-6 text-right shrink-0">{detail.score}</span>
+                    {onDeleteAttempt && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDeleteAttempt(detail.userId, detail.timestamp); }}
+                        className="text-gray-600 hover:text-board-red text-sm font-bold transition-colors shrink-0 ml-1"
+                        title="Удалить"
+                      >
+                        &times;
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
