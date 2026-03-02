@@ -82,7 +82,7 @@ export default function Card({
 
   const bgClass = shouldShowColor ? cfg.bg : 'bg-board-card';
   const textClass = shouldShowColor ? cfg.text : 'text-gray-200';
-  const glowClass = shouldShowColor && !glowing ? cfg.glow : '';
+  const glowClass = shouldShowColor && !glowing && !dimmed ? cfg.glow : '';
   const revealingClass = revealing ? 'card-border-reveal' : '';
 
   const interactiveClass =
@@ -142,14 +142,17 @@ export default function Card({
 
       {pickPercent !== undefined && pickPercent > 0 && (
         <span
-          className="absolute flex items-start justify-end text-white font-bold text-[0.55rem] sm:text-[0.65rem]"
+          className="absolute flex items-start justify-end text-white text-[0.6rem] sm:text-[0.7rem]"
           style={{
             top: 0, right: '-0.15rem',
-            width: '1.9rem', height: '1.9rem',
+            width: '2rem', height: '2rem',
             borderBottomLeftRadius: '100%',
             background: 'rgba(249,115,22,0.85)',
-            paddingTop: '0.1rem', paddingRight: '0.25rem',
+            paddingTop: '0.15rem', paddingRight: '0.2rem',
             zIndex: 3,
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            fontWeight: 600,
+            letterSpacing: '-0.02em',
           }}
         >
           {pickPercent}%

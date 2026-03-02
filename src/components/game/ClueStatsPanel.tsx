@@ -82,9 +82,8 @@ export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptP
                 onClick={() => setExpanded((e) => !e)}
                 className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
               >
-                {stats.attempts}
+                {stats.attempts} {t.results.attempts}
               </button>
-              <span className="text-gray-500 ml-1">{t.results.attempts}</span>
             </div>
             <div>
               <span className="text-gray-400">{t.results.avgScoreLabel}: </span>

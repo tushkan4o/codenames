@@ -15,6 +15,7 @@ interface BoardProps {
   revealDelays?: Record<number, number>;
   highlightTargets?: boolean;
   pickPercents?: Record<number, number>;
+  dimUnpicked?: boolean;
   cardFontSize?: CardFontSize;
   revealingIndices?: Set<number>;
   revealDuration?: number;
@@ -45,6 +46,7 @@ export default function Board({
   revealDelays,
   highlightTargets,
   pickPercents,
+  dimUnpicked,
   cardFontSize,
   revealingIndices,
   revealDuration,
@@ -93,7 +95,7 @@ export default function Board({
               disabled={disabled}
               targetMarked={!highlightTargets && targetIndices.includes(originalIndex)}
               nullMarked={nullIndices.includes(originalIndex)}
-              dimmed={hasHighlight ? !isHighlighted : false}
+              dimmed={hasHighlight ? !isHighlighted : (dimUnpicked && !order)}
               glowing={hasHighlight ? !!isTarget : false}
               pickPercent={pickPercents?.[originalIndex]}
               pickOrder={order}
@@ -123,7 +125,7 @@ export default function Board({
               disabled={disabled}
               targetMarked={!highlightTargets && targetIndices.includes(originalIndex)}
               nullMarked={nullIndices.includes(originalIndex)}
-              dimmed={hasHighlight ? !isHighlighted : false}
+              dimmed={hasHighlight ? !isHighlighted : (dimUnpicked && !order)}
               glowing={hasHighlight ? !!isTarget : false}
               pickPercent={pickPercents?.[originalIndex]}
               pickOrder={order}
