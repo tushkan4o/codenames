@@ -60,6 +60,7 @@ export const ru = {
     finish: 'Закончить',
     confirmEnd: 'Вы уверены? Найдены не все слова',
     confirmHomeClueGiving: 'Вы не закончили загадывание, вернуться на главную?',
+    confirmHomeGuessing: 'Вы не закончили отгадывание, вернуться на главную?',
     finishReveal: 'Завершить и открыть',
     selectTargets: 'Нажмите на слова вашей команды',
     selectTargetsTeam: 'Нажмите на слова',

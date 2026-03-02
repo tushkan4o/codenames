@@ -57,6 +57,7 @@ export default function GuessingPage() {
   const [showNoClues, setShowNoClues] = useState(false);
   const [revealDelays, setRevealDelays] = useState<Record<number, number>>({});
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [showHomeConfirm, setShowHomeConfirm] = useState(false);
   const [revealingIndices, setRevealingIndices] = useState<Set<number>>(new Set());
 
   // Revealed targets — only populated after game ends (security: not sent initially)
@@ -139,7 +140,11 @@ export default function GuessingPage() {
   }, [board]);
 
   function handleHome() {
-    navigate('/');
+    if (phase === 'picking') {
+      setShowHomeConfirm(true);
+    } else {
+      navigate('/');
+    }
   }
 
   async function handleAnotherClue() {
@@ -473,6 +478,28 @@ export default function GuessingPage() {
             }}
             onReport={(reason) => { if (user) api.submitReport(clue.id, user.id, reason); }}
           />
+        </div>
+      )}
+
+      {showHomeConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowHomeConfirm(false)}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center" onClick={(e) => e.stopPropagation()}>
+            <p className="text-white text-sm mb-4">{t.game.confirmHomeGuessing}</p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setShowHomeConfirm(false)}
+                className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold transition-colors"
+              >
+                {t.rating.cancel}
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-semibold transition-colors"
+              >
+                {t.admin.confirm}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
