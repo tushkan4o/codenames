@@ -45,8 +45,8 @@ function Pagination({ page, pageCount, onChange }: { page: number; pageCount: nu
 }
 
 function SortArrow({ field, activeField, dir }: { field: string; activeField: string; dir: SortDir }) {
-  if (field !== activeField) return null;
-  return <span className="ml-0.5 text-gray-400">{dir === 'desc' ? '\u25BC' : '\u25B2'}</span>;
+  if (field !== activeField) return <span className="ml-0.5 invisible text-[0.5em]">{'\u25BC'}</span>;
+  return <span className="ml-0.5 text-gray-400 text-[0.5em]">{dir === 'desc' ? '\u25BC' : '\u25B2'}</span>;
 }
 
 export default function LeaderboardPage() {

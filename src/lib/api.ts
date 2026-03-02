@@ -37,10 +37,18 @@ export interface AdminClue {
   number: number;
   userId: string;
   boardSize: string;
+  boardSeed: string;
+  wordPack: string;
   createdAt: number;
   targetIndices: number[];
   nullIndices: number[];
   reportCount: number;
+}
+
+export interface RatingStats {
+  counts: Record<number, number>;
+  total: number;
+  avg: number;
 }
 
 export interface Report {
@@ -125,6 +133,10 @@ export const api = {
 
   async adminGetReports(adminId: string, clueId: string): Promise<Report[]> {
     return get(`/api/admin?action=reports&adminId=${encodeURIComponent(adminId)}&clueId=${encodeURIComponent(clueId)}`);
+  },
+
+  async adminGetRatings(adminId: string, clueId: string): Promise<RatingStats> {
+    return get(`/api/admin?action=ratings&adminId=${encodeURIComponent(adminId)}&clueId=${encodeURIComponent(clueId)}`);
   },
 
   async adminDeleteClue(adminId: string, clueId: string): Promise<void> {

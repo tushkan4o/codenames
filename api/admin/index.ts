@@ -46,11 +46,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         userId: row.user_id,
         boardSize: row.board_size,
         boardSeed: row.board_seed,
+        wordPack: row.word_pack || 'ru',
         createdAt: Number(row.created_at),
         targetIndices: row.target_indices,
         nullIndices: row.null_indices || [],
         reportCount: Number(row.report_count) || 0,
       })));
+    }
+
+    if (action === 'ratings') {
+      const { clueId } = req.query;
+      if (!clueId || typeof clueId !== 'string') {
+        return res.status(400).json({ error: 'clueId required' });
+      }
+      const rows = await sql`
+        SELECT rating, COUNT(*)::int as cnt FROM ratings WHERE clue_id = ${clueId} GROUP BY rating ORDER BY rating
+      `;
+      const totalRows = await sql`
+        SELECT COUNT(*)::int as total, COALESCE(AVG(rating), 0) as avg FROM ratings WHERE clue_id = ${clueId}
+      `;
+      return res.json({
+        counts: Object.fromEntries(rows.map((r: Record<string, unknown>) => [Number(r.rating), Number(r.cnt)])),
+        total: Number(totalRows[0]?.total) || 0,
+        avg: Math.round((Number(totalRows[0]?.avg) || 0) * 10) / 10,
+      });
     }
 
     if (action === 'reports') {
