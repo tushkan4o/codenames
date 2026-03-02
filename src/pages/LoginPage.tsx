@@ -42,6 +42,8 @@ export default function LoginPage() {
         setError('');
       } else if (msg === 'wrong_password') {
         setError(t.login.errorPassword);
+      } else if (msg === 'invalid_chars') {
+        setError(t.login.errorChars);
       } else {
         setError(msg || 'Ошибка входа');
       }
