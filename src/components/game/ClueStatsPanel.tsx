@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { useTranslation } from '../../i18n/useTranslation';
 
-interface AttemptDetail {
+export interface AttemptDetail {
   userId: string;
   score: number;
   timestamp: number;
@@ -15,6 +15,7 @@ interface ClueStatsPanelProps {
   spymasterUserId: string;
   onShowAttemptPicks?: (guessedIndices: number[]) => void;
   onDeleteAttempt?: (userId: string, timestamp: number) => void;
+  onOpenAttempts?: (details: AttemptDetail[]) => void;
 }
 
 function formatDate(ts: number): string {
@@ -23,7 +24,16 @@ function formatDate(ts: number): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptPicks, onDeleteAttempt }: ClueStatsPanelProps) {
+export function pluralAttempts(n: number): string {
+  const abs = Math.abs(n) % 100;
+  const last = abs % 10;
+  if (abs > 10 && abs < 20) return 'попыток';
+  if (last === 1) return 'попытка';
+  if (last >= 2 && last <= 4) return 'попытки';
+  return 'попыток';
+}
+
+export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptPicks, onDeleteAttempt, onOpenAttempts }: ClueStatsPanelProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [stats, setStats] = useState<{
@@ -80,10 +90,16 @@ export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptP
           <div className="flex gap-4 mb-1">
             <div>
               <button
-                onClick={() => setExpanded((e) => !e)}
+                onClick={() => {
+                  if (onOpenAttempts && stats!.details) {
+                    onOpenAttempts(stats!.details);
+                  } else {
+                    setExpanded((e) => !e);
+                  }
+                }}
                 className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
               >
-                {stats.attempts} {t.results.attempts}
+                {stats.attempts} {pluralAttempts(stats.attempts)}
               </button>
             </div>
             <div>

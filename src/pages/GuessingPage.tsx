@@ -13,10 +13,16 @@ import GameHeader from '../components/game/GameHeader';
 import ClueDisplay from '../components/clue/ClueDisplay';
 import RevealOverlay from '../components/game/RevealOverlay';
 import ClueRating from '../components/game/ClueRating';
-import ClueStatsPanel from '../components/game/ClueStatsPanel';
+import ClueStatsPanel, { type AttemptDetail, pluralAttempts } from '../components/game/ClueStatsPanel';
 import SettingsPanel from '../components/settings/SettingsPanel';
 
 type GamePhase = 'picking' | 'revealing' | 'done';
+
+function formatDate(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 const ACTIVE_GUESS_KEY = 'codenames_active_guess';
 
@@ -40,6 +46,34 @@ function loadActiveGuess(): ActiveGuessState | null {
     if (!raw) return null;
     return JSON.parse(raw);
   } catch { return null; }
+}
+
+const COMPLETED_GUESS_KEY = 'codenames_completed_guess';
+
+interface CompletedGuessState {
+  clueId: string;
+  pickedIndices: number[];
+  score: number;
+  targetIndices: number[];
+  nullIndices: number[];
+}
+
+function saveCompletedGuess(state: CompletedGuessState) {
+  localStorage.setItem(COMPLETED_GUESS_KEY, JSON.stringify(state));
+}
+
+function loadCompletedGuess(clueId: string): CompletedGuessState | null {
+  try {
+    const raw = localStorage.getItem(COMPLETED_GUESS_KEY);
+    if (!raw) return null;
+    const state = JSON.parse(raw);
+    if (state.clueId !== clueId) return null;
+    return state;
+  } catch { return null; }
+}
+
+function clearCompletedGuess() {
+  localStorage.removeItem(COMPLETED_GUESS_KEY);
 }
 
 export default function GuessingPage() {
@@ -68,6 +102,10 @@ export default function GuessingPage() {
   const [viewingAttemptPicks, setViewingAttemptPicks] = useState<number[] | null>(null);
   const [pickPercents, setPickPercents] = useState<Record<number, number>>({});
 
+  // Attempts view in overlay
+  const [attemptsView, setAttemptsView] = useState<AttemptDetail[] | null>(null);
+  const [selectedAttemptIdx, setSelectedAttemptIdx] = useState<number | null>(null);
+
   useEffect(() => {
     async function loadClue() {
       if (!clueId) return;
@@ -80,9 +118,34 @@ export default function GuessingPage() {
       setRevealedNulls([]);
       setViewingAttemptPicks(null);
       setPickPercents({});
+      setAttemptsView(null);
+      setSelectedAttemptIdx(null);
       setLoading(true);
       const found = await api.getClueById(clueId);
       setClue(found);
+
+      // Restore completed game from localStorage (e.g. after back-navigation)
+      const completed = loadCompletedGuess(clueId);
+      if (completed) {
+        setPickedIndices(completed.pickedIndices);
+        setScore(completed.score);
+        setRevealedTargets(completed.targetIndices);
+        setRevealedNulls(completed.nullIndices);
+        setPhase('done');
+        // Re-fetch pick percentages
+        api.getClueStats(clueId).then((s) => {
+          if (s.attempts > 0) {
+            const pcts: Record<number, number> = {};
+            const counts = (s as { pickCounts?: Record<number, number> }).pickCounts || {};
+            for (const [idx, cnt] of Object.entries(counts)) {
+              pcts[Number(idx)] = Math.round((cnt as number / s.attempts) * 100);
+            }
+            setPickPercents(pcts);
+          }
+        });
+        setLoading(false);
+        return;
+      }
 
       // Restore in-progress game from localStorage
       const saved = loadActiveGuess();
@@ -143,12 +206,14 @@ export default function GuessingPage() {
     if (phase === 'picking') {
       setShowHomeConfirm(true);
     } else {
+      clearCompletedGuess();
       navigate('/');
     }
   }
 
   async function handleAnotherClue() {
     if (!user) return;
+    clearCompletedGuess();
     try {
       const newClue = await api.getRandomClue(user.id, clue ? [clue.id] : [], undefined, undefined, clue?.ranked);
       if (newClue) {
@@ -253,6 +318,15 @@ export default function GuessingPage() {
 
       setRevealedTargets(result.targetIndices);
       setRevealedNulls(result.nullIndices);
+
+      // Save completed state for back-navigation restoration
+      saveCompletedGuess({
+        clueId: clue.id,
+        pickedIndices: finalPicked,
+        score: computedScore,
+        targetIndices: result.targetIndices,
+        nullIndices: result.nullIndices,
+      });
 
       // Fetch pick percentages for all cards
       api.getClueStats(clue.id).then((s) => {
@@ -459,17 +533,77 @@ export default function GuessingPage() {
               {t.game.nextPuzzle}
             </button>
           </div>
-          <RevealOverlay
-            cards={board.cards}
-            guessedIndices={pickedIndices}
-            targetIndices={revealedTargets}
-            score={score}
-          />
+          {attemptsView ? (
+            <div className="bg-gray-800/60 rounded-xl p-5 border border-gray-700/30 max-w-md mx-auto mt-4 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-white font-semibold text-sm">
+                  {attemptsView.length} {pluralAttempts(attemptsView.length)}
+                </h3>
+                <button
+                  onClick={() => { setAttemptsView(null); setSelectedAttemptIdx(null); setViewingAttemptPicks(null); }}
+                  className="text-gray-400 hover:text-white text-lg leading-none transition-colors"
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="overflow-y-auto max-h-[200px]">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-gray-800">
+                    <tr className="text-gray-500 border-b border-gray-700/50">
+                      <th className="text-left py-1 pr-2 font-medium">{t.admin.player}</th>
+                      <th className="text-center py-1 px-2 font-medium">{t.results.score}</th>
+                      <th className="text-center py-1 pl-2 font-medium">{t.admin.clueDate}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attemptsView.map((detail, idx) => (
+                      <tr
+                        key={idx}
+                        onClick={() => {
+                          if (selectedAttemptIdx === idx) {
+                            setSelectedAttemptIdx(null);
+                            setViewingAttemptPicks(null);
+                          } else {
+                            setSelectedAttemptIdx(idx);
+                            setViewingAttemptPicks(detail.guessedIndices);
+                          }
+                        }}
+                        className={`cursor-pointer transition-colors ${
+                          selectedAttemptIdx === idx
+                            ? 'bg-board-blue/20'
+                            : 'hover:bg-gray-700/50'
+                        }`}
+                      >
+                        <td className="py-1.5 pr-2 text-left">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/profile/${detail.userId}`); }}
+                            className="text-blue-400 hover:text-blue-300 transition-colors truncate max-w-[10rem] block text-left"
+                          >
+                            {detail.userId}
+                          </button>
+                        </td>
+                        <td className="py-1.5 px-2 text-center text-white font-semibold">{detail.score}</td>
+                        <td className="py-1.5 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <RevealOverlay
+              cards={board.cards}
+              guessedIndices={pickedIndices}
+              targetIndices={revealedTargets}
+              score={score}
+            />
+          )}
           <div className="max-w-md mx-auto mt-4">
             <ClueStatsPanel
               clueId={clue.id}
               spymasterUserId={clue.userId}
               onShowAttemptPicks={(indices) => setViewingAttemptPicks(indices.length > 0 ? indices : null)}
+              onOpenAttempts={(details) => { setAttemptsView(details); setSelectedAttemptIdx(null); setViewingAttemptPicks(null); }}
             />
           </div>
           <ClueRating
@@ -493,7 +627,7 @@ export default function GuessingPage() {
                 {t.rating.cancel}
               </button>
               <button
-                onClick={() => navigate('/')}
+                onClick={() => { clearCompletedGuess(); navigate('/'); }}
                 className="px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-semibold transition-colors"
               >
                 {t.admin.confirm}
