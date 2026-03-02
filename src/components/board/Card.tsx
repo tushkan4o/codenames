@@ -104,7 +104,7 @@ export default function Card({
   // Dim/glow mode for reveal views
   const highlightGlow = glowing ? glowColors[color] : '';
   const brightnessClass = glowing ? 'brightness-125' : '';
-  const dimClass = '';
+  const dimClass = dimmed ? 'opacity-50' : '';
 
   const style: React.CSSProperties = {
     ...(revealDelay !== undefined ? { transitionDelay: `${revealDelay}ms` } : {}),
@@ -131,11 +131,6 @@ export default function Card({
       style={style}
     >
       <span className="text-center leading-tight hyphens-auto" lang="ru" style={{ overflowWrap: 'break-word' }}>{word}</span>
-
-      {/* Dim overlay — covers card content but not corner indicators */}
-      {dimmed && (
-        <span className="absolute inset-0 bg-black/50 pointer-events-none rounded-lg" style={{ zIndex: 1 }} />
-      )}
 
       {showNullX && (
         <span className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
