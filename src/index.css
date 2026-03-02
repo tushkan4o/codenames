@@ -31,3 +31,12 @@ body {
 .card-interactive:active {
   transform: scale(0.97);
 }
+
+/* Drag-and-drop floating clone */
+.card-drag-floating {
+  z-index: 50;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: scale(1.08);
+  overflow: hidden;
+}

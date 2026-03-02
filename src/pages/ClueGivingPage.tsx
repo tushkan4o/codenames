@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { generateBoard, generateSeed } from '../lib/boardGenerator';
 import { api } from '../lib/api';
@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { BOARD_CONFIGS } from '../types/game';
 import type { BoardSize } from '../types/game';
+import { useDragReorder } from '../hooks/useDragReorder';
 import Board from '../components/board/Board';
 import GameHeader from '../components/game/GameHeader';
 import ClueInput from '../components/clue/ClueInput';
@@ -44,6 +45,12 @@ export default function ClueGivingPage() {
     return generateBoard(currentSeed, config);
   }, [currentSeed, config]);
 
+  const {
+    displayOrder, dragRender,
+    handlePointerDown, handlePointerMove, handlePointerUp,
+    registerCardRef, resetOrder,
+  } = useDragReorder(board.cards.length);
+
   // Auto-detect clue-0: if any non-red cards are selected as nulls
   const isClueZero = selectedNulls.length > 0;
 
@@ -54,6 +61,7 @@ export default function ClueGivingPage() {
     setSelectedNulls([]);
     setTargetError('');
     setReshuffleCount((prev) => prev + 1);
+    resetOrder();
     window.history.replaceState(
       null,
       '',
@@ -65,6 +73,7 @@ export default function ClueGivingPage() {
     setSelectedTargets([]);
     setSelectedNulls([]);
     setTargetError('');
+    resetOrder();
   }
 
   function handleCardClick(index: number) {
@@ -83,6 +92,25 @@ export default function ClueGivingPage() {
     }
     setTargetError('');
   }
+
+  // Pointer up wrapper: if it was a click (not drag), handle card click
+  const handleCardClickRef = useRef(handleCardClick);
+  handleCardClickRef.current = handleCardClick;
+  const displayOrderRef = useRef(displayOrder);
+  displayOrderRef.current = displayOrder;
+
+  const onBoardPointerUp = useCallback((e: React.PointerEvent): boolean => {
+    const wasDrag = handlePointerUp(e);
+    if (!wasDrag) {
+      const slotEl = (e.target as HTMLElement).closest('[data-visual-index]') as HTMLElement | null;
+      if (slotEl) {
+        const visualIdx = Number(slotEl.dataset.visualIndex);
+        const originalIdx = displayOrderRef.current[visualIdx];
+        handleCardClickRef.current(originalIdx);
+      }
+    }
+    return wasDrag;
+  }, [handlePointerUp]);
 
   async function handleSubmitClue(word: string, number: number) {
     if (!user) return;
@@ -210,7 +238,12 @@ export default function ClueGivingPage() {
         selectedIndices={[]}
         targetIndices={selectedTargets}
         nullIndices={selectedNulls}
-        onCardClick={handleCardClick}
+        displayOrder={displayOrder}
+        dragRender={dragRender}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={onBoardPointerUp}
+        registerCardRef={registerCardRef}
       />
 
       {/* Clue input */}
