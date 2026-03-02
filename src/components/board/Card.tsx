@@ -30,17 +30,17 @@ const fontSizeMap: Record<CardFontSize, string> = {
 const colorConfig: Record<CardColor, { bg: string; text: string; glow: string }> = {
   red: {
     bg: 'bg-board-red',
-    text: 'text-gray-900',
+    text: 'text-gray-800',
     glow: 'shadow-[0_0_18px_rgba(239,83,80,0.5)]',
   },
   blue: {
     bg: 'bg-board-blue',
-    text: 'text-gray-900',
+    text: 'text-gray-800',
     glow: 'shadow-[0_0_18px_rgba(66,165,245,0.5)]',
   },
   neutral: {
     bg: 'bg-board-neutral',
-    text: 'text-gray-900',
+    text: 'text-gray-800',
     glow: '',
   },
   assassin: {
@@ -81,7 +81,7 @@ export default function Card({
   const cfg = colorConfig[color];
 
   const bgClass = shouldShowColor ? cfg.bg : 'bg-board-card';
-  const textClass = shouldShowColor ? cfg.text : 'text-gray-200';
+  const textClass = shouldShowColor ? cfg.text : 'text-gray-700';
   const glowClass = shouldShowColor && !glowing && !dimmed ? cfg.glow : '';
   const revealingClass = revealing ? 'card-border-reveal' : '';
 
@@ -106,7 +106,7 @@ export default function Card({
   const brightnessClass = glowing ? 'brightness-125' : '';
 
   // No border on dimmed cards
-  const borderClass = dimmed ? 'border border-transparent' : 'border border-white/5';
+  const borderClass = dimmed ? 'border border-transparent' : shouldShowColor ? 'border border-white/5' : 'border border-gray-400/20';
 
   const style: React.CSSProperties = {
     ...(revealDelay !== undefined ? { transitionDelay: `${revealDelay}ms` } : {}),
