@@ -9,7 +9,7 @@ export default {
       colors: {
         board: {
           bg: '#121218',
-          card: '#a1a19a',
+          card: '#8a8a78',
           red: '#EF5350',
           blue: '#42A5F5',
           neutral: '#b0b0b0',

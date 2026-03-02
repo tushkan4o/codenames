@@ -139,7 +139,7 @@ export default function Card({
 
       {/* Dim overlay — dims card but corners stay bright above it */}
       {dimmed && (
-        <span className="absolute -inset-px bg-black/50 pointer-events-none rounded-lg" style={{ zIndex: 1 }} />
+        <span className="absolute -inset-px bg-black/35 pointer-events-none rounded-lg" style={{ zIndex: 1 }} />
       )}
 
       {showNullX && (
