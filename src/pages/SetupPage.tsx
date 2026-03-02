@@ -208,7 +208,7 @@ export default function SetupPage() {
         <h1 className="text-2xl font-extrabold text-white mb-8 text-center">{t.setup.title}</h1>
 
         {/* Two card selectors side by side */}
-        <div className="flex gap-4 mb-6 mx-auto" style={{ maxWidth: '400px' }}>
+        <div className="flex gap-3 sm:gap-4 mb-6 mx-auto items-stretch" style={{ maxWidth: '400px' }}>
           {/* Mode selector — stacked cards */}
           <div className="relative flex-1 min-h-[80px]">
             <div
@@ -217,12 +217,12 @@ export default function SetupPage() {
             />
             <div
               onClick={handleModeSwitch}
-              className={`relative rounded-xl border-2 ${currentMode.border} bg-gray-900/80 backdrop-blur-sm p-4 cursor-pointer transition-all duration-300 ${modeAnim ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}
+              className={`relative h-full rounded-xl border-2 ${currentMode.border} bg-gray-900/80 backdrop-blur-sm p-3 sm:p-4 cursor-pointer transition-all duration-300 ${modeAnim ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}
             >
-              <h2 className={`text-base font-extrabold ${currentMode.accent} mb-0.5`}>
+              <h2 className={`text-sm sm:text-base font-extrabold ${currentMode.accent} mb-0.5`}>
                 {t.setup[currentMode.titleKey]}
               </h2>
-              <p className="text-gray-400 text-xs leading-snug">
+              <p className="text-gray-400 text-[0.65rem] sm:text-xs leading-snug">
                 {t.setup[currentMode.descKey]}
               </p>
             </div>
@@ -236,12 +236,12 @@ export default function SetupPage() {
             />
             <div
               onClick={handleRankedSwitch}
-              className={`relative rounded-xl border-2 ${currentRanked.border} bg-gray-900/80 backdrop-blur-sm p-4 cursor-pointer transition-all duration-300 ${rankedAnim ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}
+              className={`relative h-full rounded-xl border-2 ${currentRanked.border} bg-gray-900/80 backdrop-blur-sm p-3 sm:p-4 cursor-pointer transition-all duration-300 ${rankedAnim ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}
             >
-              <h2 className={`text-base font-extrabold ${currentRanked.accent} mb-0.5`}>
+              <h2 className={`text-sm sm:text-base font-extrabold ${currentRanked.accent} mb-0.5`}>
                 {t.setup[currentRanked.titleKey]}
               </h2>
-              <p className="text-gray-400 text-xs leading-snug">
+              <p className="text-gray-400 text-[0.65rem] sm:text-xs leading-snug">
                 {t.setup[currentRanked.descKey]}
               </p>
             </div>
