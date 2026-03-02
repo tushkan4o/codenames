@@ -35,6 +35,7 @@ export default function GuessingPage() {
   // Revealed targets — only populated after game ends (security: not sent initially)
   const [revealedTargets, setRevealedTargets] = useState<number[]>([]);
   const [revealedNulls, setRevealedNulls] = useState<number[]>([]);
+  const [pickPercents, setPickPercents] = useState<Record<number, number>>({});
 
   useEffect(() => {
     async function loadClue() {
@@ -141,6 +142,19 @@ export default function GuessingPage() {
 
       setRevealedTargets(result.targetIndices);
       setRevealedNulls(result.nullIndices);
+
+      // Fetch pick percentages for all cards
+      api.getClueStats(clue.id).then((s) => {
+        if (s.attempts > 0) {
+          const pcts: Record<number, number> = {};
+          const counts = (s as { pickCounts?: Record<number, number> }).pickCounts || {};
+          for (const [idx, cnt] of Object.entries(counts)) {
+            pcts[Number(idx)] = Math.round((cnt as number / s.attempts) * 100);
+          }
+          setPickPercents(pcts);
+        }
+      });
+
       runRevealAnimation(finalPicked);
     },
     [clue, board, user],
@@ -262,6 +276,8 @@ export default function GuessingPage() {
         disabled={!isPicking}
         pickOrder={pickedIndices}
         revealDelays={phase === 'revealing' ? revealDelays : undefined}
+        highlightTargets={phase === 'done'}
+        pickPercents={phase === 'done' ? pickPercents : undefined}
       />
 
       {/* End turn button below board */}

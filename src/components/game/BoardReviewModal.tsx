@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { generateBoard } from '../../lib/boardGenerator';
 import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../../types/game';
 import type { Clue, GuessResult } from '../../types/game';
 import { useTranslation } from '../../i18n/useTranslation';
+import { api } from '../../lib/api';
 import Board from '../board/Board';
 import RevealOverlay from './RevealOverlay';
 import ClueStatsPanel from './ClueStatsPanel';
@@ -15,6 +16,7 @@ interface BoardReviewModalProps {
 
 export default function BoardReviewModal({ clue, result, onClose }: BoardReviewModalProps) {
   const { t } = useTranslation();
+  const [pickPercents, setPickPercents] = useState<Record<number, number>>({});
 
   const config = clue.boardSize ? BOARD_CONFIGS[clue.boardSize] : BOARD_CONFIG_LEGACY_5x5;
 
@@ -22,6 +24,19 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
     () => generateBoard(clue.boardSeed, config, clue.wordPack || 'ru'),
     [clue.boardSeed, config, clue.wordPack],
   );
+
+  useEffect(() => {
+    api.getClueStats(clue.id).then((s) => {
+      if (s.attempts > 0) {
+        const pcts: Record<number, number> = {};
+        const counts = (s as { pickCounts?: Record<number, number> }).pickCounts || {};
+        for (const [idx, cnt] of Object.entries(counts)) {
+          pcts[Number(idx)] = Math.round((cnt as number / s.attempts) * 100);
+        }
+        setPickPercents(pcts);
+      }
+    });
+  }, [clue.id]);
 
   const displayCards = board.cards.map((card) => ({ ...card, revealed: true }));
   const guessedIndices = result?.guessedIndices ?? [];
@@ -53,6 +68,8 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
           nullIndices={clue.nullIndices || []}
           disabled={true}
           pickOrder={guessedIndices}
+          highlightTargets={true}
+          pickPercents={pickPercents}
         />
 
         {result && (

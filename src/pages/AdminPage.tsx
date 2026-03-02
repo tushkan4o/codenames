@@ -28,7 +28,14 @@ function SortArrow({ field, activeField, dir }: { field: string; activeField: st
   return <span className="ml-0.5 text-gray-400 text-[0.5em]">{dir === 'desc' ? '\u25BC' : '\u25B2'}</span>;
 }
 
-function MiniBoard({ clue }: { clue: AdminClue }) {
+const glowColorsAdmin: Record<string, string> = {
+  red: 'shadow-[0_0_10px_3px_rgba(239,83,80,0.5)]',
+  blue: 'shadow-[0_0_10px_3px_rgba(66,165,245,0.5)]',
+  neutral: 'shadow-[0_0_8px_2px_rgba(255,255,255,0.15)]',
+  assassin: 'shadow-[0_0_8px_2px_rgba(0,0,0,0.4)]',
+};
+
+function MiniBoard({ clue, pickPercents }: { clue: AdminClue; pickPercents?: Record<number, number> }) {
   const config: BoardConfig = clue.boardSize && BOARD_CONFIGS[clue.boardSize as BoardSize]
     ? BOARD_CONFIGS[clue.boardSize as BoardSize]
     : BOARD_CONFIG_LEGACY_5x5;
@@ -39,6 +46,7 @@ function MiniBoard({ clue }: { clue: AdminClue }) {
 
   const targetSet = new Set(clue.targetIndices || []);
   const nullSet = new Set(clue.nullIndices || []);
+  const hasHighlight = targetSet.size > 0 || nullSet.size > 0;
 
   const colorMap: Record<string, string> = {
     red: 'bg-board-red',
@@ -49,18 +57,30 @@ function MiniBoard({ clue }: { clue: AdminClue }) {
 
   return (
     <div className={`grid ${config.cols === 4 ? 'grid-cols-4' : 'grid-cols-5'} gap-1`}>
-      {board.cards.map((card, idx) => (
-        <div
-          key={idx}
-          className={`${colorMap[card.color]} rounded px-1 py-1 text-center text-[0.6rem] leading-tight font-semibold uppercase truncate ${
-            targetSet.has(idx) ? 'ring-2 ring-white ring-offset-1 ring-offset-gray-900' : ''
-          } ${nullSet.has(idx) ? 'ring-1 ring-white/50' : ''}`}
-          style={{ minHeight: '1.6rem' }}
-          title={card.word}
-        >
-          {card.word}
-        </div>
-      ))}
+      {board.cards.map((card, idx) => {
+        const isTarget = targetSet.has(idx);
+        const isNull = nullSet.has(idx);
+        const isHighlighted = isTarget || isNull;
+        const pct = pickPercents?.[idx];
+
+        return (
+          <div
+            key={idx}
+            className={`${colorMap[card.color]} rounded px-1 py-1 text-center text-[0.6rem] leading-tight font-semibold uppercase truncate relative transition-opacity duration-300 ${
+              hasHighlight && !isHighlighted ? 'opacity-35' : ''
+            } ${isTarget ? glowColorsAdmin[card.color] || '' : ''}`}
+            style={{ minHeight: '1.6rem' }}
+            title={card.word}
+          >
+            {card.word}
+            {pct !== undefined && pct > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 px-0.5 rounded-sm bg-orange-500/90 text-white text-[0.45rem] font-bold leading-none py-px">
+                {pct}%
+              </span>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -76,6 +96,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Record<string, ClueStats>>({});
   const [ratings, setRatings] = useState<Record<string, RatingStats>>({});
   const [reports, setReports] = useState<Record<string, Report[]>>({});
+  const [pickPercentsMap, setPickPercentsMap] = useState<Record<string, Record<number, number>>>({});
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletedMessage, setDeletedMessage] = useState<string | null>(null);
 
@@ -105,8 +126,17 @@ export default function AdminPage() {
     setExpandedId(clueId);
 
     if (!stats[clueId]) {
-      const clueStats = await api.getClueStats(clueId);
-      setStats((prev) => ({ ...prev, [clueId]: clueStats }));
+      api.getClueStats(clueId).then((s) => {
+        setStats((prev) => ({ ...prev, [clueId]: s }));
+        if (s.attempts > 0) {
+          const pcts: Record<number, number> = {};
+          const counts = (s as { pickCounts?: Record<number, number> }).pickCounts || {};
+          for (const [idx, cnt] of Object.entries(counts)) {
+            pcts[Number(idx)] = Math.round((cnt as number / s.attempts) * 100);
+          }
+          setPickPercentsMap((prev) => ({ ...prev, [clueId]: pcts }));
+        }
+      });
     }
     if (!ratings[clueId]) {
       api.adminGetRatings(user!.id, clueId).then((r) => {
@@ -311,7 +341,7 @@ export default function AdminPage() {
 
                     {/* Right: game board preview */}
                     <div className="md:w-[600px] shrink-0">
-                      <MiniBoard clue={clue} />
+                      <MiniBoard clue={clue} pickPercents={pickPercentsMap[clue.id]} />
                       <p className="text-xs text-gray-500 mt-1 text-center">
                         {clue.word} {clue.number}
                       </p>

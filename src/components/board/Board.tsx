@@ -12,6 +12,8 @@ interface BoardProps {
   disabled?: boolean;
   pickOrder?: number[];
   revealDelays?: Record<number, number>;
+  highlightTargets?: boolean;
+  pickPercents?: Record<number, number>;
 }
 
 const gridColsClass: Record<number, string> = {
@@ -30,12 +32,22 @@ export default function Board({
   disabled,
   pickOrder,
   revealDelays,
+  highlightTargets,
+  pickPercents,
 }: BoardProps) {
+  const targetSet = highlightTargets ? new Set(targetIndices) : null;
+  const nullSet = highlightTargets ? new Set(nullIndices) : null;
+  const hasHighlight = targetSet && (targetSet.size > 0 || (nullSet && nullSet.size > 0));
+
   return (
     <div className={`grid ${gridColsClass[columns] || 'grid-cols-5'} gap-1 sm:gap-1.5 w-full max-w-[min(100%,780px)] mx-auto px-1`}>
       {cards.map((card, index) => {
         const orderIdx = pickOrder?.indexOf(index);
         const order = orderIdx !== undefined && orderIdx >= 0 ? orderIdx + 1 : undefined;
+
+        const isTarget = targetSet?.has(index);
+        const isNull = nullSet?.has(index);
+        const isHighlighted = isTarget || isNull;
 
         return (
           <Card
@@ -47,8 +59,11 @@ export default function Board({
             showColor={showColors}
             onClick={onCardClick ? () => onCardClick(index) : undefined}
             disabled={disabled}
-            targetMarked={targetIndices.includes(index)}
-            nullMarked={nullIndices.includes(index)}
+            targetMarked={!highlightTargets && targetIndices.includes(index)}
+            nullMarked={!highlightTargets && nullIndices.includes(index)}
+            dimmed={hasHighlight ? !isHighlighted : false}
+            glowing={hasHighlight ? !!isTarget : false}
+            pickPercent={pickPercents?.[index]}
             pickOrder={order}
             revealDelay={revealDelays?.[index]}
           />

@@ -10,19 +10,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sql = neon(process.env.DATABASE_URL!);
 
   if (stats === 'true') {
-    const rows = await sql`SELECT score FROM results WHERE clue_id = ${id}`;
+    const rows = await sql`SELECT score, guessed_indices FROM results WHERE clue_id = ${id}`;
 
     if (rows.length === 0) {
-      return res.json({ attempts: 0, avgScore: 0, scores: [] });
+      return res.json({ attempts: 0, avgScore: 0, scores: [], pickCounts: {} });
     }
 
     const scores = rows.map((r: Record<string, unknown>) => Number(r.score) || 0);
     const totalScore = scores.reduce((s: number, v: number) => s + v, 0);
 
+    // Count how many times each card index was picked
+    const pickCounts: Record<number, number> = {};
+    for (const r of rows) {
+      const indices = r.guessed_indices as number[] | null;
+      if (indices) {
+        for (const idx of indices) {
+          pickCounts[idx] = (pickCounts[idx] || 0) + 1;
+        }
+      }
+    }
+
     return res.json({
       attempts: rows.length,
       avgScore: Math.round((totalScore / rows.length) * 10) / 10,
       scores,
+      pickCounts,
     });
   }
 
