@@ -32,11 +32,11 @@ export default function ClueInput({ boardCards, targetCount, onSubmit }: ClueInp
           type="text"
           value={word}
           onChange={(e) => {
-            const filtered = e.target.value.replace(/[\d\s]/g, '');
+            const filtered = e.target.value.replace(/[^a-zA-Zа-яА-ЯёЁ\-]/g, '');
             setWord(filtered);
             setError('');
           }}
-          onFocus={() => { if (word) setWord(''); }}
+          onFocus={() => { setWord(''); setError(''); }}
           placeholder={t.clue.placeholder}
           className="px-3 h-11 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg focus:outline-none focus:border-board-blue w-44 sm:w-48"
         />

@@ -233,10 +233,10 @@ export default function ClueGivingPage() {
         </button>
         <button
           onClick={handleSortByColor}
-          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border ${
             isSorted
-              ? 'bg-board-blue/30 text-board-blue border border-board-blue/40'
-              : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+              ? 'bg-board-blue/30 text-board-blue border-board-blue/40'
+              : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border-transparent'
           }`}
         >
           {t.game.sortByColor}
