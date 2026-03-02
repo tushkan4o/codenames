@@ -314,9 +314,9 @@ export default function AdminPage() {
           <span className={thClass} onClick={() => toggleSort('word')}>{t.admin.clueWord}<SortArrow field="word" activeField={sortField} dir={sortDir} /></span>
           <span className={thClass} onClick={() => toggleSort('userId')}>{t.admin.clueAuthor}<SortArrow field="userId" activeField={sortField} dir={sortDir} /></span>
           <span className={`${thClass} text-center`} title="Рейтинговая">★</span>
-          <span className={`${thClass} text-right`} onClick={() => toggleSort('attempts')}>{t.admin.attempts}<SortArrow field="attempts" activeField={sortField} dir={sortDir} /></span>
-          <span className={`${thClass} text-right`} onClick={() => toggleSort('avgScore')}>{t.admin.avgScore}<SortArrow field="avgScore" activeField={sortField} dir={sortDir} /></span>
-          <span className={thClass} onClick={() => toggleSort('createdAt')}>{t.admin.clueDate}<SortArrow field="createdAt" activeField={sortField} dir={sortDir} /></span>
+          <span className={`${thClass} text-center`} onClick={() => toggleSort('attempts')}>{t.admin.attempts}<SortArrow field="attempts" activeField={sortField} dir={sortDir} /></span>
+          <span className={`${thClass} text-center`} onClick={() => toggleSort('avgScore')}>{t.admin.avgScore}<SortArrow field="avgScore" activeField={sortField} dir={sortDir} /></span>
+          <span className={`${thClass} text-center`} onClick={() => toggleSort('createdAt')}>{t.admin.clueDate}<SortArrow field="createdAt" activeField={sortField} dir={sortDir} /></span>
           <span className={`${thClass} text-center`} onClick={() => toggleSort('reportCount')}>{t.admin.reportsCount}<SortArrow field="reportCount" activeField={sortField} dir={sortDir} /></span>
           <span></span>
         </div>
@@ -342,9 +342,9 @@ export default function AdminPage() {
                     {clue.userId}
                   </span>
                   <span className="text-sm text-center">{clue.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
-                  <span className="text-sm text-right text-gray-400">{clue.attempts || '—'}</span>
-                  <span className="text-sm text-right text-gray-400">{clue.avgScore > 0 ? clue.avgScore.toFixed(1) : '—'}</span>
-                  <span className="text-gray-400 text-sm">
+                  <span className="text-sm text-center text-gray-400">{clue.attempts || '—'}</span>
+                  <span className="text-sm text-center text-gray-400">{clue.avgScore > 0 ? clue.avgScore.toFixed(1) : '—'}</span>
+                  <span className="text-gray-400 text-sm text-center">
                     {formatDateTime(clue.createdAt)}
                   </span>
                   <span
@@ -470,9 +470,9 @@ export default function AdminPage() {
           <div className="hidden md:grid grid-cols-[1.5fr_1fr_4.5rem_2rem_1fr_2rem] gap-2 px-4 py-2 items-center">
             <span className={thClass} onClick={() => toggleResultSort('clueWord')}>{t.admin.clueWord}<SortArrow field="clueWord" activeField={resultSort} dir={resultDir} /></span>
             <span className={thClass} onClick={() => toggleResultSort('userId')}>{t.admin.player}<SortArrow field="userId" activeField={resultSort} dir={resultDir} /></span>
-            <span className={`${thClass} text-right`} onClick={() => toggleResultSort('score')}>{t.admin.score}<SortArrow field="score" activeField={resultSort} dir={resultDir} /></span>
+            <span className={`${thClass} text-center`} onClick={() => toggleResultSort('score')}>{t.admin.score}<SortArrow field="score" activeField={resultSort} dir={resultDir} /></span>
             <span className={`${thClass} text-center`} title="Рейтинговая">★</span>
-            <span className={thClass} onClick={() => toggleResultSort('timestamp')}>{t.admin.clueDate}<SortArrow field="timestamp" activeField={resultSort} dir={resultDir} /></span>
+            <span className={`${thClass} text-center`} onClick={() => toggleResultSort('timestamp')}>{t.admin.clueDate}<SortArrow field="timestamp" activeField={resultSort} dir={resultDir} /></span>
             <span></span>
           </div>
 
@@ -496,12 +496,12 @@ export default function AdminPage() {
                       {r.userId}
                     </button>
                   </span>
-                  <span className="text-sm text-right font-bold text-white">
+                  <span className="text-sm text-center font-bold text-white">
                     {r.score}
                     <span className="text-gray-500 font-normal ml-0.5 text-xs">({r.correctCount}/{r.totalTargets})</span>
                   </span>
                   <span className="text-sm text-center">{r.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
-                  <span className="text-gray-400 text-sm">{formatDateTime(r.timestamp)}</span>
+                  <span className="text-gray-400 text-sm text-center">{formatDateTime(r.timestamp)}</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); setConfirmDeleteResult({ clueId: r.clueId, userId: r.userId, timestamp: r.timestamp }); }}
                     className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
@@ -533,11 +533,11 @@ export default function AdminPage() {
           {/* Table header */}
           <div className="hidden md:grid grid-cols-[1.5fr_4.5rem_4.5rem_4rem_1fr_1fr_2rem] gap-2 px-4 py-2 items-center">
             <span className={thClass} onClick={() => toggleUserSort('displayName')}>{t.leaderboard.player}<SortArrow field="displayName" activeField={userSort} dir={userDir} /></span>
-            <span className={`${thClass} text-right`} onClick={() => toggleUserSort('cluesGiven')}>{t.admin.given}<SortArrow field="cluesGiven" activeField={userSort} dir={userDir} /></span>
-            <span className={`${thClass} text-right`} onClick={() => toggleUserSort('cluesSolved')}>{t.admin.solved}<SortArrow field="cluesSolved" activeField={userSort} dir={userDir} /></span>
-            <span className={`${thClass} text-right`} onClick={() => toggleUserSort('avgScore')}>{t.admin.avgScore}<SortArrow field="avgScore" activeField={userSort} dir={userDir} /></span>
-            <span className={thClass} onClick={() => toggleUserSort('createdAt')}>{t.admin.registered}<SortArrow field="createdAt" activeField={userSort} dir={userDir} /></span>
-            <span className={thClass} onClick={() => toggleUserSort('lastActivity')}>{t.admin.lastActive}<SortArrow field="lastActivity" activeField={userSort} dir={userDir} /></span>
+            <span className={`${thClass} text-center`} onClick={() => toggleUserSort('cluesGiven')}>{t.admin.given}<SortArrow field="cluesGiven" activeField={userSort} dir={userDir} /></span>
+            <span className={`${thClass} text-center`} onClick={() => toggleUserSort('cluesSolved')}>{t.admin.solved}<SortArrow field="cluesSolved" activeField={userSort} dir={userDir} /></span>
+            <span className={`${thClass} text-center`} onClick={() => toggleUserSort('avgScore')}>{t.admin.avgScore}<SortArrow field="avgScore" activeField={userSort} dir={userDir} /></span>
+            <span className={`${thClass} text-center`} onClick={() => toggleUserSort('createdAt')}>{t.admin.registered}<SortArrow field="createdAt" activeField={userSort} dir={userDir} /></span>
+            <span className={`${thClass} text-center`} onClick={() => toggleUserSort('lastActivity')}>{t.admin.lastActive}<SortArrow field="lastActivity" activeField={userSort} dir={userDir} /></span>
             <span></span>
           </div>
 
@@ -553,11 +553,11 @@ export default function AdminPage() {
                     <span className="font-semibold text-white">{u.displayName}</span>
                     {u.isAdmin && <span className="ml-1 text-[0.6rem] text-board-blue font-bold">ADM</span>}
                   </span>
-                  <span className="text-sm text-right text-gray-300">{u.cluesGiven}</span>
-                  <span className="text-sm text-right text-gray-300">{u.cluesSolved}</span>
-                  <span className="text-sm text-right text-gray-300">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</span>
-                  <span className="text-sm text-gray-500">{formatDateTime(u.createdAt)}</span>
-                  <span className="text-sm text-gray-400">{formatDateTime(u.lastActivity)}</span>
+                  <span className="text-sm text-center text-gray-300">{u.cluesGiven}</span>
+                  <span className="text-sm text-center text-gray-300">{u.cluesSolved}</span>
+                  <span className="text-sm text-center text-gray-300">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</span>
+                  <span className="text-sm text-center text-gray-500">{formatDateTime(u.createdAt)}</span>
+                  <span className="text-sm text-center text-gray-400">{formatDateTime(u.lastActivity)}</span>
                   {!u.isAdmin ? (
                     <button
                       onClick={(e) => { e.stopPropagation(); setConfirmDeleteUserId(u.id); }}

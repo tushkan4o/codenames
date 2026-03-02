@@ -183,7 +183,7 @@ export default function LeaderboardPage() {
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className={`${thClass} text-left w-[6%]`}>{t.leaderboard.rank}</th>
+                    <th className={`${thClass} text-center w-[6%]`}>{t.leaderboard.rank}</th>
                     <th className={`${thClass} text-left w-[32%]`}>{t.leaderboard.player}</th>
                     <th className={`${thSortClass} w-[20%]`} onClick={() => toggleSpySort('cluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="cluesGiven" activeField={spySort} dir={spyDir} /></th>
                     <th className={`${thSortClass} w-[21%]`} onClick={() => toggleSpySort('avgWordsPerClue')}>{t.leaderboard.avgWordsPerClue}<SortArrow field="avgWordsPerClue" activeField={spySort} dir={spyDir} /></th>
@@ -193,7 +193,7 @@ export default function LeaderboardPage() {
                 <tbody>
                   {paged.map((s, i) => (
                     <tr key={s.userId} className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 transition-colors">
-                      <td className={tdClass}>{page * PAGE_SIZE + i + 1}</td>
+                      <td className={`${tdClass} text-center`}>{page * PAGE_SIZE + i + 1}</td>
                       <td className={`${tdClass} font-semibold truncate`}>
                         <button onClick={() => navigate(`/profile/${s.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{s.userId}</button>
                       </td>
@@ -218,7 +218,7 @@ export default function LeaderboardPage() {
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className={`${thClass} text-left w-[6%]`}>{t.leaderboard.rank}</th>
+                    <th className={`${thClass} text-center w-[6%]`}>{t.leaderboard.rank}</th>
                     <th className={`${thClass} text-left w-[32%]`}>{t.leaderboard.player}</th>
                     <th className={`${thSortClass} w-[20%]`} onClick={() => toggleGuesserSort('cluesSolved')}>{t.leaderboard.cluesSolved}<SortArrow field="cluesSolved" activeField={guesserSort} dir={guesserDir} /></th>
                     <th className={`${thSortClass} w-[21%]`} onClick={() => toggleGuesserSort('avgWordsPicked')}>{t.leaderboard.avgWordsPicked}<SortArrow field="avgWordsPicked" activeField={guesserSort} dir={guesserDir} /></th>
@@ -228,7 +228,7 @@ export default function LeaderboardPage() {
                 <tbody>
                   {paged.map((g, i) => (
                     <tr key={g.userId} className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 transition-colors">
-                      <td className={tdClass}>{page * PAGE_SIZE + i + 1}</td>
+                      <td className={`${tdClass} text-center`}>{page * PAGE_SIZE + i + 1}</td>
                       <td className={`${tdClass} font-semibold truncate`}>
                         <button onClick={() => navigate(`/profile/${g.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{g.userId}</button>
                       </td>
@@ -253,7 +253,7 @@ export default function LeaderboardPage() {
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className={`${thClass} text-left w-[5%]`}>{t.leaderboard.rank}</th>
+                    <th className={`${thClass} text-center w-[5%]`}>{t.leaderboard.rank}</th>
                     <th className={`${thClass} text-left w-[17%]`}>{t.leaderboard.author}</th>
                     <th className={`${thSortClass} text-left w-[25%]`} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></th>
                     <th className={`${thClass} text-center w-[5%]`} title="Рейтинговая">★</th>
@@ -272,7 +272,7 @@ export default function LeaderboardPage() {
                         onClick={() => user && handleClueRowClick(c.id, solved, isOwn)}
                         className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 cursor-pointer transition-colors"
                       >
-                        <td className={tdClass}>{page * PAGE_SIZE + i + 1}</td>
+                        <td className={`${tdClass} text-center`}>{page * PAGE_SIZE + i + 1}</td>
                         <td className={`${tdClass} truncate`}>
                           <button onClick={(e) => { e.stopPropagation(); navigate(`/profile/${c.userId}`); }} className="text-board-blue hover:text-blue-300 transition-colors">{c.userId}</button>
                         </td>
