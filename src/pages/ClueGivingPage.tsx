@@ -52,6 +52,7 @@ export default function ClueGivingPage() {
   } = useDragReorder(board.cards.length);
 
   const [isSorted, setIsSorted] = useState(false);
+  const [showReshuffleConfirm, setShowReshuffleConfirm] = useState(false);
 
   // Auto-detect clue-0: if any non-red cards are selected as nulls
   const isClueZero = selectedNulls.length > 0;
@@ -222,9 +223,8 @@ export default function ClueGivingPage() {
           {t.game.home}
         </button>
         <button
-          onClick={handleReshuffle}
+          onClick={() => setShowReshuffleConfirm(true)}
           className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors"
-          title={t.game.reshuffleWarning}
         >
           {t.game.reshuffle}
           {reshuffleCount > 0 && (
@@ -249,8 +249,26 @@ export default function ClueGivingPage() {
         </button>
       </div>
 
-      {reshuffleCount > 0 && (
-        <p className="text-center text-board-red text-xs mb-2">{t.game.reshuffleWarning}</p>
+      {showReshuffleConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowReshuffleConfirm(false)}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center" onClick={(e) => e.stopPropagation()}>
+            <p className="text-white text-sm mb-4">{t.game.reshuffleWarning}, продолжить?</p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setShowReshuffleConfirm(false)}
+                className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold transition-colors"
+              >
+                {t.rating.cancel}
+              </button>
+              <button
+                onClick={() => { setShowReshuffleConfirm(false); handleReshuffle(); }}
+                className="px-5 py-2 rounded-lg bg-board-red hover:brightness-110 text-white font-semibold transition-colors"
+              >
+                {t.admin.confirm}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Main hint */}
