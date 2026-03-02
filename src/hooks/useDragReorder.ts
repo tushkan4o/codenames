@@ -203,6 +203,19 @@ export function useDragReorder(cardCount: number) {
     flipAnimate();
   }, [cardCount, flipAnimate]);
 
+  const setOrder = useCallback((newOrder: number[]) => {
+    const rects = new Map<number, DOMRect>();
+    cardRefsMap.current.forEach((el, idx) => {
+      rects.set(idx, el.getBoundingClientRect());
+    });
+    prevRectsRef.current = rects;
+
+    setDisplayOrder(newOrder);
+    setDraggingOrigIdx(null);
+
+    flipAnimate();
+  }, [flipAnimate]);
+
   return {
     displayOrder,
     draggingOrigIdx,
@@ -211,5 +224,6 @@ export function useDragReorder(cardCount: number) {
     handlePointerUp,
     registerCardRef,
     resetOrder,
+    setOrder,
   };
 }

@@ -48,8 +48,10 @@ export default function ClueGivingPage() {
   const {
     displayOrder, draggingOrigIdx,
     handlePointerDown, handlePointerMove, handlePointerUp,
-    registerCardRef, resetOrder,
+    registerCardRef, resetOrder, setOrder,
   } = useDragReorder(board.cards.length);
+
+  const [isSorted, setIsSorted] = useState(false);
 
   // Auto-detect clue-0: if any non-red cards are selected as nulls
   const isClueZero = selectedNulls.length > 0;
@@ -61,6 +63,7 @@ export default function ClueGivingPage() {
     setSelectedNulls([]);
     setTargetError('');
     setReshuffleCount((prev) => prev + 1);
+    setIsSorted(false);
     resetOrder();
     window.history.replaceState(
       null,
@@ -73,7 +76,26 @@ export default function ClueGivingPage() {
     setSelectedTargets([]);
     setSelectedNulls([]);
     setTargetError('');
+    setIsSorted(false);
     resetOrder();
+  }
+
+  function handleSortByColor() {
+    if (isSorted) {
+      setIsSorted(false);
+      resetOrder();
+      return;
+    }
+    // Sort: red → neutral → assassin → blue (top to bottom)
+    const colorPriority: Record<string, number> = { red: 0, neutral: 1, assassin: 2, blue: 3 };
+    const sorted = board.cards.map((_, i) => i);
+    sorted.sort((a, b) => {
+      const ca = colorPriority[board.cards[a].color] ?? 1;
+      const cb = colorPriority[board.cards[b].color] ?? 1;
+      return ca - cb;
+    });
+    setIsSorted(true);
+    setOrder(sorted);
   }
 
   function handleCardClick(index: number) {
@@ -154,6 +176,7 @@ export default function ClueGivingPage() {
     setTargetError('');
     setSubmitted(false);
     setReshuffleCount(0);
+    setIsSorted(false);
     window.history.replaceState(
       null,
       '',
@@ -207,6 +230,16 @@ export default function ClueGivingPage() {
           {reshuffleCount > 0 && (
             <span className="ml-1 text-gray-300">({reshuffleCount})</span>
           )}
+        </button>
+        <button
+          onClick={handleSortByColor}
+          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+            isSorted
+              ? 'bg-board-blue/30 text-board-blue border border-board-blue/40'
+              : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+          }`}
+        >
+          {t.game.sortByColor}
         </button>
         <button
           onClick={handleReset}
