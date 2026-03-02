@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
-import type { BoardSize } from '../types/game';
+import BoardReviewModal from '../components/game/BoardReviewModal';
+import type { BoardSize, Clue, GuessResult } from '../types/game';
 
 type Tab = 'spymasters' | 'guessers' | 'clues';
 type SizeFilter = 'all' | BoardSize;
@@ -62,7 +63,10 @@ export default function LeaderboardPage() {
   const [clueStats, setClueStats] = useState<ClueStatEntry[]>([]);
   const [page, setPage] = useState(0);
   const [mySolvedClueIds, setMySolvedClueIds] = useState<Set<string>>(new Set());
-  const [confirmTryClueId, setConfirmTryClueId] = useState<string | null>(null);
+  const [myResults, setMyResults] = useState<Map<string, GuessResult>>(new Map());
+  const [confirmTryId, setConfirmTryId] = useState<string | null>(null);
+  const [modalClue, setModalClue] = useState<Clue | null>(null);
+  const [modalResult, setModalResult] = useState<GuessResult | undefined>(undefined);
 
   const [spySort, setSpySort] = useState<'avgScoreOnClues' | 'cluesGiven' | 'avgWordsPerClue'>('avgScoreOnClues');
   const [spyDir, setSpyDir] = useState<SortDir>('desc');
@@ -87,9 +91,21 @@ export default function LeaderboardPage() {
     if (user) {
       api.getResultsByUser(user.id).then((results) => {
         setMySolvedClueIds(new Set(results.map((r) => r.clueId)));
+        setMyResults(new Map(results.map((r) => [r.clueId, r])));
       });
     }
   }, [user]);
+
+  async function handleClueRowClick(clueId: string, solved: boolean, isOwn: boolean) {
+    if (solved || isOwn) {
+      const clue = await api.getClueById(clueId, true);
+      if (!clue) return;
+      setModalClue(clue);
+      setModalResult(myResults.get(clueId));
+    } else {
+      setConfirmTryId(clueId);
+    }
+  }
 
   const sortedSpymasters = useMemo(() =>
     [...spymasters].sort((a, b) => {
@@ -186,7 +202,7 @@ export default function LeaderboardPage() {
                 </thead>
                 <tbody>
                   {paged.map((s, i) => (
-                    <tr key={s.userId} className="border-b border-gray-800/50 text-gray-300">
+                    <tr key={s.userId} className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 transition-colors">
                       <td className={tdClass}>{page * PAGE_SIZE + i + 1}</td>
                       <td className={`${tdClass} font-semibold truncate`}>
                         <button onClick={() => navigate(`/profile/${s.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{s.userId}</button>
@@ -221,7 +237,7 @@ export default function LeaderboardPage() {
                 </thead>
                 <tbody>
                   {paged.map((g, i) => (
-                    <tr key={g.userId} className="border-b border-gray-800/50 text-gray-300">
+                    <tr key={g.userId} className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 transition-colors">
                       <td className={tdClass}>{page * PAGE_SIZE + i + 1}</td>
                       <td className={`${tdClass} font-semibold truncate`}>
                         <button onClick={() => navigate(`/profile/${g.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{g.userId}</button>
@@ -250,9 +266,9 @@ export default function LeaderboardPage() {
                     <th className={`${thClass} text-left w-[6%]`}>{t.leaderboard.rank}</th>
                     <th className={`${thClass} text-left w-[18%]`}>{t.leaderboard.author}</th>
                     <th className={`${thClass} text-left w-[28%]`}>{t.leaderboard.clueWord}</th>
-                    <th className={`${thSortClass} w-[17%]`} onClick={() => toggleClueSort('attempts')}>{t.leaderboard.attempts}<SortArrow field="attempts" activeField={clueSort} dir={clueDir} /></th>
-                    <th className={`${thSortClass} w-[17%]`} onClick={() => toggleClueSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></th>
-                    <th className={`${thClass} text-center w-[14%]`}></th>
+                    <th className={`${thSortClass} w-[20%]`} onClick={() => toggleClueSort('attempts')}>{t.leaderboard.attempts}<SortArrow field="attempts" activeField={clueSort} dir={clueDir} /></th>
+                    <th className={`${thSortClass} w-[20%]`} onClick={() => toggleClueSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></th>
+                    <th className={`${thClass} text-center w-[8%]`}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -260,10 +276,14 @@ export default function LeaderboardPage() {
                     const isOwn = c.userId === user?.id;
                     const solved = mySolvedClueIds.has(c.id);
                     return (
-                      <tr key={`${c.id}-${i}`} className="border-b border-gray-800/50 text-gray-300">
+                      <tr
+                        key={`${c.id}-${i}`}
+                        onClick={() => user && handleClueRowClick(c.id, solved, isOwn)}
+                        className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 cursor-pointer transition-colors"
+                      >
                         <td className={tdClass}>{page * PAGE_SIZE + i + 1}</td>
                         <td className={`${tdClass} truncate`}>
-                          <button onClick={() => navigate(`/profile/${c.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{c.userId}</button>
+                          <button onClick={(e) => { e.stopPropagation(); navigate(`/profile/${c.userId}`); }} className="text-board-blue hover:text-blue-300 transition-colors">{c.userId}</button>
                         </td>
                         <td className={`${tdClass} font-bold uppercase truncate`}>
                           {c.word} <span className="text-gray-500 font-semibold">{c.number}</span>
@@ -271,22 +291,11 @@ export default function LeaderboardPage() {
                         <td className={`${tdClass} text-right`}>{c.attempts}</td>
                         <td className={`${tdClass} text-right`}>{c.avgScore.toFixed(1)}</td>
                         <td className={`${tdClass} text-center`}>
-                          {!isOwn && user && (
-                            solved ? (
-                              <span className="text-board-blue text-sm" title={t.profile.solved}>✓</span>
-                            ) : confirmTryClueId === c.id ? (
-                              <span className="inline-flex items-center gap-1">
-                                <button onClick={() => navigate(`/guess/${c.id}`)} className="text-xs font-bold text-green-400 hover:text-green-300">✓</button>
-                                <button onClick={() => setConfirmTryClueId(null)} className="text-xs font-bold text-gray-500 hover:text-gray-300">✗</button>
-                              </span>
+                          {user && (
+                            (solved || isOwn) ? (
+                              <span className="text-board-blue text-sm">✓</span>
                             ) : (
-                              <button
-                                onClick={() => setConfirmTryClueId(c.id)}
-                                className="text-board-red text-sm hover:text-red-300 transition-colors"
-                                title={t.profile.tryIt}
-                              >
-                                ?
-                              </button>
+                              <span className="text-gray-500 text-sm">–</span>
                             )
                           )}
                         </td>
@@ -300,6 +309,22 @@ export default function LeaderboardPage() {
           );
         })()}
       </div>
+
+      {confirmTryId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-gray-800 rounded-xl p-6 max-w-xs text-center">
+            <p className="text-white mb-4">{t.profile.tryIt}?</p>
+            <div className="flex justify-center gap-3">
+              <button onClick={() => { navigate(`/guess/${confirmTryId}`); setConfirmTryId(null); }} className="px-4 py-2 text-sm font-bold text-white bg-board-blue hover:bg-blue-600 rounded-lg transition-colors">✓</button>
+              <button onClick={() => setConfirmTryId(null)} className="px-4 py-2 text-sm font-bold text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">✗</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalClue && (
+        <BoardReviewModal clue={modalClue} result={modalResult} onClose={() => { setModalClue(null); setModalResult(undefined); }} />
+      )}
     </div>
   );
 }

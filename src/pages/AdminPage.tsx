@@ -68,7 +68,7 @@ function MiniBoard({ clue, pickPercents }: { clue: AdminClue; pickPercents?: Rec
         return (
           <div
             key={idx}
-            className={`${colorMap[card.color]} rounded px-1 flex items-center justify-center font-card font-bold uppercase text-[0.75rem] leading-tight relative transition-opacity duration-300 ${
+            className={`${colorMap[card.color]} rounded px-1 flex items-center justify-center overflow-hidden font-card font-bold uppercase text-[0.75rem] leading-tight relative transition-opacity duration-300 ${
               hasHighlight && !isHighlighted ? 'opacity-50' : ''
             } ${isTarget ? `${glowColorsAdmin[card.color] || ''} brightness-110` : ''}`}
             style={{ height: '2.2rem' }}
@@ -81,10 +81,9 @@ function MiniBoard({ clue, pickPercents }: { clue: AdminClue; pickPercents?: Rec
               </span>
             )}
             {isNull && hasHighlight && (
-              <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <svg width="50%" height="60%" viewBox="0 0 40 20" style={{ opacity: 0.75 }}>
-                  <path d="M4,4 C12,6 28,14 36,16" stroke="#EF5350" strokeWidth="2" strokeLinecap="round" fill="none" />
-                  <path d="M4,17 C10,14 30,5 36,3" stroke="#EF5350" strokeWidth="2" strokeLinecap="round" fill="none" />
+              <span className="absolute inset-0 pointer-events-none overflow-hidden">
+                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ opacity: 0.7 }}>
+                  <path d="M8,92 C30,70 70,30 92,8" stroke="#EF5350" strokeWidth="2" strokeLinecap="round" fill="none" vectorEffect="non-scaling-stroke" />
                 </svg>
               </span>
             )}

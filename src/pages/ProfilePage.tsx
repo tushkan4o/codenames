@@ -267,7 +267,8 @@ export default function ProfilePage() {
                     return (
                       <tr
                         key={clue.id}
-                        onClick={() => openGivenModal(clue)}
+                        onClick={() => canOpen ? openGivenModal(clue) : undefined}
+                        title={canOpen ? (solved ? t.profile.solved : t.profile.tryIt) : undefined}
                         className={`border-b border-gray-800/50 text-gray-300 ${canOpen ? 'cursor-pointer hover:bg-gray-800/40' : ''}`}
                       >
                         <td className={`${tdClass} truncate`}>
@@ -296,10 +297,10 @@ export default function ProfilePage() {
                               ) : (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setConfirmTryClueId(clue.id); }}
-                                  className="text-board-red text-sm hover:text-red-300 transition-colors"
+                                  className="text-gray-500 text-sm hover:text-gray-300 transition-colors"
                                   title={t.profile.tryIt}
                                 >
-                                  ?
+                                  –
                                 </button>
                               )
                             ) : null}
@@ -356,6 +357,7 @@ export default function ProfilePage() {
                       <tr
                         key={i}
                         onClick={() => canOpen ? openSolvedModal(entry) : undefined}
+                        title={canOpen ? t.profile.solved : undefined}
                         className={`border-b border-gray-800/50 text-gray-300 ${canOpen ? 'cursor-pointer hover:bg-gray-800/40' : ''}`}
                       >
                         <td className={`${tdClass} truncate`}>

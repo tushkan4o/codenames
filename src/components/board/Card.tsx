@@ -101,7 +101,7 @@ export default function Card({
   return (
     <button
       className={`
-        card-reveal relative flex items-center justify-center
+        card-reveal relative flex items-center justify-center overflow-hidden
         h-[3.2rem] sm:h-[3.6rem] rounded-lg font-card font-bold uppercase tracking-wide select-none
         text-[clamp(0.7rem,3vw,1rem)] p-1 sm:p-2 border border-white/5
         transition-all duration-300
@@ -123,10 +123,9 @@ export default function Card({
       )}
 
       {showNullX && (
-        <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <svg width="50%" height="60%" viewBox="0 0 40 20" className="drop-shadow-sm" style={{ opacity: 0.75 }}>
-            <path d="M4,4 C12,6 28,14 36,16" stroke="#EF5350" strokeWidth="2.2" strokeLinecap="round" fill="none" />
-            <path d="M4,17 C10,14 30,5 36,3" stroke="#EF5350" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+        <span className="absolute inset-0 pointer-events-none overflow-hidden">
+          <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="drop-shadow-sm" style={{ opacity: 0.7 }}>
+            <path d="M8,92 C30,70 70,30 92,8" stroke="#EF5350" strokeWidth="2.5" strokeLinecap="round" fill="none" vectorEffect="non-scaling-stroke" />
           </svg>
         </span>
       )}
