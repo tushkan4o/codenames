@@ -102,8 +102,8 @@ export default function Card({
     <button
       className={`
         card-reveal relative flex items-center justify-center overflow-hidden
-        h-[3.2rem] sm:h-[3.6rem] rounded-lg font-card font-bold uppercase tracking-wide select-none
-        text-[clamp(0.7rem,3vw,1rem)] p-1 sm:p-2 border border-white/5
+        h-[3.2rem] sm:h-[3.8rem] rounded-lg font-card font-bold uppercase tracking-wide select-none
+        text-[clamp(0.75rem,3.2vw,1.05rem)] p-1 sm:p-2 border border-white/5
         transition-all duration-300
         ${bgClass} ${textClass} ${glowClass} ${interactiveClass}
         ${ringClass} ${targetClass}
