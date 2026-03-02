@@ -83,6 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? Math.round(clueResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / attempts * 10) / 10
       : 0;
     return {
+      id: c.id as string,
       word: c.word as string,
       number: Number(c.number),
       userId: c.user_id as string,

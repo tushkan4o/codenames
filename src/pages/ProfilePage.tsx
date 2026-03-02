@@ -40,6 +40,7 @@ export default function ProfilePage() {
   const [modalResult, setModalResult] = useState<GuessResult | undefined>(undefined);
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(false);
   const [confirmDeleteClue, setConfirmDeleteClue] = useState<string | null>(null);
+  const [confirmTryClueId, setConfirmTryClueId] = useState<string | null>(null);
 
   // Stats per clue (solve count + avg score)
   const [clueStatsMap, setClueStatsMap] = useState<Record<string, ClueStats>>({});
@@ -286,13 +287,19 @@ export default function ProfilePage() {
                           <div className="flex items-center justify-end gap-1">
                             {badge ? (
                               solved ? (
-                                <span className="text-xs font-semibold text-board-blue bg-board-blue/10 px-1.5 py-0.5 rounded">{t.profile.solved}</span>
+                                <span className="text-board-blue text-sm" title={t.profile.solved}>✓</span>
+                              ) : confirmTryClueId === clue.id ? (
+                                <span className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                  <button onClick={(e) => { e.stopPropagation(); navigate(`/guess/${clue.id}`); }} className="text-xs font-bold text-green-400 hover:text-green-300">✓</button>
+                                  <button onClick={(e) => { e.stopPropagation(); setConfirmTryClueId(null); }} className="text-xs font-bold text-gray-500 hover:text-gray-300">✗</button>
+                                </span>
                               ) : (
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); navigate(`/guess/${clue.id}`); }}
-                                  className="text-xs font-bold text-board-blue bg-board-blue/10 px-1.5 py-0.5 rounded hover:bg-board-blue/20 transition-colors"
+                                  onClick={(e) => { e.stopPropagation(); setConfirmTryClueId(clue.id); }}
+                                  className="text-board-red text-sm hover:text-red-300 transition-colors"
+                                  title={t.profile.tryIt}
                                 >
-                                  {t.profile.tryIt}
+                                  ?
                                 </button>
                               )
                             ) : null}

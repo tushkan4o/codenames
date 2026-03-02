@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
@@ -24,6 +25,7 @@ interface GuesserEntry {
 }
 
 interface ClueStatEntry {
+  id: string;
   word: string;
   number: number;
   userId: string;
@@ -52,12 +54,15 @@ function SortArrow({ field, activeField, dir }: { field: string; activeField: st
 export default function LeaderboardPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('spymasters');
   const [sizeFilter, setSizeFilter] = useState<SizeFilter>('all');
   const [spymasters, setSpymasters] = useState<SpymasterEntry[]>([]);
   const [guessers, setGuessers] = useState<GuesserEntry[]>([]);
   const [clueStats, setClueStats] = useState<ClueStatEntry[]>([]);
   const [page, setPage] = useState(0);
+  const [mySolvedClueIds, setMySolvedClueIds] = useState<Set<string>>(new Set());
+  const [confirmTryClueId, setConfirmTryClueId] = useState<string | null>(null);
 
   const [spySort, setSpySort] = useState<'avgScoreOnClues' | 'cluesGiven' | 'avgWordsPerClue'>('avgScoreOnClues');
   const [spyDir, setSpyDir] = useState<SortDir>('desc');
@@ -77,6 +82,14 @@ export default function LeaderboardPage() {
   useEffect(() => {
     loadData(sizeFilter);
   }, [sizeFilter, loadData]);
+
+  useEffect(() => {
+    if (user) {
+      api.getResultsByUser(user.id).then((results) => {
+        setMySolvedClueIds(new Set(results.map((r) => r.clueId)));
+      });
+    }
+  }, [user]);
 
   const sortedSpymasters = useMemo(() =>
     [...spymasters].sort((a, b) => {
@@ -235,26 +248,51 @@ export default function LeaderboardPage() {
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
                     <th className={`${thClass} text-left w-[6%]`}>{t.leaderboard.rank}</th>
-                    <th className={`${thClass} text-left w-[32%]`}>{t.leaderboard.clueWord}</th>
-                    <th className={`${thClass} text-left w-[20%]`}>{t.leaderboard.author}</th>
-                    <th className={`${thSortClass} w-[21%]`} onClick={() => toggleClueSort('attempts')}>{t.leaderboard.attempts}<SortArrow field="attempts" activeField={clueSort} dir={clueDir} /></th>
-                    <th className={`${thSortClass} w-[21%]`} onClick={() => toggleClueSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></th>
+                    <th className={`${thClass} text-left w-[18%]`}>{t.leaderboard.author}</th>
+                    <th className={`${thClass} text-left w-[28%]`}>{t.leaderboard.clueWord}</th>
+                    <th className={`${thSortClass} w-[17%]`} onClick={() => toggleClueSort('attempts')}>{t.leaderboard.attempts}<SortArrow field="attempts" activeField={clueSort} dir={clueDir} /></th>
+                    <th className={`${thSortClass} w-[17%]`} onClick={() => toggleClueSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></th>
+                    <th className={`${thClass} text-center w-[14%]`}></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paged.map((c, i) => (
-                    <tr key={`${c.word}-${i}`} className="border-b border-gray-800/50 text-gray-300">
-                      <td className={tdClass}>{page * PAGE_SIZE + i + 1}</td>
-                      <td className={`${tdClass} font-bold uppercase truncate`}>
-                        {c.word} <span className="text-gray-500 font-semibold">{c.number}</span>
-                      </td>
-                      <td className={`${tdClass} truncate`}>
-                        <button onClick={() => navigate(`/profile/${c.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{c.userId}</button>
-                      </td>
-                      <td className={`${tdClass} text-right`}>{c.attempts}</td>
-                      <td className={`${tdClass} text-right`}>{c.avgScore.toFixed(1)}</td>
-                    </tr>
-                  ))}
+                  {paged.map((c, i) => {
+                    const isOwn = c.userId === user?.id;
+                    const solved = mySolvedClueIds.has(c.id);
+                    return (
+                      <tr key={`${c.id}-${i}`} className="border-b border-gray-800/50 text-gray-300">
+                        <td className={tdClass}>{page * PAGE_SIZE + i + 1}</td>
+                        <td className={`${tdClass} truncate`}>
+                          <button onClick={() => navigate(`/profile/${c.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{c.userId}</button>
+                        </td>
+                        <td className={`${tdClass} font-bold uppercase truncate`}>
+                          {c.word} <span className="text-gray-500 font-semibold">{c.number}</span>
+                        </td>
+                        <td className={`${tdClass} text-right`}>{c.attempts}</td>
+                        <td className={`${tdClass} text-right`}>{c.avgScore.toFixed(1)}</td>
+                        <td className={`${tdClass} text-center`}>
+                          {!isOwn && user && (
+                            solved ? (
+                              <span className="text-board-blue text-sm" title={t.profile.solved}>✓</span>
+                            ) : confirmTryClueId === c.id ? (
+                              <span className="inline-flex items-center gap-1">
+                                <button onClick={() => navigate(`/guess/${c.id}`)} className="text-xs font-bold text-green-400 hover:text-green-300">✓</button>
+                                <button onClick={() => setConfirmTryClueId(null)} className="text-xs font-bold text-gray-500 hover:text-gray-300">✗</button>
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => setConfirmTryClueId(c.id)}
+                                className="text-board-red text-sm hover:text-red-300 transition-colors"
+                                title={t.profile.tryIt}
+                              >
+                                ?
+                              </button>
+                            )
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               <Pagination page={page} pageCount={pageCount} onChange={setPage} />
