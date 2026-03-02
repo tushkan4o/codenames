@@ -254,9 +254,8 @@ export default function AdminPage() {
         </div>
 
         {/* Table header */}
-        <div className="hidden md:grid grid-cols-[1fr_0.5fr_1fr_0.6fr_1.2fr_0.5fr_2rem] gap-2 px-4 py-2">
+        <div className="hidden md:grid grid-cols-[1.2fr_1fr_0.6fr_1.2fr_0.5fr_2rem] gap-2 px-4 py-2">
           <span className={thClass} onClick={() => toggleSort('word')}>{t.admin.clueWord}<SortArrow field="word" activeField={sortField} dir={sortDir} /></span>
-          <span className={`${thClass} text-center`}>{t.admin.clueNumber}</span>
           <span className={thClass} onClick={() => toggleSort('userId')}>{t.admin.clueAuthor}<SortArrow field="userId" activeField={sortField} dir={sortDir} /></span>
           <span className={`${thClass} text-center`}>{t.admin.clueSize}</span>
           <span className={thClass} onClick={() => toggleSort('createdAt')}>{t.admin.clueDate}<SortArrow field="createdAt" activeField={sortField} dir={sortDir} /></span>
@@ -276,11 +275,10 @@ export default function AdminPage() {
                     : 'border-gray-700/30'
                 }`}
               >
-                <div className="grid grid-cols-2 md:grid-cols-[1fr_0.5fr_1fr_0.6fr_1.2fr_0.5fr_2rem] gap-2 items-center">
+                <div className="grid grid-cols-2 md:grid-cols-[1.2fr_1fr_0.6fr_1.2fr_0.5fr_2rem] gap-2 items-center">
                   <span className="font-bold text-white uppercase text-sm">
-                    {clue.word}
+                    {clue.word} <span className="text-gray-500 font-semibold">{clue.number}</span>
                   </span>
-                  <span className="text-white font-bold text-sm text-center">{clue.number}</span>
                   <span className="text-gray-400 text-sm truncate">
                     {clue.userId}
                   </span>

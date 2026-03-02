@@ -72,7 +72,7 @@ export default function LeaderboardPage() {
   const [spyDir, setSpyDir] = useState<SortDir>('desc');
   const [guesserSort, setGuesserSort] = useState<'avgScore' | 'cluesSolved' | 'avgWordsPicked'>('avgScore');
   const [guesserDir, setGuesserDir] = useState<SortDir>('desc');
-  const [clueSort, setClueSort] = useState<'attempts' | 'avgScore'>('avgScore');
+  const [clueSort, setClueSort] = useState<'number' | 'attempts' | 'avgScore'>('avgScore');
   const [clueDir, setClueDir] = useState<SortDir>('desc');
 
   const loadData = useCallback(async (size: SizeFilter) => {
@@ -254,7 +254,7 @@ export default function LeaderboardPage() {
                   <tr className="text-gray-400 border-b border-gray-700/50">
                     <th className={`${thClass} text-left w-[6%]`}>{t.leaderboard.rank}</th>
                     <th className={`${thClass} text-left w-[18%]`}>{t.leaderboard.author}</th>
-                    <th className={`${thClass} text-left w-[28%]`}>{t.leaderboard.clueWord}</th>
+                    <th className={`${thSortClass} text-left w-[28%]`} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></th>
                     <th className={`${thSortClass} w-[20%]`} onClick={() => toggleClueSort('attempts')}>{t.leaderboard.attempts}<SortArrow field="attempts" activeField={clueSort} dir={clueDir} /></th>
                     <th className={`${thSortClass} w-[20%]`} onClick={() => toggleClueSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></th>
                     <th className={`${thClass} text-center w-[8%]`}></th>

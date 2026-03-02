@@ -9,7 +9,9 @@ import type { Clue, GuessResult } from '../types/game';
 import type { UserStats } from '../types/user';
 
 type Tab = 'given' | 'solved';
-type SortField = 'date' | 'attempts' | 'score';
+type SortDir = 'asc' | 'desc';
+type GivenSortField = 'number' | 'attempts' | 'avgScore';
+type SolvedSortField = 'number' | 'attempts' | 'avgScore' | 'myScore';
 
 interface SolvedEntry {
   result: GuessResult;
@@ -22,6 +24,22 @@ interface ClueStats {
 }
 
 const PAGE_SIZE = 5;
+
+function SortArrow({ field, activeField, dir }: { field: string; activeField: string; dir: SortDir }) {
+  if (field !== activeField) return <span className="ml-0.5 invisible text-[0.5em]">{'\u25BC'}</span>;
+  return <span className="ml-0.5 text-gray-400 text-[0.5em]">{dir === 'desc' ? '\u25BC' : '\u25B2'}</span>;
+}
+
+function Pagination({ page, pageCount, onChange }: { page: number; pageCount: number; onChange: (p: number) => void }) {
+  if (pageCount <= 1) return null;
+  return (
+    <div className="flex justify-center gap-2 mt-4">
+      <button onClick={() => onChange(Math.max(0, page - 1))} disabled={page === 0} className="px-3 py-1 rounded bg-gray-800 text-gray-400 text-xs sm:text-sm font-bold disabled:opacity-30 hover:bg-gray-700 transition-colors">&lsaquo;</button>
+      <span className="text-gray-500 text-xs sm:text-sm py-1">{page + 1} / {pageCount}</span>
+      <button onClick={() => onChange(Math.min(pageCount - 1, page + 1))} disabled={page >= pageCount - 1} className="px-3 py-1 rounded bg-gray-800 text-gray-400 text-xs sm:text-sm font-bold disabled:opacity-30 hover:bg-gray-700 transition-colors">&rsaquo;</button>
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const { userId: paramUserId } = useParams<{ userId: string }>();
@@ -41,17 +59,17 @@ export default function ProfilePage() {
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(false);
   const [confirmDeleteClue, setConfirmDeleteClue] = useState<string | null>(null);
   const [confirmTryClueId, setConfirmTryClueId] = useState<string | null>(null);
-
-  // Stats per clue (solve count + avg score)
   const [clueStatsMap, setClueStatsMap] = useState<Record<string, ClueStats>>({});
 
   // Pagination
   const [givenPage, setGivenPage] = useState(0);
   const [solvedPage, setSolvedPage] = useState(0);
 
-  // Sorting
-  const [givenSort, setGivenSort] = useState<SortField>('date');
-  const [solvedSort, setSolvedSort] = useState<SortField>('date');
+  // Sorting with direction (like leaderboard)
+  const [givenSort, setGivenSort] = useState<GivenSortField>('number');
+  const [givenDir, setGivenDir] = useState<SortDir>('desc');
+  const [solvedSort, setSolvedSort] = useState<SolvedSortField>('number');
+  const [solvedDir, setSolvedDir] = useState<SortDir>('desc');
 
   useEffect(() => {
     if (!profileId) return;
@@ -73,7 +91,7 @@ export default function ProfilePage() {
       );
       setSolvedEntries(entries);
       entries.forEach((entry) => {
-        if (entry.clue && !clueStatsMap[entry.clue.id]) {
+        if (entry.clue) {
           api.getClueStats(entry.clue.id).then((s) => {
             setClueStatsMap((prev) => ({ ...prev, [entry.clue!.id]: { attempts: s.attempts, avgScore: s.avgScore } }));
           });
@@ -87,57 +105,60 @@ export default function ProfilePage() {
     }
   }, [profileId, user]);
 
-  // Sorted + paginated given clues
+  // Sorted given clues
   const sortedGiven = useMemo(() => {
     const sorted = [...cluesGiven];
-    if (givenSort === 'date') sorted.sort((a, b) => b.createdAt - a.createdAt);
-    else if (givenSort === 'attempts') sorted.sort((a, b) => (clueStatsMap[b.id]?.attempts ?? 0) - (clueStatsMap[a.id]?.attempts ?? 0));
-    else if (givenSort === 'score') sorted.sort((a, b) => (clueStatsMap[b.id]?.avgScore ?? 0) - (clueStatsMap[a.id]?.avgScore ?? 0));
+    sorted.sort((a, b) => {
+      let diff = 0;
+      if (givenSort === 'number') diff = b.number - a.number;
+      else if (givenSort === 'attempts') diff = (clueStatsMap[b.id]?.attempts ?? 0) - (clueStatsMap[a.id]?.attempts ?? 0);
+      else if (givenSort === 'avgScore') diff = (clueStatsMap[b.id]?.avgScore ?? 0) - (clueStatsMap[a.id]?.avgScore ?? 0);
+      return givenDir === 'desc' ? diff : -diff;
+    });
     return sorted;
-  }, [cluesGiven, givenSort, clueStatsMap]);
+  }, [cluesGiven, givenSort, givenDir, clueStatsMap]);
 
   const givenPageCount = Math.ceil(sortedGiven.length / PAGE_SIZE);
   const pagedGiven = sortedGiven.slice(givenPage * PAGE_SIZE, (givenPage + 1) * PAGE_SIZE);
 
-  // Sorted + paginated solved entries
+  // Sorted solved entries
   const sortedSolved = useMemo(() => {
     const sorted = [...solvedEntries];
-    if (solvedSort === 'date') sorted.sort((a, b) => b.result.timestamp - a.result.timestamp);
-    else if (solvedSort === 'attempts') {
-      sorted.sort((a, b) => {
+    sorted.sort((a, b) => {
+      let diff = 0;
+      if (solvedSort === 'number') diff = (b.clue?.number ?? 0) - (a.clue?.number ?? 0);
+      else if (solvedSort === 'attempts') {
         const aAttempts = a.clue ? (clueStatsMap[a.clue.id]?.attempts ?? 0) : 0;
         const bAttempts = b.clue ? (clueStatsMap[b.clue.id]?.attempts ?? 0) : 0;
-        return bAttempts - aAttempts;
-      });
-    } else if (solvedSort === 'score') sorted.sort((a, b) => (b.result.score ?? 0) - (a.result.score ?? 0));
+        diff = bAttempts - aAttempts;
+      } else if (solvedSort === 'avgScore') {
+        const aScore = a.clue ? (clueStatsMap[a.clue.id]?.avgScore ?? 0) : 0;
+        const bScore = b.clue ? (clueStatsMap[b.clue.id]?.avgScore ?? 0) : 0;
+        diff = bScore - aScore;
+      } else if (solvedSort === 'myScore') diff = (b.result.score ?? 0) - (a.result.score ?? 0);
+      return solvedDir === 'desc' ? diff : -diff;
+    });
     return sorted;
-  }, [solvedEntries, solvedSort, clueStatsMap]);
+  }, [solvedEntries, solvedSort, solvedDir, clueStatsMap]);
 
   const solvedPageCount = Math.ceil(sortedSolved.length / PAGE_SIZE);
   const pagedSolved = sortedSolved.slice(solvedPage * PAGE_SIZE, (solvedPage + 1) * PAGE_SIZE);
 
-  function canRevealClue(clue: Clue): boolean {
-    if (isOwnProfile) return true;
-    if (clue.userId === user?.id) return true;
-    return mySolvedClueIds.has(clue.id);
+  function handleGivenRowClick(clue: Clue) {
+    const solved = mySolvedClueIds.has(clue.id);
+    const isOwn = clue.userId === user?.id;
+    if (solved || isOwn || isOwnProfile) {
+      setModalClue(clue);
+      setModalResult(undefined);
+    } else {
+      setConfirmTryClueId(clue.id);
+    }
   }
 
-  function openGivenModal(clue: Clue) {
-    if (!canRevealClue(clue)) return;
-    setModalClue(clue);
-    setModalResult(undefined);
-  }
-
-  function openSolvedModal(entry: SolvedEntry) {
+  function handleSolvedRowClick(entry: SolvedEntry) {
     if (!entry.clue) return;
-    if (!canRevealClue(entry.clue)) return;
     setModalClue(entry.clue);
     setModalResult(entry.result);
-  }
-
-  function closeModal() {
-    setModalClue(null);
-    setModalResult(undefined);
   }
 
   async function handleAdminDeleteUser() {
@@ -153,29 +174,21 @@ export default function ProfilePage() {
     setConfirmDeleteClue(null);
   }
 
-  function shouldShowBadge(clue: Clue): boolean {
-    if (isOwnProfile) return false;
-    if (clue.userId === user?.id) return false;
-    return true;
-  }
-
-  function handleGivenSortChange(field: SortField) {
-    setGivenSort(field);
+  function toggleGivenSort(field: GivenSortField) {
+    if (givenSort === field) setGivenDir((d) => d === 'desc' ? 'asc' : 'desc');
+    else { setGivenSort(field); setGivenDir('desc'); }
     setGivenPage(0);
   }
 
-  function handleSolvedSortChange(field: SortField) {
-    setSolvedSort(field);
+  function toggleSolvedSort(field: SolvedSortField) {
+    if (solvedSort === field) setSolvedDir((d) => d === 'desc' ? 'asc' : 'desc');
+    else { setSolvedSort(field); setSolvedDir('desc'); }
     setSolvedPage(0);
   }
 
-  const sortBtnClass = (active: boolean) =>
-    `px-2 py-0.5 rounded text-xs font-semibold transition-colors ${
-      active ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-500 hover:text-white'
-    }`;
-
-  const thClass = 'py-2 text-xs sm:text-sm';
-  const tdClass = 'py-2 text-xs sm:text-sm';
+  const thBase = 'py-2 text-xs sm:text-sm';
+  const thSort = `${thBase} text-right cursor-pointer hover:text-white transition-colors select-none`;
+  const td = 'py-2 text-xs sm:text-sm';
 
   return (
     <div className="min-h-screen">
@@ -230,19 +243,6 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {/* Sorting */}
-        <div className="flex justify-center gap-1 mb-3">
-          {(['date', 'attempts', 'score'] as SortField[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => tab === 'given' ? handleGivenSortChange(f) : handleSolvedSortChange(f)}
-              className={sortBtnClass((tab === 'given' ? givenSort : solvedSort) === f)}
-            >
-              {f === 'date' ? t.profile.sortDate : f === 'attempts' ? t.profile.sortAttempts : t.profile.sortScore}
-            </button>
-          ))}
-        </div>
-
         {tab === 'given' && (
           cluesGiven.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesGiven}</p>
@@ -251,59 +251,40 @@ export default function ProfilePage() {
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className={`${thClass} text-left w-[38%]`}>{t.leaderboard.clueWord}</th>
-                    <th className={`${thClass} text-left w-[14%]`}>{t.leaderboard.rank === '#' ? '' : ''}</th>
-                    <th className={`${thClass} text-right w-[16%]`}>{t.profile.solveCount}</th>
-                    <th className={`${thClass} text-right w-[16%]`}>{t.leaderboard.avgScore}</th>
-                    <th className={`${thClass} text-right w-[16%]`}></th>
+                    <th className={`${thSort} text-left w-[40%]`} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></th>
+                    <th className={`${thSort} w-[20%]`} onClick={() => toggleGivenSort('attempts')}>{t.profile.solveCount}<SortArrow field="attempts" activeField={givenSort} dir={givenDir} /></th>
+                    <th className={`${thSort} w-[20%]`} onClick={() => toggleGivenSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={givenSort} dir={givenDir} /></th>
+                    <th className={`${thBase} text-center w-[20%]`}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {pagedGiven.map((clue) => {
-                    const canOpen = canRevealClue(clue);
-                    const badge = shouldShowBadge(clue);
+                    const isOwn = clue.userId === user?.id;
                     const solved = mySolvedClueIds.has(clue.id);
                     const cStats = clueStatsMap[clue.id];
                     return (
                       <tr
                         key={clue.id}
-                        onClick={() => canOpen ? openGivenModal(clue) : undefined}
-                        title={canOpen ? (solved ? t.profile.solved : t.profile.tryIt) : undefined}
-                        className={`border-b border-gray-800/50 text-gray-300 ${canOpen ? 'cursor-pointer hover:bg-gray-800/40' : ''}`}
+                        onClick={() => handleGivenRowClick(clue)}
+                        className="border-b border-gray-800/50 text-gray-300 cursor-pointer hover:bg-gray-800/40 transition-colors"
                       >
-                        <td className={`${tdClass} truncate`}>
+                        <td className={`${td} truncate`}>
                           <span className="font-bold text-white uppercase">{clue.word}</span>
                           <span className="ml-1 text-gray-500 font-semibold">{clue.number}</span>
                         </td>
-                        <td className={`${tdClass} text-gray-500`}>
-                          {clue.boardSize}
-                        </td>
-                        <td className={`${tdClass} text-right`}>
+                        <td className={`${td} text-right`}>
                           {cStats?.attempts ?? '—'}
                         </td>
-                        <td className={`${tdClass} text-right`}>
+                        <td className={`${td} text-right`}>
                           {cStats ? cStats.avgScore.toFixed(1) : '—'}
                         </td>
-                        <td className={`${tdClass} text-right`}>
+                        <td className={`${td} text-right`}>
                           <div className="flex items-center justify-end gap-1">
-                            {badge ? (
-                              solved ? (
-                                <span className="text-board-blue text-sm" title={t.profile.solved}>✓</span>
-                              ) : confirmTryClueId === clue.id ? (
-                                <span className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                  <button onClick={(e) => { e.stopPropagation(); navigate(`/guess/${clue.id}`); }} className="text-xs font-bold text-green-400 hover:text-green-300">✓</button>
-                                  <button onClick={(e) => { e.stopPropagation(); setConfirmTryClueId(null); }} className="text-xs font-bold text-gray-500 hover:text-gray-300">✗</button>
-                                </span>
-                              ) : (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setConfirmTryClueId(clue.id); }}
-                                  className="text-gray-500 text-sm hover:text-gray-300 transition-colors"
-                                  title={t.profile.tryIt}
-                                >
-                                  –
-                                </button>
-                              )
-                            ) : null}
+                            {(solved || isOwn || isOwnProfile) ? (
+                              <span className="text-board-blue text-sm">✓</span>
+                            ) : (
+                              <span className="text-gray-500 text-sm">–</span>
+                            )}
                             {user?.isAdmin && (
                               confirmDeleteClue === clue.id ? (
                                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -327,9 +308,7 @@ export default function ProfilePage() {
                   })}
                 </tbody>
               </table>
-              {givenPageCount > 1 && (
-                <Pagination page={givenPage} pageCount={givenPageCount} onChange={setGivenPage} />
-              )}
+              <Pagination page={givenPage} pageCount={givenPageCount} onChange={setGivenPage} />
             </>
           )
         )}
@@ -342,25 +321,22 @@ export default function ProfilePage() {
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className={`${thClass} text-left w-[32%]`}>{t.leaderboard.clueWord}</th>
-                    <th className={`${thClass} text-left w-[22%]`}>{t.leaderboard.author}</th>
-                    <th className={`${thClass} text-right w-[16%]`}>{t.profile.solveCount}</th>
-                    <th className={`${thClass} text-right w-[14%]`}>{t.leaderboard.avgScore}</th>
-                    <th className={`${thClass} text-right w-[16%]`}>{t.profile.sortScore}</th>
+                    <th className={`${thSort} text-left w-[30%]`} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></th>
+                    <th className={`${thBase} text-left w-[18%]`}>{t.leaderboard.author}</th>
+                    <th className={`${thSort} w-[16%]`} onClick={() => toggleSolvedSort('attempts')}>{t.profile.solveCount}<SortArrow field="attempts" activeField={solvedSort} dir={solvedDir} /></th>
+                    <th className={`${thSort} w-[16%]`} onClick={() => toggleSolvedSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></th>
+                    <th className={`${thSort} w-[20%]`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></th>
                   </tr>
                 </thead>
                 <tbody>
                   {pagedSolved.map((entry, i) => {
-                    const canOpen = entry.clue ? canRevealClue(entry.clue) : false;
-                    const cStats = entry.clue ? clueStatsMap[entry.clue.id] : undefined;
                     return (
                       <tr
                         key={i}
-                        onClick={() => canOpen ? openSolvedModal(entry) : undefined}
-                        title={canOpen ? t.profile.solved : undefined}
-                        className={`border-b border-gray-800/50 text-gray-300 ${canOpen ? 'cursor-pointer hover:bg-gray-800/40' : ''}`}
+                        onClick={() => handleSolvedRowClick(entry)}
+                        className="border-b border-gray-800/50 text-gray-300 cursor-pointer hover:bg-gray-800/40 transition-colors"
                       >
-                        <td className={`${tdClass} truncate`}>
+                        <td className={`${td} truncate`}>
                           <span className="font-bold text-white uppercase">
                             {entry.clue?.word ?? entry.result.clueId.slice(0, 12)}
                           </span>
@@ -368,7 +344,7 @@ export default function ProfilePage() {
                             {entry.clue?.number ?? entry.result.totalTargets}
                           </span>
                         </td>
-                        <td className={`${tdClass} truncate`}>
+                        <td className={`${td} truncate`}>
                           {entry.clue && (
                             <button
                               onClick={(e) => { e.stopPropagation(); navigate(`/profile/${entry.clue!.userId}`); }}
@@ -378,13 +354,13 @@ export default function ProfilePage() {
                             </button>
                           )}
                         </td>
-                        <td className={`${tdClass} text-right`}>
-                          {cStats?.attempts ?? '—'}
+                        <td className={`${td} text-right`}>
+                          {entry.clue ? (clueStatsMap[entry.clue.id]?.attempts ?? '—') : '—'}
                         </td>
-                        <td className={`${tdClass} text-right`}>
-                          {cStats ? cStats.avgScore.toFixed(1) : '—'}
+                        <td className={`${td} text-right`}>
+                          {entry.clue ? (clueStatsMap[entry.clue.id]?.avgScore?.toFixed(1) ?? '—') : '—'}
                         </td>
-                        <td className={`${tdClass} text-right font-bold text-white`}>
+                        <td className={`${td} text-right font-bold text-white`}>
                           {entry.result.score ?? 0}
                           <span className="text-gray-500 font-normal ml-0.5 text-xs">
                             ({entry.result.correctCount}/{entry.result.totalTargets})
@@ -395,39 +371,27 @@ export default function ProfilePage() {
                   })}
                 </tbody>
               </table>
-              {solvedPageCount > 1 && (
-                <Pagination page={solvedPage} pageCount={solvedPageCount} onChange={setSolvedPage} />
-              )}
+              <Pagination page={solvedPage} pageCount={solvedPageCount} onChange={setSolvedPage} />
             </>
           )
         )}
       </div>
 
-      {modalClue && (
-        <BoardReviewModal clue={modalClue} result={modalResult} onClose={closeModal} />
+      {confirmTryClueId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setConfirmTryClueId(null)}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-xs text-center" onClick={(e) => e.stopPropagation()}>
+            <p className="text-white mb-4">{t.profile.tryIt}?</p>
+            <div className="flex justify-center gap-3">
+              <button onClick={() => { navigate(`/guess/${confirmTryClueId}`); setConfirmTryClueId(null); }} className="px-4 py-2 text-sm font-bold text-white bg-board-blue hover:bg-blue-600 rounded-lg transition-colors">✓</button>
+              <button onClick={() => setConfirmTryClueId(null)} className="px-4 py-2 text-sm font-bold text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">✗</button>
+            </div>
+          </div>
+        </div>
       )}
-    </div>
-  );
-}
 
-function Pagination({ page, pageCount, onChange }: { page: number; pageCount: number; onChange: (p: number) => void }) {
-  return (
-    <div className="flex justify-center gap-2 mt-4">
-      <button
-        onClick={() => onChange(Math.max(0, page - 1))}
-        disabled={page === 0}
-        className="px-3 py-1 rounded bg-gray-800 text-gray-400 text-xs sm:text-sm font-bold disabled:opacity-30 hover:bg-gray-700 transition-colors"
-      >
-        &lsaquo;
-      </button>
-      <span className="text-gray-500 text-xs sm:text-sm py-1">{page + 1} / {pageCount}</span>
-      <button
-        onClick={() => onChange(Math.min(pageCount - 1, page + 1))}
-        disabled={page >= pageCount - 1}
-        className="px-3 py-1 rounded bg-gray-800 text-gray-400 text-xs sm:text-sm font-bold disabled:opacity-30 hover:bg-gray-700 transition-colors"
-      >
-        &rsaquo;
-      </button>
+      {modalClue && (
+        <BoardReviewModal clue={modalClue} result={modalResult} onClose={() => { setModalClue(null); setModalResult(undefined); }} />
+      )}
     </div>
   );
 }
