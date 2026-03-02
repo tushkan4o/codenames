@@ -124,9 +124,9 @@ export default function Card({
 
       {showNullX && (
         <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <svg width="50%" height="60%" viewBox="0 0 40 20" className="drop-shadow-sm" style={{ opacity: 0.8 }}>
-            <line x1="4" y1="3" x2="36" y2="17" stroke="#EF5350" strokeWidth="3.5" strokeLinecap="round" />
-            <line x1="4" y1="17" x2="36" y2="3" stroke="#EF5350" strokeWidth="3.5" strokeLinecap="round" />
+          <svg width="50%" height="60%" viewBox="0 0 40 20" className="drop-shadow-sm" style={{ opacity: 0.75 }}>
+            <path d="M4,4 C12,6 28,14 36,16" stroke="#EF5350" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+            <path d="M4,17 C10,14 30,5 36,3" stroke="#EF5350" strokeWidth="2.2" strokeLinecap="round" fill="none" />
           </svg>
         </span>
       )}

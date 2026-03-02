@@ -90,7 +90,7 @@ export const ru = {
     placeholder: 'подсказка',
     number: 'Число',
     submit: 'Отправить',
-    errorEmpty: 'Подсказка не может быть пустой',
+    errorEmpty: 'Введите подсказку',
     errorMultiWord: 'Подсказка должна быть одним словом',
     errorOnBoard: 'Подсказка не может быть словом на поле',
     errorNumber: 'Число должно быть от 0 до {max}',
