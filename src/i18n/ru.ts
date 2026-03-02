@@ -59,6 +59,7 @@ export const ru = {
     endTurn: 'Завершить ход',
     finish: 'Закончить',
     confirmEnd: 'Вы уверены? Найдены не все слова',
+    confirmHomeClueGiving: 'Вы не закончили загадывание, вернуться на главную?',
     finishReveal: 'Завершить и открыть',
     selectTargets: 'Нажмите на слова вашей команды',
     selectTargetsTeam: 'Нажмите на слова',
@@ -227,6 +228,9 @@ export const ru = {
     slow: 'Медленно',
     verySlow: 'Очень медленно',
     sec: 'сек',
+    sortMode: 'Сортировка',
+    sortRows: 'Строки',
+    sortColumns: 'Столбцы',
   },
 };
 

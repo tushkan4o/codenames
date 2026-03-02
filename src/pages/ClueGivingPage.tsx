@@ -92,7 +92,8 @@ export default function ClueGivingPage() {
       resetOrder();
       return;
     }
-    // Sort: red → neutral → assassin → blue (top to bottom)
+    const sortMode = user?.preferences.colorSortMode || 'rows';
+    // Sort: red → neutral → assassin → blue
     const colorPriority: Record<string, number> = { red: 0, neutral: 1, assassin: 2, blue: 3 };
     const sorted = board.cards.map((_, i) => i);
     sorted.sort((a, b) => {
@@ -100,8 +101,23 @@ export default function ClueGivingPage() {
       const cb = colorPriority[board.cards[b].color] ?? 1;
       return ca - cb;
     });
+
+    if (sortMode === 'columns') {
+      // Transpose: fill columns instead of rows
+      const cols = config.cols;
+      const rows = Math.ceil(sorted.length / cols);
+      const transposed: number[] = new Array(sorted.length);
+      for (let i = 0; i < sorted.length; i++) {
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        const newIdx = col * rows + row;
+        transposed[newIdx < sorted.length ? newIdx : i] = sorted[i];
+      }
+      setOrder(transposed);
+    } else {
+      setOrder(sorted);
+    }
     setIsSorted(true);
-    setOrder(sorted);
   }
 
   function handleCardClick(index: number) {
@@ -268,7 +284,7 @@ export default function ClueGivingPage() {
       {showHomeConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowHomeConfirm(false)}>
           <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center" onClick={(e) => e.stopPropagation()}>
-            <p className="text-white text-sm mb-4">{t.game.confirmEnd}</p>
+            <p className="text-white text-sm mb-4">{t.game.confirmHomeClueGiving}</p>
             <div className="flex justify-center gap-3">
               <button
                 onClick={() => setShowHomeConfirm(false)}

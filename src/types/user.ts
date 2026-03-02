@@ -9,12 +9,14 @@ export interface User {
 }
 
 export type CardFontSize = 'sm' | 'md' | 'lg';
+export type ColorSortMode = 'rows' | 'columns';
 
 export interface UserPreferences {
   defaultBoardSize: BoardSize;
   animationEnabled: boolean;
   revealDuration: number;
   cardFontSize: CardFontSize;
+  colorSortMode: ColorSortMode;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -22,6 +24,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   animationEnabled: true,
   revealDuration: 1000,
   cardFontSize: 'md',
+  colorSortMode: 'rows',
 };
 
 export interface UserStats {

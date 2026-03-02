@@ -2,7 +2,7 @@ import { Cog6ToothIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../i18n/useTranslation';
-import type { CardFontSize } from '../../types/user';
+import type { CardFontSize, ColorSortMode } from '../../types/user';
 
 interface SettingsPanelProps {
   mode: 'clue-giving' | 'guessing';
@@ -11,11 +11,17 @@ interface SettingsPanelProps {
 const REVEAL_STEPS = [500, 1000, 1500, 2000];
 const REVEAL_LABELS: Record<number, string> = { 500: '0.5', 1000: '1', 1500: '1.5', 2000: '2' };
 
-const FONT_OPTIONS: { value: CardFontSize; labelKey: 'fontSmall' | 'fontMedium' | 'fontLarge' }[] = [
-  { value: 'sm', labelKey: 'fontSmall' },
-  { value: 'md', labelKey: 'fontMedium' },
-  { value: 'lg', labelKey: 'fontLarge' },
+const FONT_OPTIONS: { value: CardFontSize; icon: string }[] = [
+  { value: 'sm', icon: 'A' },
+  { value: 'md', icon: 'A' },
+  { value: 'lg', icon: 'A' },
 ];
+
+const FONT_SIZES: Record<CardFontSize, string> = {
+  sm: 'text-[0.65rem]',
+  md: 'text-xs',
+  lg: 'text-sm',
+};
 
 export default function SettingsPanel({ mode }: SettingsPanelProps) {
   const { user, updateUser } = useAuth();
@@ -31,7 +37,7 @@ export default function SettingsPanel({ mode }: SettingsPanelProps) {
     updateUser({ preferences: newPrefs });
   }
 
-  const btnBase = 'px-2.5 py-1 rounded text-xs font-semibold transition-colors';
+  const btnBase = 'rounded transition-colors flex items-center justify-center';
   const btnActive = `${btnBase} bg-board-blue text-white`;
   const btnInactive = `${btnBase} bg-gray-700 text-gray-400 hover:text-white`;
 
@@ -85,17 +91,48 @@ export default function SettingsPanel({ mode }: SettingsPanelProps) {
             </div>
           )}
 
+          {/* Font size — both modes */}
+          <div className="mb-3">
+            <label className="text-gray-400 text-xs mb-1.5 block">{t.settings.cardFontSize}</label>
+            <div className="flex gap-1">
+              {FONT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => updatePref('cardFontSize', opt.value)}
+                  className={`w-8 h-8 font-bold ${FONT_SIZES[opt.value]} ${prefs.cardFontSize === opt.value ? btnActive : btnInactive}`}
+                  title={t.settings[opt.value === 'sm' ? 'fontSmall' : opt.value === 'md' ? 'fontMedium' : 'fontLarge']}
+                >
+                  {opt.icon}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Sort mode — captain mode only */}
           {mode === 'clue-giving' && (
-            <div className="mb-3">
-              <label className="text-gray-400 text-xs mb-1.5 block">{t.settings.cardFontSize}</label>
+            <div className="mb-1">
+              <label className="text-gray-400 text-xs mb-1.5 block">{t.settings.sortMode}</label>
               <div className="flex gap-1">
-                {FONT_OPTIONS.map((opt) => (
+                {(['rows', 'columns'] as ColorSortMode[]).map((m) => (
                   <button
-                    key={opt.value}
-                    onClick={() => updatePref('cardFontSize', opt.value)}
-                    className={prefs.cardFontSize === opt.value ? btnActive : btnInactive}
+                    key={m}
+                    onClick={() => updatePref('colorSortMode', m)}
+                    className={`w-8 h-8 ${prefs.colorSortMode === m ? btnActive : btnInactive}`}
+                    title={m === 'rows' ? t.settings.sortRows : t.settings.sortColumns}
                   >
-                    {t.settings[opt.labelKey]}
+                    {m === 'rows' ? (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="1" y="1" width="14" height="3" rx="0.5" fill="currentColor" opacity="0.9" />
+                        <rect x="1" y="6" width="14" height="3" rx="0.5" fill="currentColor" opacity="0.5" />
+                        <rect x="1" y="11" width="14" height="3" rx="0.5" fill="currentColor" opacity="0.3" />
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="1" y="1" width="3" height="14" rx="0.5" fill="currentColor" opacity="0.9" />
+                        <rect x="6" y="1" width="3" height="14" rx="0.5" fill="currentColor" opacity="0.5" />
+                        <rect x="11" y="1" width="3" height="14" rx="0.5" fill="currentColor" opacity="0.3" />
+                      </svg>
+                    )}
                   </button>
                 ))}
               </div>

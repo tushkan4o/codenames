@@ -418,6 +418,7 @@ export default function GuessingPage() {
         pickPercents={phase === 'done' && (!viewingAttemptPicks || viewingAttemptPicks.length === 0) ? pickPercents : undefined}
         revealingIndices={revealingIndices.size > 0 ? revealingIndices : undefined}
         revealDuration={revealDuration}
+        cardFontSize={user?.preferences.cardFontSize}
       />
 
       {/* End turn button below board */}
