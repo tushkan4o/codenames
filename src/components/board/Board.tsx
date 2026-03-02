@@ -98,6 +98,7 @@ export default function Board({
         return (
           <div
             key={originalIndex}
+            className="min-w-0"
             data-visual-index={visualIdx}
             ref={(el) => registerCardRef?.(visualIdx, el)}
             style={{ touchAction: 'none', opacity: isDragged ? 0.3 : 1 }}
