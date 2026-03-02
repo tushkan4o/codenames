@@ -290,25 +290,26 @@ export default function SetupPage() {
               })}
             </div>
 
-            {!colorLocked && (
-              <button
-                onClick={resetConfig}
-                className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
-                title={t.setup.resetConfig}
-              >
-                <ArrowUturnLeftIcon className="w-4 h-4" />
-              </button>
-            )}
+            <button
+              onClick={resetConfig}
+              disabled={colorLocked}
+              className={`p-2 rounded-lg transition-colors ${colorLocked ? 'text-transparent cursor-default' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+              title={t.setup.resetConfig}
+            >
+              <ArrowUturnLeftIcon className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        <button
-          onClick={handleStart}
-          disabled={loading || (mode === 'guessing' && puzzleCount?.available === 0)}
-          className="w-full py-4 rounded-xl bg-board-blue hover:brightness-110 text-white font-bold text-lg transition-colors disabled:opacity-50"
-        >
-          {loading ? t.game.findingClue : t.setup.start}
-        </button>
+        <div className="mx-auto" style={{ maxWidth: '400px' }}>
+          <button
+            onClick={handleStart}
+            disabled={loading || (mode === 'guessing' && puzzleCount?.available === 0)}
+            className="w-full py-4 rounded-xl bg-board-blue hover:brightness-110 text-white font-bold text-lg transition-colors disabled:opacity-50"
+          >
+            {loading ? t.game.findingClue : t.setup.start}
+          </button>
+        </div>
 
         {/* Puzzle count — below button so layout doesn't shift */}
         {mode === 'guessing' && puzzleCount && (

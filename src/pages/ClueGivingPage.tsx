@@ -165,6 +165,9 @@ export default function ClueGivingPage() {
       boardSize,
       reshuffleCount,
       ranked: isRanked,
+      ...(config.redCount !== baseConfig.redCount ? { redCount: config.redCount } : {}),
+      ...(config.blueCount !== baseConfig.blueCount ? { blueCount: config.blueCount } : {}),
+      ...(config.assassinCount !== baseConfig.assassinCount ? { assassinCount: config.assassinCount } : {}),
     };
     try {
       await api.saveClue(clue as Clue);

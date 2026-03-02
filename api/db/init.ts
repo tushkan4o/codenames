@@ -73,6 +73,11 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     // Migration: add ranked column to clues
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS ranked BOOLEAN DEFAULT true`;
 
+    // Migration: add custom color count columns to clues
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS red_count INT`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS blue_count INT`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS assassin_count INT`;
+
     // Seed tushkan as admin with password
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
 

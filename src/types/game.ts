@@ -54,6 +54,9 @@ export interface Clue {
   reshuffleCount: number;
   disabled?: boolean;
   ranked?: boolean;
+  redCount?: number;
+  blueCount?: number;
+  assassinCount?: number;
 }
 
 export interface GuessResult {

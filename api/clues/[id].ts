@@ -89,6 +89,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     reshuffleCount: row.reshuffle_count,
     disabled: row.disabled || false,
     ranked: row.ranked ?? true,
+    ...(row.red_count != null ? { redCount: row.red_count } : {}),
+    ...(row.blue_count != null ? { blueCount: row.blue_count } : {}),
+    ...(row.assassin_count != null ? { assassinCount: row.assassin_count } : {}),
     ...(includeTargets ? {
       targetIndices: row.target_indices,
       nullIndices: row.null_indices || [],

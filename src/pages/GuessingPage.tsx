@@ -96,8 +96,16 @@ export default function GuessingPage() {
 
   const config = useMemo(() => {
     if (!clue) return BOARD_CONFIGS['5x5'];
-    if (clue.boardSize) return BOARD_CONFIGS[clue.boardSize];
-    return BOARD_CONFIG_LEGACY_5x5;
+    const base = clue.boardSize ? BOARD_CONFIGS[clue.boardSize] : BOARD_CONFIG_LEGACY_5x5;
+    // Use custom color counts if stored on the clue
+    if (clue.redCount != null || clue.blueCount != null || clue.assassinCount != null) {
+      const redCount = clue.redCount ?? base.redCount;
+      const blueCount = clue.blueCount ?? base.blueCount;
+      const assassinCount = clue.assassinCount ?? base.assassinCount;
+      const neutralCount = base.totalCards - redCount - blueCount - assassinCount;
+      return { ...base, redCount, blueCount, assassinCount, neutralCount };
+    }
+    return base;
   }, [clue]);
 
   const board = useMemo(() => {
@@ -446,7 +454,7 @@ export default function GuessingPage() {
             onRate={(rating) => {
               if (user) api.saveRating(clue.id, user.id, rating);
             }}
-            onReport={(reason) => console.log('Reported:', reason)}
+            onReport={(reason) => { if (user) api.submitReport(clue.id, user.id, reason); }}
           />
         </div>
       )}
