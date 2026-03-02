@@ -111,36 +111,52 @@ export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptP
           {/* Expanded per-attempt details */}
           {expanded && stats.details && stats.details.length > 0 && (
             <div className="mt-3 border-t border-gray-700/50 pt-3">
-              <div className="space-y-0.5 max-h-[200px] overflow-y-auto">
-                {stats.details.map((detail, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => handleAttemptClick(idx)}
-                    className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-colors text-xs ${
-                      selectedAttemptIdx === idx
-                        ? 'bg-board-blue/20 border border-board-blue/30'
-                        : 'hover:bg-gray-700/50'
-                    }`}
-                  >
-                    <span className="text-gray-500 w-[5.5rem] shrink-0">{formatDate(detail.timestamp)}</span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); navigate(`/profile/${detail.userId}`); }}
-                      className="text-blue-400 hover:text-blue-300 transition-colors truncate flex-1 text-left"
-                    >
-                      {detail.userId}
-                    </button>
-                    <span className="text-white font-semibold w-6 text-right shrink-0">{detail.score}</span>
-                    {onDeleteAttempt && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onDeleteAttempt(detail.userId, detail.timestamp); }}
-                        className="text-gray-600 hover:text-board-red text-sm font-bold transition-colors shrink-0 ml-1"
-                        title="Удалить"
+              <div className="max-h-[200px] overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-gray-800">
+                    <tr className="text-gray-500 border-b border-gray-700/50">
+                      <th className="text-left py-1 pr-2 font-medium">{t.admin.player}</th>
+                      <th className="text-center py-1 px-2 font-medium">{t.results.score}</th>
+                      <th className="text-center py-1 pl-2 font-medium">{t.admin.clueDate}</th>
+                      {onDeleteAttempt && <th className="w-5"></th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.details.map((detail, idx) => (
+                      <tr
+                        key={idx}
+                        onClick={() => handleAttemptClick(idx)}
+                        className={`cursor-pointer transition-colors ${
+                          selectedAttemptIdx === idx
+                            ? 'bg-board-blue/20'
+                            : 'hover:bg-gray-700/50'
+                        }`}
                       >
-                        &times;
-                      </button>
-                    )}
-                  </div>
-                ))}
+                        <td className="py-1.5 pr-2 text-left">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/profile/${detail.userId}`); }}
+                            className="text-blue-400 hover:text-blue-300 transition-colors truncate max-w-[10rem] block text-left"
+                          >
+                            {detail.userId}
+                          </button>
+                        </td>
+                        <td className="py-1.5 px-2 text-center text-white font-semibold">{detail.score}</td>
+                        <td className="py-1.5 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>
+                        {onDeleteAttempt && (
+                          <td className="py-1.5 text-center">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onDeleteAttempt(detail.userId, detail.timestamp); }}
+                              className="text-gray-600 hover:text-board-red text-sm font-bold transition-colors"
+                              title="Удалить"
+                            >
+                              &times;
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

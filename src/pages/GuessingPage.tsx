@@ -494,7 +494,7 @@ export default function GuessingPage() {
         pickOrder={viewingAttemptPicks && viewingAttemptPicks.length > 0 ? viewingAttemptPicks : pickedIndices}
         revealDelays={phase === 'revealing' ? revealDelays : undefined}
         highlightTargets={phase === 'done'}
-        pickPercents={phase === 'done' && (!viewingAttemptPicks || viewingAttemptPicks.length === 0) ? pickPercents : undefined}
+        pickPercents={phase === 'done' ? pickPercents : undefined}
         revealingIndices={revealingIndices.size > 0 ? revealingIndices : undefined}
         revealDuration={revealDuration}
         cardFontSize={user?.preferences.cardFontSize}

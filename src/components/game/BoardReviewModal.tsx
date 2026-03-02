@@ -98,7 +98,7 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
           disabled={true}
           pickOrder={viewingAttemptPicks && viewingAttemptPicks.length > 0 ? viewingAttemptPicks : guessedIndices}
           highlightTargets={true}
-          pickPercents={!viewingAttemptPicks || viewingAttemptPicks.length === 0 ? pickPercents : undefined}
+          pickPercents={pickPercents}
         />
 
         {result && (
