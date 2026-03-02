@@ -57,6 +57,7 @@ export default function ClueGivingPage() {
 
   const [isSorted, setIsSorted] = useState(false);
   const [showReshuffleConfirm, setShowReshuffleConfirm] = useState(false);
+  const [showHomeConfirm, setShowHomeConfirm] = useState(false);
 
   // Auto-detect clue-0: if any non-red cards are selected as nulls
   const isClueZero = selectedNulls.length > 0;
@@ -222,47 +223,69 @@ export default function ClueGivingPage() {
 
   return (
     <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-6">
-      <GameHeader mode="clue-giving" config={config} />
+      <GameHeader mode="clue-giving" config={config} ranked={isRanked} />
 
       {/* Action buttons */}
       <div className="flex flex-wrap justify-center gap-2 mb-3">
         <button
-          onClick={() => navigate('/')}
-          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
+          onClick={() => setShowHomeConfirm(true)}
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors inline-flex items-center"
+          title={t.game.home}
         >
           <HomeIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">{t.game.home}</span>
         </button>
         <button
           onClick={() => setShowReshuffleConfirm(true)}
           className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
+          title={t.game.reshuffle}
         >
           <ArrowPathIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">{t.game.reshuffle}</span>
           {reshuffleCount > 0 && (
-            <span className="text-gray-300">({reshuffleCount})</span>
+            <span className="text-gray-300 text-xs">({reshuffleCount})</span>
           )}
         </button>
         <button
           onClick={handleSortByColor}
-          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border inline-flex items-center gap-1 ${
+          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border inline-flex items-center ${
             isSorted
               ? 'bg-board-blue/30 text-board-blue border-board-blue/40'
               : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border-transparent'
           }`}
+          title={t.game.sortByColor}
         >
           <BarsArrowDownIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">{t.game.sortByColor}</span>
         </button>
         <button
           onClick={handleReset}
-          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center gap-1"
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center"
+          title={t.game.reset}
         >
           <ArrowUturnLeftIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">{t.game.reset}</span>
         </button>
         <SettingsPanel mode="clue-giving" />
       </div>
+
+      {showHomeConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowHomeConfirm(false)}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center" onClick={(e) => e.stopPropagation()}>
+            <p className="text-white text-sm mb-4">{t.game.confirmEnd}</p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setShowHomeConfirm(false)}
+                className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold transition-colors"
+              >
+                {t.rating.cancel}
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-semibold transition-colors"
+              >
+                {t.admin.confirm}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showReshuffleConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowReshuffleConfirm(false)}>

@@ -2,6 +2,16 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'GET') {
+    const { clueId, userId } = req.query;
+    if (!clueId || !userId || typeof clueId !== 'string' || typeof userId !== 'string') {
+      return res.status(400).json({ error: 'clueId and userId required' });
+    }
+    const sql = neon(process.env.DATABASE_URL!);
+    const rows = await sql`SELECT rating FROM ratings WHERE clue_id = ${clueId} AND user_id = ${userId}`;
+    return res.json({ rating: rows.length > 0 ? rows[0].rating : null });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { clueId, userId, rating, reason } = req.body;

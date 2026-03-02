@@ -4,18 +4,22 @@ import { useTranslation } from '../../i18n/useTranslation';
 interface ClueRatingProps {
   onRate: (rating: number) => void;
   onReport: (reason: string) => void;
+  initialRating?: number | null;
 }
 
-export default function ClueRating({ onRate, onReport }: ClueRatingProps) {
+export default function ClueRating({ onRate, onReport, initialRating }: ClueRatingProps) {
   const { t } = useTranslation();
-  const [rated, setRated] = useState(false);
+  const [currentRating, setCurrentRating] = useState<number | null>(initialRating ?? null);
+  const [justRated, setJustRated] = useState(false);
   const [showReportInput, setShowReportInput] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reported, setReported] = useState(false);
 
   function handleRate(rating: number) {
-    setRated(true);
+    setCurrentRating(rating);
+    setJustRated(true);
     onRate(rating);
+    setTimeout(() => setJustRated(false), 1500);
   }
 
   function handleReport() {
@@ -27,7 +31,7 @@ export default function ClueRating({ onRate, onReport }: ClueRatingProps) {
 
   return (
     <div className="flex flex-col items-center gap-2 mt-3">
-      {rated ? (
+      {justRated ? (
         <p className="text-blue-400 text-sm">{t.rating.thanks}</p>
       ) : (
         <>
@@ -37,7 +41,11 @@ export default function ClueRating({ onRate, onReport }: ClueRatingProps) {
               <button
                 key={n}
                 onClick={() => handleRate(n)}
-                className="w-8 h-8 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold transition-colors"
+                className={`w-8 h-8 rounded text-sm font-bold transition-colors ${
+                  currentRating === n
+                    ? 'bg-board-blue text-white ring-2 ring-board-blue/50'
+                    : 'bg-gray-700 hover:bg-gray-600 text-white'
+                }`}
               >
                 {n}
               </button>

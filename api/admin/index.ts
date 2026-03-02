@@ -123,6 +123,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         clueWord: row.clue_word || null,
         clueNumber: row.clue_number ?? null,
         ranked: row.clue_ranked ?? true,
+        guessedIndices: row.guessed_indices || [],
       })));
     }
 

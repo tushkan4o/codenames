@@ -3,10 +3,12 @@ import { generateBoard } from '../../lib/boardGenerator';
 import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../../types/game';
 import type { Clue, GuessResult } from '../../types/game';
 import { useTranslation } from '../../i18n/useTranslation';
+import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
 import Board from '../board/Board';
 import RevealOverlay from './RevealOverlay';
 import ClueStatsPanel from './ClueStatsPanel';
+import ClueRating from './ClueRating';
 
 interface BoardReviewModalProps {
   clue: Clue;
@@ -16,8 +18,11 @@ interface BoardReviewModalProps {
 
 export default function BoardReviewModal({ clue, result, onClose }: BoardReviewModalProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [pickPercents, setPickPercents] = useState<Record<number, number>>({});
   const [viewingAttemptPicks, setViewingAttemptPicks] = useState<number[] | null>(null);
+  const [existingRating, setExistingRating] = useState<number | null>(null);
+  const [ratingLoaded, setRatingLoaded] = useState(false);
 
   const config = useMemo(() => {
     const base = clue.boardSize ? BOARD_CONFIGS[clue.boardSize] : BOARD_CONFIG_LEGACY_5x5;
@@ -49,8 +54,21 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
     });
   }, [clue.id]);
 
+  // Fetch existing user rating
+  useEffect(() => {
+    if (user && clue.userId !== user.id) {
+      api.getUserRating(clue.id, user.id).then((r) => {
+        setExistingRating(r.rating);
+        setRatingLoaded(true);
+      }).catch(() => setRatingLoaded(true));
+    }
+  }, [clue.id, user]);
+
   const displayCards = board.cards.map((card) => ({ ...card, revealed: true }));
   const guessedIndices = result?.guessedIndices ?? [];
+
+  // Show rating if user is not the clue author
+  const showRating = user && clue.userId !== user.id;
 
   return (
     <div
@@ -99,6 +117,16 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
             onShowAttemptPicks={(indices) => setViewingAttemptPicks(indices.length > 0 ? indices : null)}
           />
         </div>
+
+        {showRating && ratingLoaded && (
+          <div className="mt-4">
+            <ClueRating
+              initialRating={existingRating}
+              onRate={(rating) => api.saveRating(clue.id, user!.id, rating)}
+              onReport={(reason) => api.submitReport(clue.id, user!.id, reason)}
+            />
+          </div>
+        )}
 
         <div className="mt-4 text-center">
           <button

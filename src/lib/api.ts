@@ -96,6 +96,7 @@ export interface AdminResult {
   clueWord: string | null;
   clueNumber: number | null;
   ranked: boolean;
+  guessedIndices: number[];
 }
 
 export const api = {
@@ -148,6 +149,10 @@ export const api = {
 
   async saveRating(clueId: string, userId: string, rating: number): Promise<void> {
     await post('/api/ratings', { clueId, userId, rating });
+  },
+
+  async getUserRating(clueId: string, userId: string): Promise<{ rating: number | null }> {
+    return get(`/api/ratings?clueId=${encodeURIComponent(clueId)}&userId=${encodeURIComponent(userId)}`);
   },
 
   async getUserStats(userId: string): Promise<UserStats> {

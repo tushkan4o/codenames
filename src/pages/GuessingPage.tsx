@@ -353,7 +353,7 @@ export default function GuessingPage() {
 
   return (
     <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-6">
-      <GameHeader mode="guessing" config={config} />
+      <GameHeader mode="guessing" config={config} ranked={clue.ranked !== false} />
       <ClueDisplay word={clue.word} number={clue.number} teamColor="red" />
 
       {colorCounts && phase === 'picking' && (

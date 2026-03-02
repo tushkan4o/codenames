@@ -10,6 +10,8 @@ import type { BoardSize } from '../types/game';
 import NavBar from '../components/layout/NavBar';
 import Board from '../components/board/Board';
 import ClueStatsPanel from '../components/game/ClueStatsPanel';
+import BoardReviewModal from '../components/game/BoardReviewModal';
+import type { Clue, GuessResult } from '../types/game';
 
 type AdminTab = 'clues' | 'users' | 'results';
 type SortField = 'createdAt' | 'reportCount' | 'word' | 'userId';
@@ -73,6 +75,7 @@ export default function AdminPage() {
   const [viewingAttemptPicks, setViewingAttemptPicks] = useState<Record<string, number[] | null>>({});
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteResult, setConfirmDeleteResult] = useState<{ clueId: string; userId: string; timestamp: number } | null>(null);
+  const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null);
   const [deletedMessage, setDeletedMessage] = useState<string | null>(null);
 
   const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -88,6 +91,8 @@ export default function AdminPage() {
 
   // Track stats refresh key per clue to force ClueStatsPanel reload
   const [statsRefreshKey, setStatsRefreshKey] = useState<Record<string, number>>({});
+  const [resultModalClue, setResultModalClue] = useState<Clue | null>(null);
+  const [resultModalResult, setResultModalResult] = useState<GuessResult | undefined>(undefined);
 
   useEffect(() => {
     if (!user?.isAdmin) {
@@ -172,6 +177,31 @@ export default function AdminPage() {
         setPickPercentsMap((prev) => ({ ...prev, [clueId]: pcts }));
       }
     });
+    showDeleted();
+  }
+
+  async function handleViewResult(r: AdminResult) {
+    const clue = await api.getClueById(r.clueId, true);
+    if (!clue) return;
+    setResultModalClue(clue);
+    setResultModalResult({
+      clueId: r.clueId,
+      userId: r.userId,
+      score: r.score,
+      correctCount: r.correctCount,
+      totalTargets: r.totalTargets,
+      timestamp: r.timestamp,
+      guessedIndices: r.guessedIndices || [],
+      boardSize: r.boardSize as any,
+    });
+  }
+
+  async function handleDeleteUser(userId: string) {
+    await api.adminDeleteUser(user!.id, userId);
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    setClues((prev) => prev.filter((c) => c.userId !== userId));
+    setResults((prev) => prev.filter((r) => r.userId !== userId));
+    setConfirmDeleteUserId(null);
     showDeleted();
   }
 
@@ -454,7 +484,8 @@ export default function AdminPage() {
                 {sortedResults.map((r, i) => (
                   <tr
                     key={`${r.clueId}-${r.userId}-${r.timestamp}-${i}`}
-                    className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40"
+                    className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 cursor-pointer"
+                    onClick={() => handleViewResult(r)}
                   >
                     <td className="py-2 text-sm truncate">
                       <span className="font-bold text-white uppercase">{r.clueWord || r.clueId.slice(0, 12)}</span>
@@ -527,12 +558,13 @@ export default function AdminPage() {
                   <th className={`${thClass} text-right w-[14%]`} onClick={() => toggleUserSort('avgScore')}>
                     {t.admin.avgScore}<SortArrow field="avgScore" activeField={userSort} dir={userDir} />
                   </th>
-                  <th className={`${thClass} text-right w-[19%]`} onClick={() => toggleUserSort('createdAt')}>
+                  <th className={`${thClass} text-right w-[17%]`} onClick={() => toggleUserSort('createdAt')}>
                     {t.admin.registered}<SortArrow field="createdAt" activeField={userSort} dir={userDir} />
                   </th>
-                  <th className={`${thClass} text-right w-[19%]`} onClick={() => toggleUserSort('lastActivity')}>
+                  <th className={`${thClass} text-right w-[17%]`} onClick={() => toggleUserSort('lastActivity')}>
                     {t.admin.lastActive}<SortArrow field="lastActivity" activeField={userSort} dir={userDir} />
                   </th>
+                  <th className={`${thClass} text-center w-[4%]`}></th>
                 </tr>
               </thead>
               <tbody>
@@ -551,6 +583,17 @@ export default function AdminPage() {
                     <td className="py-2 text-sm text-right">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</td>
                     <td className="py-2 text-sm text-right text-gray-500">{formatDateTime(u.createdAt)}</td>
                     <td className="py-2 text-sm text-right text-gray-400">{formatDateTime(u.lastActivity)}</td>
+                    <td className="py-2 text-center">
+                      {!u.isAdmin && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteUserId(u.id); }}
+                          className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
+                          title={t.admin.deleteUser}
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -582,6 +625,40 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Confirm delete user modal */}
+      {confirmDeleteUserId && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-700/30 rounded-lg p-6 max-w-sm mx-4">
+            <p className="text-white font-bold mb-4">
+              {t.admin.confirmDeleteUser.replace('{name}', users.find((u) => u.id === confirmDeleteUserId)?.displayName || confirmDeleteUserId)}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDeleteUserId(null)}
+                className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold px-4 py-2 rounded transition-colors"
+              >
+                {t.admin.cancel}
+              </button>
+              <button
+                onClick={() => handleDeleteUser(confirmDeleteUserId)}
+                className="bg-board-red hover:bg-board-red/80 text-white text-sm font-bold px-4 py-2 rounded transition-colors"
+              >
+                {t.admin.confirm}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Result board modal */}
+      {resultModalClue && (
+        <BoardReviewModal
+          clue={resultModalClue}
+          result={resultModalResult}
+          onClose={() => { setResultModalClue(null); setResultModalResult(undefined); }}
+        />
       )}
 
       {/* Confirm delete result modal */}
