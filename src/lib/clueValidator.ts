@@ -1,8 +1,10 @@
 import type { CardState } from '../types/game';
 
+export type ClueErrorKey = 'errorEmpty' | 'errorMultiWord' | 'errorOnBoard' | 'errorNumber';
+
 export interface ClueValidation {
   valid: boolean;
-  error?: string;
+  errorKey?: ClueErrorKey;
 }
 
 export function validateClue(
@@ -13,19 +15,19 @@ export function validateClue(
   const trimmed = word.trim().toUpperCase();
 
   if (!trimmed) {
-    return { valid: false, error: 'Clue cannot be empty' };
+    return { valid: false, errorKey: 'errorEmpty' };
   }
 
   if (/\s/.test(trimmed)) {
-    return { valid: false, error: 'Clue must be a single word' };
+    return { valid: false, errorKey: 'errorMultiWord' };
   }
 
   if (boardCards.some((card) => card.word.toUpperCase() === trimmed)) {
-    return { valid: false, error: 'Clue cannot be a word on the board' };
+    return { valid: false, errorKey: 'errorOnBoard' };
   }
 
   if (number < 0 || !Number.isInteger(number)) {
-    return { valid: false, error: 'Select at least one target word' };
+    return { valid: false, errorKey: 'errorNumber' };
   }
 
   return { valid: true };

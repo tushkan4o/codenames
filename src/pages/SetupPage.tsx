@@ -21,7 +21,7 @@ export default function SetupPage() {
   const { t } = useTranslation();
 
   const [mode, setMode] = useState<GameMode>('clue-giving');
-  const [boardSize, setBoardSize] = useState<BoardSize>(user?.preferences.defaultBoardSize ?? '5x5');
+  const boardSize: BoardSize = '5x5';
   const [loading, setLoading] = useState(false);
   const [puzzleCount, setPuzzleCount] = useState<{ available: number; total: number } | null>(null);
 
@@ -81,9 +81,7 @@ export default function SetupPage() {
     setAssassinCount(cfg.assassinCount);
   }
 
-  function toggleSize() {
-    setBoardSize((s) => (s === '5x5' ? '4x4' : '5x5'));
-  }
+  // Board size is always 5x5 now (4x4 removed)
 
   const counts: Record<string, number> = {
     red: redCount,
@@ -156,17 +154,10 @@ export default function SetupPage() {
           </div>
         </div>
 
-        {/* Board Size + Color Config */}
+        {/* Color Config */}
         <div className="mb-8">
           <label className="block text-sm text-gray-400 mb-2">{t.setup.boardSize}</label>
           <div className="flex items-center gap-3">
-            <button
-              onClick={toggleSize}
-              className="px-4 py-3 rounded-lg border-2 border-board-blue/60 bg-board-blue/10 text-white font-bold text-lg min-w-[4.5rem] text-center transition-colors hover:bg-board-blue/20"
-            >
-              {boardSize === '5x5' ? '5×5' : '4×4'}
-            </button>
-
             <div className="flex items-center gap-2 flex-1">
               {COLOR_CONFIG.map(({ key, bg }) => {
                 const count = counts[key];

@@ -57,7 +57,7 @@ export default function LeaderboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('spymasters');
-  const [sizeFilter, setSizeFilter] = useState<SizeFilter>('all');
+  const sizeFilter: SizeFilter = 'all';
   const [spymasters, setSpymasters] = useState<SpymasterEntry[]>([]);
   const [guessers, setGuessers] = useState<GuesserEntry[]>([]);
   const [clueStats, setClueStats] = useState<ClueStatEntry[]>([]);
@@ -172,17 +172,6 @@ export default function LeaderboardPage() {
           <button onClick={() => { setTab('clues'); setPage(0); }} className={tabBtnClass(tab === 'clues', 'bg-board-red')}>{t.leaderboard.clues}</button>
         </div>
 
-        <div className="flex justify-center gap-2 mb-6">
-          {(['all', '4x4', '5x5'] as SizeFilter[]).map((size) => (
-            <button
-              key={size}
-              onClick={() => { setSizeFilter(size); setPage(0); }}
-              className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-colors ${sizeFilter === size ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
-            >
-              {size === 'all' ? t.leaderboard.allSizes : size.toUpperCase()}
-            </button>
-          ))}
-        </div>
 
         {tab === 'spymasters' && (() => {
           const { paged, pageCount } = getPage(sortedSpymasters);

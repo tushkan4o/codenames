@@ -18,7 +18,7 @@ export default function ClueInput({ boardCards, targetCount, onSubmit }: ClueInp
     e.preventDefault();
     const validation = validateClue(word, targetCount, boardCards);
     if (!validation.valid) {
-      setError(validation.error!);
+      setError(validation.errorKey ? t.clue[validation.errorKey] : '');
       return;
     }
     setError('');
@@ -38,7 +38,7 @@ export default function ClueInput({ boardCards, targetCount, onSubmit }: ClueInp
           }}
           onFocus={() => { setWord(''); setError(''); }}
           placeholder={t.clue.placeholder}
-          className="px-3 h-11 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg focus:outline-none focus:border-board-blue w-44 sm:w-48"
+          className="px-3 h-11 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg focus:outline-none focus:border-board-blue w-44 sm:w-48 placeholder:text-gray-500 focus:placeholder:text-transparent"
         />
         <div className="h-11 px-3 rounded-lg bg-gray-800 border border-gray-600 text-white text-lg font-bold min-w-[2.5rem] flex items-center justify-center">
           {targetCount}
