@@ -310,7 +310,7 @@ export default function AdminPage() {
         </div>
 
         {/* Table header */}
-        <div className="hidden md:grid grid-cols-[1.2fr_1fr_2rem_3rem_3.5rem_1.2fr_0.5fr_2rem] gap-2 px-4 py-2 items-center">
+        <div className="hidden md:grid grid-cols-[1.5fr_1fr_2rem_4.5rem_4rem_1fr_3rem_2rem] gap-2 px-4 py-2 items-center">
           <span className={thClass} onClick={() => toggleSort('word')}>{t.admin.clueWord}<SortArrow field="word" activeField={sortField} dir={sortDir} /></span>
           <span className={thClass} onClick={() => toggleSort('userId')}>{t.admin.clueAuthor}<SortArrow field="userId" activeField={sortField} dir={sortDir} /></span>
           <span className={`${thClass} text-center`} title="Рейтинговая">★</span>
@@ -333,7 +333,7 @@ export default function AdminPage() {
                     : 'border-gray-700/30'
                 }`}
               >
-                <div className="grid grid-cols-2 md:grid-cols-[1.2fr_1fr_2rem_3rem_3.5rem_1.2fr_0.5fr_2rem] gap-2 items-center">
+                <div className="grid grid-cols-2 md:grid-cols-[1.5fr_1fr_2rem_4.5rem_4rem_1fr_3rem_2rem] gap-2 items-center">
                   <span className="font-bold text-white uppercase text-sm">
                     {clue.word} <span className="text-gray-500 font-semibold">{clue.number}</span>
                     {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
@@ -467,7 +467,7 @@ export default function AdminPage() {
           </div>
 
           {/* Table header */}
-          <div className="hidden md:grid grid-cols-[1.2fr_1fr_4rem_2rem_1.2fr_2rem] gap-2 px-4 py-2 items-center">
+          <div className="hidden md:grid grid-cols-[1.5fr_1fr_4.5rem_2rem_1fr_2rem] gap-2 px-4 py-2 items-center">
             <span className={thClass} onClick={() => toggleResultSort('clueWord')}>{t.admin.clueWord}<SortArrow field="clueWord" activeField={resultSort} dir={resultDir} /></span>
             <span className={thClass} onClick={() => toggleResultSort('userId')}>{t.admin.player}<SortArrow field="userId" activeField={resultSort} dir={resultDir} /></span>
             <span className={`${thClass} text-right`} onClick={() => toggleResultSort('score')}>{t.admin.score}<SortArrow field="score" activeField={resultSort} dir={resultDir} /></span>
@@ -483,7 +483,7 @@ export default function AdminPage() {
                 onClick={() => handleViewResult(r)}
                 className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600"
               >
-                <div className="grid grid-cols-2 md:grid-cols-[1.2fr_1fr_4rem_2rem_1.2fr_2rem] gap-2 items-center">
+                <div className="grid grid-cols-2 md:grid-cols-[1.5fr_1fr_4.5rem_2rem_1fr_2rem] gap-2 items-center">
                   <span className="font-bold text-white uppercase text-sm">
                     {r.clueWord || r.clueId.slice(0, 12)}
                     {r.clueNumber != null && <span className="ml-1 text-gray-500 font-semibold">{r.clueNumber}</span>}
@@ -531,7 +531,7 @@ export default function AdminPage() {
           </div>
 
           {/* Table header */}
-          <div className="hidden md:grid grid-cols-[1.2fr_3rem_3rem_3.5rem_1fr_1fr_2rem] gap-2 px-4 py-2 items-center">
+          <div className="hidden md:grid grid-cols-[1.5fr_4.5rem_4.5rem_4rem_1fr_1fr_2rem] gap-2 px-4 py-2 items-center">
             <span className={thClass} onClick={() => toggleUserSort('displayName')}>{t.leaderboard.player}<SortArrow field="displayName" activeField={userSort} dir={userDir} /></span>
             <span className={`${thClass} text-right`} onClick={() => toggleUserSort('cluesGiven')}>{t.admin.given}<SortArrow field="cluesGiven" activeField={userSort} dir={userDir} /></span>
             <span className={`${thClass} text-right`} onClick={() => toggleUserSort('cluesSolved')}>{t.admin.solved}<SortArrow field="cluesSolved" activeField={userSort} dir={userDir} /></span>
@@ -548,7 +548,7 @@ export default function AdminPage() {
                 onClick={() => navigate(`/profile/${u.id}`)}
                 className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600"
               >
-                <div className="grid grid-cols-2 md:grid-cols-[1.2fr_3rem_3rem_3.5rem_1fr_1fr_2rem] gap-2 items-center">
+                <div className="grid grid-cols-2 md:grid-cols-[1.5fr_4.5rem_4.5rem_4rem_1fr_1fr_2rem] gap-2 items-center">
                   <span className="text-sm truncate">
                     <span className="font-semibold text-white">{u.displayName}</span>
                     {u.isAdmin && <span className="ml-1 text-[0.6rem] text-board-blue font-bold">ADM</span>}
