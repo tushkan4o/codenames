@@ -18,17 +18,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let totalRows;
 
       if (wordPack && boardSize) {
-        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string}`;
-        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE word_pack = ${wordPack as string} AND board_size = ${boardSize as string}`;
+        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE)`;
+        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE)`;
       } else if (wordPack) {
-        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string}`;
-        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE word_pack = ${wordPack as string}`;
+        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND (disabled IS NOT TRUE)`;
+        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE word_pack = ${wordPack as string} AND (disabled IS NOT TRUE)`;
       } else if (boardSize) {
-        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string}`;
-        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE board_size = ${boardSize as string}`;
+        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE)`;
+        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE board_size = ${boardSize as string} AND (disabled IS NOT TRUE)`;
       } else {
-        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string}`;
-        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues`;
+        availableRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE user_id != ${userId as string} AND (disabled IS NOT TRUE)`;
+        totalRows = await sql`SELECT COUNT(*) as cnt FROM clues WHERE (disabled IS NOT TRUE)`;
       }
 
       const totalCount = Number(totalRows[0].cnt);
@@ -45,13 +45,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let rows;
     if (wordPack && boardSize) {
-      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string} ORDER BY RANDOM() LIMIT 20`;
+      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) ORDER BY RANDOM() LIMIT 20`;
     } else if (wordPack) {
-      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} ORDER BY RANDOM() LIMIT 20`;
+      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND (disabled IS NOT TRUE) ORDER BY RANDOM() LIMIT 20`;
     } else if (boardSize) {
-      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string} ORDER BY RANDOM() LIMIT 20`;
+      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) ORDER BY RANDOM() LIMIT 20`;
     } else {
-      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} ORDER BY RANDOM() LIMIT 20`;
+      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND (disabled IS NOT TRUE) ORDER BY RANDOM() LIMIT 20`;
     }
 
     const excludeSet = new Set(allExcluded);

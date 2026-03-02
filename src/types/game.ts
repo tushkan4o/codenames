@@ -52,6 +52,7 @@ export interface Clue {
   wordPack: string;
   boardSize: BoardSize;
   reshuffleCount: number;
+  disabled?: boolean;
 }
 
 export interface GuessResult {

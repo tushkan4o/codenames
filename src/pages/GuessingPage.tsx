@@ -7,12 +7,14 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../types/game';
 import type { Clue, CardState } from '../types/game';
+import { HomeIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import Board from '../components/board/Board';
 import GameHeader from '../components/game/GameHeader';
 import ClueDisplay from '../components/clue/ClueDisplay';
 import RevealOverlay from '../components/game/RevealOverlay';
 import ClueRating from '../components/game/ClueRating';
 import ClueStatsPanel from '../components/game/ClueStatsPanel';
+import SettingsPanel from '../components/settings/SettingsPanel';
 
 type GamePhase = 'picking' | 'revealing' | 'done';
 
@@ -31,6 +33,7 @@ export default function GuessingPage() {
   const [showNoClues, setShowNoClues] = useState(false);
   const [revealDelays, setRevealDelays] = useState<Record<number, number>>({});
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [revealingIndices, setRevealingIndices] = useState<Set<number>>(new Set());
 
   // Revealed targets — only populated after game ends (security: not sent initially)
   const [revealedTargets, setRevealedTargets] = useState<number[]>([]);
@@ -45,6 +48,7 @@ export default function GuessingPage() {
       setAssassinHit(false);
       setScore(0);
       setRevealDelays({});
+      setRevealingIndices(new Set());
       setRevealedTargets([]);
       setRevealedNulls([]);
       setLoading(true);
@@ -67,6 +71,7 @@ export default function GuessingPage() {
   }, [clue, config]);
 
   const animationEnabled = user?.preferences.animationEnabled ?? true;
+  const revealDuration = user?.preferences.revealDuration ?? 1000;
 
   // For clue-0, we don't know the target count (hidden for security), so no auto-end
   const effectiveTargetCount = useMemo(() => {
@@ -99,28 +104,42 @@ export default function GuessingPage() {
 
   function handlePick(index: number) {
     if (phase !== 'picking' || !board || !clue) return;
-    if (pickedIndices.includes(index)) return;
+    if (pickedIndices.includes(index) || revealingIndices.has(index)) return;
 
-    const newPicked = [...pickedIndices, index];
-    setPickedIndices(newPicked);
     setConfirmEnd(false);
 
-    const card = board.cards[index];
+    // Start border trace animation
+    setRevealingIndices((prev) => new Set(prev).add(index));
 
-    if (card.color === 'assassin') {
-      setAssassinHit(true);
-      setScore(0);
-      setTimeout(() => finishGame(newPicked, true), 600);
-      return;
-    }
+    // After animation completes, reveal the card
+    setTimeout(() => {
+      setRevealingIndices((prev) => {
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
+      });
 
-    // Auto-end only for non-zero clues when all reds found
-    if (effectiveTargetCount > 0) {
-      const newRedCount = newPicked.filter((i) => board.cards[i].color === 'red').length;
-      if (newRedCount >= effectiveTargetCount) {
-        setTimeout(() => finishGame(newPicked, false), 400);
-      }
-    }
+      setPickedIndices((prev) => {
+        const newPicked = [...prev, index];
+        const card = board!.cards[index];
+
+        if (card.color === 'assassin') {
+          setAssassinHit(true);
+          setScore(0);
+          setTimeout(() => finishGame(newPicked, true), 600);
+          return newPicked;
+        }
+
+        // Auto-end only for non-zero clues when all reds found
+        if (effectiveTargetCount > 0) {
+          const newRedCount = newPicked.filter((i) => board!.cards[i].color === 'red').length;
+          if (newRedCount >= effectiveTargetCount) {
+            setTimeout(() => finishGame(newPicked, false), 400);
+          }
+        }
+        return newPicked;
+      });
+    }, revealDuration);
   }
 
   const finishGame = useCallback(
@@ -227,7 +246,7 @@ export default function GuessingPage() {
     return card;
   });
 
-  const isPicking = phase === 'picking' && !assassinHit;
+  const isPicking = phase === 'picking' && !assassinHit && revealingIndices.size === 0;
 
   // For done phase: show target markers using revealed data (not from initial clue load)
   const doneTargetIndices = phase === 'done' ? revealedTargets : [];
@@ -252,16 +271,19 @@ export default function GuessingPage() {
         <div className="flex flex-wrap justify-center gap-2 mb-3 mt-2">
           <button
             onClick={handleHome}
-            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
           >
-            {t.results.backHome}
+            <HomeIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">{t.results.backHome}</span>
           </button>
           <button
             onClick={handleAnotherClue}
-            className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
           >
-            {t.game.anotherClue}
+            <ArrowPathIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">{t.game.anotherClue}</span>
           </button>
+          <SettingsPanel mode="guessing" />
         </div>
       )}
 
@@ -273,11 +295,13 @@ export default function GuessingPage() {
         targetIndices={doneTargetIndices}
         nullIndices={doneNullIndices}
         onCardClick={isPicking ? handlePick : undefined}
-        disabled={!isPicking}
+        disabled={!isPicking && revealingIndices.size === 0}
         pickOrder={pickedIndices}
         revealDelays={phase === 'revealing' ? revealDelays : undefined}
         highlightTargets={phase === 'done'}
         pickPercents={phase === 'done' ? pickPercents : undefined}
+        revealingIndices={revealingIndices.size > 0 ? revealingIndices : undefined}
+        revealDuration={revealDuration}
       />
 
       {/* End turn button below board */}
@@ -300,14 +324,16 @@ export default function GuessingPage() {
           <div className="flex justify-center gap-3 mt-4 mb-4">
             <button
               onClick={handleHome}
-              className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold transition-colors"
+              className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold transition-colors inline-flex items-center gap-1.5"
             >
+              <HomeIcon className="w-4 h-4" />
               {t.results.backHome}
             </button>
             <button
               onClick={handleAnotherClue}
-              className="px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-bold transition-colors"
+              className="px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-bold transition-colors inline-flex items-center gap-1.5"
             >
+              <ArrowPathIcon className="w-4 h-4" />
               {t.game.nextPuzzle}
             </button>
           </div>

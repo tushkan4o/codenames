@@ -22,6 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       wordPack: row.word_pack,
       boardSize: row.board_size,
       reshuffleCount: row.reshuffle_count,
+      disabled: row.disabled || false,
     })));
   }
 

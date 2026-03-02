@@ -67,6 +67,9 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       created_at BIGINT NOT NULL
     )`;
 
+    // Migration: add disabled column to clues
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS disabled BOOLEAN DEFAULT false`;
+
     // Seed tushkan as admin with password
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
 

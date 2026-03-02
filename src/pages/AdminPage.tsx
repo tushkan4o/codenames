@@ -278,6 +278,7 @@ export default function AdminPage() {
                 <div className="grid grid-cols-2 md:grid-cols-[1.2fr_1fr_0.6fr_1.2fr_0.5fr_2rem] gap-2 items-center">
                   <span className="font-bold text-white uppercase text-sm">
                     {clue.word} <span className="text-gray-500 font-semibold">{clue.number}</span>
+                    {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                   </span>
                   <span className="text-gray-400 text-sm truncate">
                     {clue.userId}

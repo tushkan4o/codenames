@@ -2,6 +2,21 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'PATCH') {
+    const { disabled, userId } = req.body || {};
+    const { id: clueId } = req.query;
+    if (!clueId || typeof clueId !== 'string') return res.status(400).json({ error: 'id required' });
+    if (typeof disabled !== 'boolean' || !userId) return res.status(400).json({ error: 'disabled (boolean) and userId required' });
+
+    const sql = neon(process.env.DATABASE_URL!);
+    const rows = await sql`SELECT user_id FROM clues WHERE id = ${clueId}`;
+    if (rows.length === 0) return res.status(404).json({ error: 'Clue not found' });
+    if (rows[0].user_id !== userId) return res.status(403).json({ error: 'Only the clue owner can toggle disabled' });
+
+    await sql`UPDATE clues SET disabled = ${disabled} WHERE id = ${clueId}`;
+    return res.json({ ok: true });
+  }
+
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const { id, stats, reveal } = req.query;
@@ -58,6 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     wordPack: row.word_pack,
     boardSize: row.board_size,
     reshuffleCount: row.reshuffle_count,
+    disabled: row.disabled || false,
     ...(includeTargets ? {
       targetIndices: row.target_indices,
       nullIndices: row.null_indices || [],

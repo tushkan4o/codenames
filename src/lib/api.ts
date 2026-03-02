@@ -23,6 +23,19 @@ async function get<T>(url: string): Promise<T> {
   return res.json();
 }
 
+async function patch<T>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 async function del(url: string): Promise<void> {
   const res = await fetch(url, { method: 'DELETE' });
   if (!res.ok) {
@@ -43,6 +56,7 @@ export interface AdminClue {
   targetIndices: number[];
   nullIndices: number[];
   reportCount: number;
+  disabled: boolean;
 }
 
 export interface RatingStats {
@@ -130,6 +144,10 @@ export const api = {
   }> {
     const params = boardSize ? `?boardSize=${boardSize}` : '';
     return get(`/api/leaderboard${params}`);
+  },
+
+  async toggleClueDisabled(clueId: string, userId: string, disabled: boolean): Promise<void> {
+    await patch(`/api/clues/${encodeURIComponent(clueId)}`, { userId, disabled });
   },
 
   // Reports

@@ -51,6 +51,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         targetIndices: row.target_indices,
         nullIndices: row.null_indices || [],
         reportCount: Number(row.report_count) || 0,
+        disabled: row.disabled || false,
       })));
     }
 

@@ -1,4 +1,5 @@
 import type { CardColor } from '../../types/game';
+import type { CardFontSize } from '../../types/user';
 
 interface CardProps {
   word: string;
@@ -15,7 +16,16 @@ interface CardProps {
   pickPercent?: number;
   pickOrder?: number;
   revealDelay?: number;
+  fontSize?: CardFontSize;
+  revealing?: boolean;
+  revealDuration?: number;
 }
+
+const fontSizeMap: Record<CardFontSize, string> = {
+  sm: 'text-[clamp(0.6rem,2.6vw,0.85rem)]',
+  md: 'text-[clamp(0.75rem,3.2vw,1.05rem)]',
+  lg: 'text-[clamp(0.9rem,3.8vw,1.25rem)]',
+};
 
 const colorConfig: Record<CardColor, { bg: string; text: string; glow: string }> = {
   red: {
@@ -62,13 +72,18 @@ export default function Card({
   pickPercent,
   pickOrder,
   revealDelay,
+  fontSize,
+  revealing,
+  revealDuration,
 }: CardProps) {
-  const shouldShowColor = showColor || revealed;
+  // During border trace animation, don't show color yet
+  const shouldShowColor = (showColor || revealed) && !revealing;
   const cfg = colorConfig[color];
 
   const bgClass = shouldShowColor ? cfg.bg : 'bg-board-card';
   const textClass = shouldShowColor ? cfg.text : 'text-gray-200';
   const glowClass = shouldShowColor && !glowing ? cfg.glow : '';
+  const revealingClass = revealing ? 'card-border-reveal' : '';
 
   const interactiveClass =
     !disabled && onClick ? 'card-interactive cursor-pointer' : '';
@@ -91,9 +106,10 @@ export default function Card({
   const brightnessClass = glowing ? 'brightness-125' : '';
   const dimClass = dimmed ? 'opacity-50' : '';
 
-  const style = revealDelay !== undefined
-    ? { transitionDelay: `${revealDelay}ms` }
-    : undefined;
+  const style: React.CSSProperties = {
+    ...(revealDelay !== undefined ? { transitionDelay: `${revealDelay}ms` } : {}),
+    ...(revealing && revealDuration ? { '--reveal-duration': `${revealDuration}ms` } as React.CSSProperties : {}),
+  };
 
   // Show null × marker whenever nullMarked (clue-giving + reveal modes)
   const showNullX = !!nullMarked;
@@ -103,11 +119,11 @@ export default function Card({
       className={`
         card-reveal relative flex items-center justify-center overflow-hidden w-full
         h-[3.2rem] sm:h-[3.8rem] rounded-lg font-card font-bold uppercase tracking-wide select-none
-        text-[clamp(0.75rem,3.2vw,1.05rem)] p-1 sm:p-2 border border-white/5
+        ${fontSizeMap[fontSize || 'md']} p-1 sm:p-2 border border-white/5
         transition-all duration-300
         ${bgClass} ${textClass} ${glowClass} ${interactiveClass}
         ${ringClass} ${targetClass}
-        ${highlightGlow} ${brightnessClass} ${dimClass}
+        ${highlightGlow} ${brightnessClass} ${dimClass} ${revealingClass}
       `}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}

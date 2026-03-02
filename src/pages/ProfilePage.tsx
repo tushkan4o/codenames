@@ -174,6 +174,17 @@ export default function ProfilePage() {
     setConfirmDeleteClue(null);
   }
 
+  async function handleToggleDisabled(clue: Clue) {
+    if (!user) return;
+    const newDisabled = !clue.disabled;
+    try {
+      await api.toggleClueDisabled(clue.id, user.id, newDisabled);
+      setCluesGiven((prev) => prev.map((c) => c.id === clue.id ? { ...c, disabled: newDisabled } : c));
+    } catch (err) {
+      console.error('Failed to toggle disabled:', err);
+    }
+  }
+
   function toggleGivenSort(field: GivenSortField) {
     if (givenSort === field) setGivenDir((d) => d === 'desc' ? 'asc' : 'desc');
     else { setGivenSort(field); setGivenDir('desc'); }
@@ -280,7 +291,15 @@ export default function ProfilePage() {
                         </td>
                         <td className={`${td} text-right`}>
                           <div className="flex items-center justify-end gap-1">
-                            {(solved || isOwn || isOwnProfile) ? (
+                            {isOwnProfile ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleToggleDisabled(clue); }}
+                                className={`text-sm font-bold transition-colors ${clue.disabled ? 'text-board-red hover:text-red-300' : 'text-board-blue hover:text-blue-300'}`}
+                                title={clue.disabled ? 'Активировать' : 'Деактивировать'}
+                              >
+                                {clue.disabled ? '✗' : '✓'}
+                              </button>
+                            ) : (solved || isOwn) ? (
                               <span className="text-board-blue text-sm">✓</span>
                             ) : (
                               <span className="text-gray-500 text-sm">–</span>

@@ -37,6 +37,8 @@ export const ru = {
     boardSize: 'Размер поля',
     start: 'Начать',
     resetConfig: 'Сброс',
+    ranked: 'Рейтинговая',
+    casual: 'Обычная',
     availablePuzzles: '{available} пазлов доступно ({total} всего)',
     noPuzzlesAvailable: 'Нет доступных пазлов с этими настройками',
   },
@@ -200,6 +202,18 @@ export const ru = {
     solved: 'Решено',
     confirm: 'Подтвердить',
     cancel: 'Отмена',
+  },
+  settings: {
+    title: 'Настройки',
+    revealDuration: 'Скорость раскрытия',
+    cardFontSize: 'Размер шрифта',
+    fontSmall: 'Мелкий',
+    fontMedium: 'Средний',
+    fontLarge: 'Крупный',
+    fast: 'Быстро',
+    normal: 'Обычно',
+    slow: 'Медленно',
+    verySlow: 'Очень медленно',
   },
 };
 

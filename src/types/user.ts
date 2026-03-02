@@ -8,14 +8,20 @@ export interface User {
   isAdmin: boolean;
 }
 
+export type CardFontSize = 'sm' | 'md' | 'lg';
+
 export interface UserPreferences {
   defaultBoardSize: BoardSize;
   animationEnabled: boolean;
+  revealDuration: number;
+  cardFontSize: CardFontSize;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   defaultBoardSize: '5x5',
   animationEnabled: true,
+  revealDuration: 1000,
+  cardFontSize: 'md',
 };
 
 export interface UserStats {

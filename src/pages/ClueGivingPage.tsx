@@ -7,9 +7,12 @@ import { useTranslation } from '../i18n/useTranslation';
 import { BOARD_CONFIGS } from '../types/game';
 import type { BoardSize } from '../types/game';
 import { useDragReorder } from '../hooks/useDragReorder';
+import { HomeIcon, ArrowPathIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+import { BarsArrowDownIcon } from '@heroicons/react/24/solid';
 import Board from '../components/board/Board';
 import GameHeader from '../components/game/GameHeader';
 import ClueInput from '../components/clue/ClueInput';
+import SettingsPanel from '../components/settings/SettingsPanel';
 
 export default function ClueGivingPage() {
   const { seed: rawSeed } = useParams<{ seed: string }>();
@@ -193,14 +196,16 @@ export default function ClueGivingPage() {
         <div className="flex gap-3">
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors"
+            className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors inline-flex items-center gap-1.5"
           >
+            <HomeIcon className="w-5 h-5" />
             {t.game.home}
           </button>
           <button
             onClick={handleGiveAnother}
-            className="px-6 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold transition-colors"
+            className="px-6 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold transition-colors inline-flex items-center gap-1.5"
           >
+            <ArrowPathIcon className="w-5 h-5" />
             {t.game.giveAnotherClue}
           </button>
         </div>
@@ -218,35 +223,40 @@ export default function ClueGivingPage() {
       <div className="flex flex-wrap justify-center gap-2 mb-3">
         <button
           onClick={() => navigate('/')}
-          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors"
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
         >
-          {t.game.home}
+          <HomeIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">{t.game.home}</span>
         </button>
         <button
           onClick={() => setShowReshuffleConfirm(true)}
-          className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors"
+          className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
         >
-          {t.game.reshuffle}
+          <ArrowPathIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">{t.game.reshuffle}</span>
           {reshuffleCount > 0 && (
-            <span className="ml-1 text-gray-300">({reshuffleCount})</span>
+            <span className="text-gray-300">({reshuffleCount})</span>
           )}
         </button>
         <button
           onClick={handleSortByColor}
-          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border ${
+          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border inline-flex items-center gap-1 ${
             isSorted
               ? 'bg-board-blue/30 text-board-blue border-board-blue/40'
               : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border-transparent'
           }`}
         >
-          {t.game.sortByColor}
+          <BarsArrowDownIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">{t.game.sortByColor}</span>
         </button>
         <button
           onClick={handleReset}
-          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors"
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center gap-1"
         >
-          {t.game.reset}
+          <ArrowUturnLeftIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">{t.game.reset}</span>
         </button>
+        <SettingsPanel mode="clue-giving" />
       </div>
 
       {showReshuffleConfirm && (
@@ -295,6 +305,7 @@ export default function ClueGivingPage() {
         onPointerMove={handlePointerMove}
         onPointerUp={onBoardPointerUp}
         registerCardRef={registerCardRef}
+        cardFontSize={user?.preferences.cardFontSize}
       />
 
       {/* Clue input */}

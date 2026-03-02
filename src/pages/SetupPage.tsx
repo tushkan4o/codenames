@@ -5,6 +5,7 @@ import { useTranslation } from '../i18n/useTranslation';
 import { generateSeed } from '../lib/boardGenerator';
 import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
+import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import { BOARD_CONFIGS } from '../types/game';
 import type { BoardSize, GameMode } from '../types/game';
 
@@ -21,6 +22,7 @@ export default function SetupPage() {
   const { t } = useTranslation();
 
   const [mode, setMode] = useState<GameMode>('clue-giving');
+  const [ranked, setRanked] = useState(true);
   const boardSize: BoardSize = '5x5';
   const [loading, setLoading] = useState(false);
   const [puzzleCount, setPuzzleCount] = useState<{ available: number; total: number } | null>(null);
@@ -33,12 +35,15 @@ export default function SetupPage() {
   const totalCards = defaults.totalCards;
   const neutralCount = totalCards - redCount - blueCount - assassinCount;
 
+  // When switching to ranked, reset to defaults
   useEffect(() => {
-    const cfg = BOARD_CONFIGS[boardSize];
-    setRedCount(cfg.redCount);
-    setBlueCount(cfg.blueCount);
-    setAssassinCount(cfg.assassinCount);
-  }, [boardSize]);
+    if (ranked) {
+      const cfg = BOARD_CONFIGS[boardSize];
+      setRedCount(cfg.redCount);
+      setBlueCount(cfg.blueCount);
+      setAssassinCount(cfg.assassinCount);
+    }
+  }, [ranked, boardSize]);
 
   useEffect(() => {
     if (!user || mode !== 'guessing') {
@@ -49,6 +54,7 @@ export default function SetupPage() {
   }, [user, mode, boardSize]);
 
   function canAdjust(key: string, delta: number): boolean {
+    if (ranked) return false;
     if (key === 'red') {
       const newVal = redCount + delta;
       if (newVal < 1) return false;
@@ -80,8 +86,6 @@ export default function SetupPage() {
     setBlueCount(cfg.blueCount);
     setAssassinCount(cfg.assassinCount);
   }
-
-  // Board size is always 5x5 now (4x4 removed)
 
   const counts: Record<string, number> = {
     red: redCount,
@@ -119,91 +123,93 @@ export default function SetupPage() {
     }
   }
 
+  const toggleBtnBase = 'px-4 py-2 rounded-lg font-bold text-sm transition-colors';
+
   return (
     <div className="min-h-screen">
       <NavBar showBack />
       <div className="max-w-lg mx-auto px-4 pt-10">
         <h1 className="text-2xl font-extrabold text-white mb-8 text-center">{t.setup.title}</h1>
 
-        {/* Mode */}
-        <div className="mb-6">
-          <label className="block text-sm text-gray-400 mb-2">{t.setup.mode}</label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setMode('clue-giving')}
-              className={`p-4 rounded-lg border-2 transition-colors text-left ${
-                mode === 'clue-giving'
-                  ? 'border-board-blue/60 bg-board-blue/10'
-                  : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-              }`}
-            >
-              <p className="font-bold text-white">{t.setup.clueing}</p>
-              <p className="text-xs text-gray-400 mt-1">{t.setup.clueingDesc}</p>
-            </button>
-            <button
-              onClick={() => setMode('guessing')}
-              className={`p-4 rounded-lg border-2 transition-colors text-left ${
-                mode === 'guessing'
-                  ? 'border-board-blue/60 bg-board-blue/10'
-                  : 'border-gray-700 bg-gray-800 hover:border-gray-600'
-              }`}
-            >
-              <p className="font-bold text-white">{t.setup.guessing}</p>
-              <p className="text-xs text-gray-400 mt-1">{t.setup.guessingDesc}</p>
-            </button>
-          </div>
+        {/* Mode + Ranked toggles */}
+        <div className="flex justify-center gap-2 mb-6">
+          <button
+            onClick={() => setMode(mode === 'clue-giving' ? 'guessing' : 'clue-giving')}
+            className={`${toggleBtnBase} ${
+              mode === 'clue-giving'
+                ? 'bg-board-red text-white'
+                : 'bg-board-blue text-white'
+            }`}
+          >
+            {mode === 'clue-giving' ? t.setup.clueing : t.setup.guessing}
+          </button>
+          <button
+            onClick={() => setRanked(!ranked)}
+            className={`${toggleBtnBase} ${
+              ranked
+                ? 'bg-amber-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:text-white'
+            }`}
+          >
+            {ranked ? t.setup.ranked : t.setup.casual}
+          </button>
         </div>
 
-        {/* Color Config */}
-        <div className="mb-8">
-          <label className="block text-sm text-gray-400 mb-2">{t.setup.boardSize}</label>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 flex-1">
-              {COLOR_CONFIG.map(({ key, bg }) => {
-                const count = counts[key];
-                const isNeutral = key === 'neutral';
-                return (
-                  <div key={key} className="flex flex-col items-center gap-0.5">
-                    {!isNeutral ? (
-                      <button
-                        onClick={() => adjust(key, 1)}
-                        disabled={!canAdjust(key, 1)}
-                        className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
+        {/* Color Config — only for clue-giving mode */}
+        {mode === 'clue-giving' && (
+          <div className="mb-8">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 flex-1">
+                {COLOR_CONFIG.map(({ key, bg }) => {
+                  const count = counts[key];
+                  const isNeutral = key === 'neutral';
+                  const adjustable = !isNeutral && !ranked;
+                  return (
+                    <div key={key} className="flex flex-col items-center gap-0.5">
+                      {adjustable ? (
+                        <button
+                          onClick={() => adjust(key, 1)}
+                          disabled={!canAdjust(key, 1)}
+                          className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
+                        >
+                          ▲
+                        </button>
+                      ) : (
+                        <span className="text-xs text-transparent leading-none select-none">▲</span>
+                      )}
+                      <div
+                        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-md ${bg} flex items-center justify-center text-white font-bold text-lg ${ranked ? 'opacity-60' : ''}`}
                       >
-                        ▲
-                      </button>
-                    ) : (
-                      <span className="text-xs text-transparent leading-none">▲</span>
-                    )}
-                    <div
-                      className={`w-10 h-10 sm:w-11 sm:h-11 rounded-md ${bg} flex items-center justify-center text-white font-bold text-lg`}
-                    >
-                      {count}
+                        {count}
+                      </div>
+                      {adjustable ? (
+                        <button
+                          onClick={() => adjust(key, -1)}
+                          disabled={!canAdjust(key, -1)}
+                          className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
+                        >
+                          ▼
+                        </button>
+                      ) : (
+                        <span className="text-xs text-transparent leading-none select-none">▼</span>
+                      )}
                     </div>
-                    {!isNeutral ? (
-                      <button
-                        onClick={() => adjust(key, -1)}
-                        disabled={!canAdjust(key, -1)}
-                        className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
-                      >
-                        ▼
-                      </button>
-                    ) : (
-                      <span className="text-xs text-transparent leading-none">▼</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
 
-            <button
-              onClick={resetConfig}
-              className="px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors"
-            >
-              {t.setup.resetConfig}
-            </button>
+              {!ranked && (
+                <button
+                  onClick={resetConfig}
+                  className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
+                  title={t.setup.resetConfig}
+                >
+                  <ArrowUturnLeftIcon className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         <button
           onClick={handleStart}

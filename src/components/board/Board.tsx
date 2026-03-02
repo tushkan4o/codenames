@@ -1,4 +1,5 @@
 import type { CardState } from '../../types/game';
+import type { CardFontSize } from '../../types/user';
 import Card from './Card';
 
 interface BoardProps {
@@ -14,6 +15,9 @@ interface BoardProps {
   revealDelays?: Record<number, number>;
   highlightTargets?: boolean;
   pickPercents?: Record<number, number>;
+  cardFontSize?: CardFontSize;
+  revealingIndices?: Set<number>;
+  revealDuration?: number;
   // Drag-and-drop support
   displayOrder?: number[];
   draggingOrigIdx?: number | null;
@@ -41,6 +45,9 @@ export default function Board({
   revealDelays,
   highlightTargets,
   pickPercents,
+  cardFontSize,
+  revealingIndices,
+  revealDuration,
   displayOrder,
   draggingOrigIdx,
   onPointerDown,
@@ -91,6 +98,9 @@ export default function Board({
               pickPercent={pickPercents?.[originalIndex]}
               pickOrder={order}
               revealDelay={revealDelays?.[originalIndex]}
+              fontSize={cardFontSize}
+              revealing={revealingIndices?.has(originalIndex)}
+              revealDuration={revealDuration}
             />
           );
         }
@@ -118,6 +128,9 @@ export default function Board({
               pickPercent={pickPercents?.[originalIndex]}
               pickOrder={order}
               revealDelay={revealDelays?.[originalIndex]}
+              fontSize={cardFontSize}
+              revealing={revealingIndices?.has(originalIndex)}
+              revealDuration={revealDuration}
             />
           </div>
         );
