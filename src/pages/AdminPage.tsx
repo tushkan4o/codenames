@@ -48,14 +48,14 @@ function MiniBoard({ clue }: { clue: AdminClue }) {
   };
 
   return (
-    <div className={`grid ${config.cols === 4 ? 'grid-cols-4' : 'grid-cols-5'} gap-0.5`}>
+    <div className={`grid ${config.cols === 4 ? 'grid-cols-4' : 'grid-cols-5'} gap-1`}>
       {board.cards.map((card, idx) => (
         <div
           key={idx}
-          className={`${colorMap[card.color]} rounded-sm px-0.5 py-0.5 text-center text-[0.5rem] leading-tight font-semibold uppercase truncate ${
+          className={`${colorMap[card.color]} rounded px-1 py-1 text-center text-[0.6rem] leading-tight font-semibold uppercase truncate ${
             targetSet.has(idx) ? 'ring-2 ring-white ring-offset-1 ring-offset-gray-900' : ''
           } ${nullSet.has(idx) ? 'ring-1 ring-white/50' : ''}`}
-          style={{ minHeight: '1.1rem' }}
+          style={{ minHeight: '1.6rem' }}
           title={card.word}
         >
           {card.word}
@@ -310,7 +310,7 @@ export default function AdminPage() {
                     </div>
 
                     {/* Right: game board preview */}
-                    <div className="md:w-[240px] shrink-0">
+                    <div className="md:w-[420px] shrink-0">
                       <h3 className="text-sm font-bold text-white mb-2">{t.admin.board}</h3>
                       <MiniBoard clue={clue} />
                       <p className="text-xs text-gray-500 mt-1 text-center">
