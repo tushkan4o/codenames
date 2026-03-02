@@ -5,11 +5,13 @@ import { useTranslation } from '../i18n/useTranslation';
 import { api } from '../lib/api';
 import { generateBoard } from '../lib/boardGenerator';
 import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../types/game';
-import type { AdminClue, Report, RatingStats } from '../lib/api';
+import type { AdminClue, AdminUser, Report, RatingStats } from '../lib/api';
 import type { BoardSize, BoardConfig } from '../types/game';
 import NavBar from '../components/layout/NavBar';
 
+type AdminTab = 'clues' | 'users';
 type SortField = 'createdAt' | 'reportCount' | 'word' | 'userId';
+type UserSortField = 'lastActivity' | 'createdAt' | 'cluesGiven' | 'cluesSolved' | 'avgScore' | 'displayName';
 type SortDir = 'asc' | 'desc';
 
 interface ClueStats {
@@ -98,7 +100,9 @@ export default function AdminPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
 
+  const [adminTab, setAdminTab] = useState<AdminTab>('clues');
   const [clues, setClues] = useState<AdminClue[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [stats, setStats] = useState<Record<string, ClueStats>>({});
@@ -111,12 +115,17 @@ export default function AdminPage() {
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
+  const [userSort, setUserSort] = useState<UserSortField>('lastActivity');
+  const [userDir, setUserDir] = useState<SortDir>('desc');
+  const [userSearch, setUserSearch] = useState('');
+
   useEffect(() => {
     if (!user?.isAdmin) {
       navigate('/');
       return;
     }
     api.adminGetAllClues(user.id).then(setClues);
+    api.adminGetUsers(user.id).then(setUsers);
   }, [user, navigate]);
 
   if (!user?.isAdmin) return null;
@@ -124,6 +133,11 @@ export default function AdminPage() {
   function toggleSort(field: SortField) {
     if (sortField === field) setSortDir((d) => d === 'desc' ? 'asc' : 'desc');
     else { setSortField(field); setSortDir('desc'); }
+  }
+
+  function toggleUserSort(field: UserSortField) {
+    if (userSort === field) setUserDir((d) => d === 'desc' ? 'asc' : 'desc');
+    else { setUserSort(field); setUserDir('desc'); }
   }
 
   async function toggleExpand(clueId: string) {
@@ -179,6 +193,21 @@ export default function AdminPage() {
     return sortDir === 'desc' ? diff : -diff;
   });
 
+  const filteredUsers = users.filter((u) =>
+    u.id.toLowerCase().includes(userSearch.toLowerCase()) || u.displayName.toLowerCase().includes(userSearch.toLowerCase()),
+  );
+
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    let diff = 0;
+    if (userSort === 'lastActivity') diff = b.lastActivity - a.lastActivity;
+    else if (userSort === 'createdAt') diff = b.createdAt - a.createdAt;
+    else if (userSort === 'cluesGiven') diff = b.cluesGiven - a.cluesGiven;
+    else if (userSort === 'cluesSolved') diff = b.cluesSolved - a.cluesSolved;
+    else if (userSort === 'avgScore') diff = b.avgScore - a.avgScore;
+    else if (userSort === 'displayName') diff = a.displayName.localeCompare(b.displayName);
+    return userDir === 'desc' ? diff : -diff;
+  });
+
   const thClass = 'py-2 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
 
   return (
@@ -189,12 +218,28 @@ export default function AdminPage() {
           {t.admin.title}
         </h1>
 
+        <div className="flex justify-center gap-2 mb-6">
+          <button
+            onClick={() => setAdminTab('clues')}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${adminTab === 'clues' ? 'bg-board-red text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+          >
+            {t.admin.cluesTab} ({clues.length})
+          </button>
+          <button
+            onClick={() => setAdminTab('users')}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${adminTab === 'users' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+          >
+            {t.admin.usersTab} ({users.length})
+          </button>
+        </div>
+
         {deletedMessage && (
           <div className="mb-4 text-center text-green-400 text-sm font-semibold">
             {t.admin.deleted}
           </div>
         )}
 
+        {adminTab === 'clues' && (<>
         <div className="mb-4">
           <input
             type="text"
@@ -360,6 +405,69 @@ export default function AdminPage() {
             </div>
           ))}
         </div>
+        </>)}
+
+        {adminTab === 'users' && (
+          <>
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Поиск по имени..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="w-full bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
+              />
+            </div>
+
+            <div className="text-sm text-gray-400 mb-2">
+              {t.admin.userCount}: {filteredUsers.length}
+            </div>
+
+            <table className="w-full table-fixed">
+              <thead>
+                <tr className="text-gray-400 border-b border-gray-700/50">
+                  <th className={`${thClass} text-left w-[22%]`} onClick={() => toggleUserSort('displayName')}>
+                    {t.leaderboard.player}<SortArrow field="displayName" activeField={userSort} dir={userDir} />
+                  </th>
+                  <th className={`${thClass} text-right w-[13%]`} onClick={() => toggleUserSort('cluesGiven')}>
+                    {t.admin.given}<SortArrow field="cluesGiven" activeField={userSort} dir={userDir} />
+                  </th>
+                  <th className={`${thClass} text-right w-[13%]`} onClick={() => toggleUserSort('cluesSolved')}>
+                    {t.admin.solved}<SortArrow field="cluesSolved" activeField={userSort} dir={userDir} />
+                  </th>
+                  <th className={`${thClass} text-right w-[14%]`} onClick={() => toggleUserSort('avgScore')}>
+                    {t.admin.avgScore}<SortArrow field="avgScore" activeField={userSort} dir={userDir} />
+                  </th>
+                  <th className={`${thClass} text-right w-[19%]`} onClick={() => toggleUserSort('createdAt')}>
+                    {t.admin.registered}<SortArrow field="createdAt" activeField={userSort} dir={userDir} />
+                  </th>
+                  <th className={`${thClass} text-right w-[19%]`} onClick={() => toggleUserSort('lastActivity')}>
+                    {t.admin.lastActive}<SortArrow field="lastActivity" activeField={userSort} dir={userDir} />
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedUsers.map((u) => (
+                  <tr
+                    key={u.id}
+                    className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 cursor-pointer"
+                    onClick={() => navigate(`/profile/${u.id}`)}
+                  >
+                    <td className="py-2 text-sm truncate">
+                      <span className="font-semibold text-white">{u.displayName}</span>
+                      {u.isAdmin && <span className="ml-1 text-[0.6rem] text-board-blue font-bold">ADM</span>}
+                    </td>
+                    <td className="py-2 text-sm text-right">{u.cluesGiven}</td>
+                    <td className="py-2 text-sm text-right">{u.cluesSolved}</td>
+                    <td className="py-2 text-sm text-right">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</td>
+                    <td className="py-2 text-sm text-right text-gray-500">{formatDateTime(u.createdAt)}</td>
+                    <td className="py-2 text-sm text-right text-gray-400">{formatDateTime(u.lastActivity)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </div>
 
       {/* Confirm delete modal */}

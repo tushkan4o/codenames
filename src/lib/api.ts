@@ -51,6 +51,17 @@ export interface RatingStats {
   avg: number;
 }
 
+export interface AdminUser {
+  id: string;
+  displayName: string;
+  createdAt: number;
+  isAdmin: boolean;
+  cluesGiven: number;
+  cluesSolved: number;
+  avgScore: number;
+  lastActivity: number;
+}
+
 export interface Report {
   id: number;
   clueId: string;
@@ -137,6 +148,10 @@ export const api = {
 
   async adminGetRatings(adminId: string, clueId: string): Promise<RatingStats> {
     return get(`/api/admin?action=ratings&adminId=${encodeURIComponent(adminId)}&clueId=${encodeURIComponent(clueId)}`);
+  },
+
+  async adminGetUsers(adminId: string): Promise<AdminUser[]> {
+    return get(`/api/admin?action=users&adminId=${encodeURIComponent(adminId)}`);
   },
 
   async adminDeleteClue(adminId: string, clueId: string): Promise<void> {

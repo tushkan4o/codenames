@@ -72,6 +72,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    if (action === 'users') {
+      const users = await sql`SELECT id, display_name, created_at, is_admin FROM users ORDER BY created_at DESC`;
+      const clueCountRows = await sql`SELECT user_id, COUNT(*)::int as cnt FROM clues GROUP BY user_id`;
+      const solveCountRows = await sql`SELECT user_id, COUNT(*)::int as cnt FROM results GROUP BY user_id`;
+      const lastClueRows = await sql`SELECT user_id, MAX(created_at) as last_at FROM clues GROUP BY user_id`;
+      const lastSolveRows = await sql`SELECT user_id, MAX(timestamp) as last_at FROM results GROUP BY user_id`;
+      const avgScoreRows = await sql`SELECT user_id, ROUND(AVG(score)::numeric, 1) as avg FROM results GROUP BY user_id`;
+
+      const clueCountMap = Object.fromEntries(clueCountRows.map((r: Record<string, unknown>) => [r.user_id, Number(r.cnt)]));
+      const solveCountMap = Object.fromEntries(solveCountRows.map((r: Record<string, unknown>) => [r.user_id, Number(r.cnt)]));
+      const lastClueMap = Object.fromEntries(lastClueRows.map((r: Record<string, unknown>) => [r.user_id, Number(r.last_at)]));
+      const lastSolveMap = Object.fromEntries(lastSolveRows.map((r: Record<string, unknown>) => [r.user_id, Number(r.last_at)]));
+      const avgScoreMap = Object.fromEntries(avgScoreRows.map((r: Record<string, unknown>) => [r.user_id, Number(r.avg)]));
+
+      return res.json(users.map((u: Record<string, unknown>) => {
+        const id = u.id as string;
+        const lastClue = lastClueMap[id] || 0;
+        const lastSolve = lastSolveMap[id] || 0;
+        return {
+          id,
+          displayName: u.display_name,
+          createdAt: Number(u.created_at),
+          isAdmin: u.is_admin === true,
+          cluesGiven: clueCountMap[id] || 0,
+          cluesSolved: solveCountMap[id] || 0,
+          avgScore: avgScoreMap[id] || 0,
+          lastActivity: Math.max(lastClue, lastSolve, Number(u.created_at)),
+        };
+      }));
+    }
+
     if (action === 'reports') {
       const { clueId } = req.query;
       if (!clueId || typeof clueId !== 'string') {
