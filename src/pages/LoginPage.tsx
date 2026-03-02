@@ -27,7 +27,7 @@ export default function LoginPage() {
       setError(t.login.errorLong);
       return;
     }
-    if (!/^[a-zA-Zа-яА-ЯёЁ ]+$/.test(trimmed)) {
+    if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(trimmed)) {
       setError(t.login.errorChars);
       return;
     }

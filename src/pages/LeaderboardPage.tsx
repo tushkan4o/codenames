@@ -30,6 +30,7 @@ interface ClueStatEntry {
   word: string;
   number: number;
   userId: string;
+  ranked: boolean;
   attempts: number;
   avgScore: number;
 }
@@ -158,7 +159,7 @@ export default function LeaderboardPage() {
   const thClass = 'py-2 text-xs sm:text-sm';
   const tdClass = 'py-2 text-xs sm:text-sm';
 
-  const thSortClass = `${thClass} text-right cursor-pointer hover:text-white transition-colors select-none`;
+  const thSortClass = `${thClass} text-center cursor-pointer hover:text-white transition-colors select-none`;
 
   return (
     <div className="min-h-screen">
@@ -196,9 +197,9 @@ export default function LeaderboardPage() {
                       <td className={`${tdClass} font-semibold truncate`}>
                         <button onClick={() => navigate(`/profile/${s.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{s.userId}</button>
                       </td>
-                      <td className={`${tdClass} text-right`}>{s.cluesGiven}</td>
-                      <td className={`${tdClass} text-right`}>{s.avgWordsPerClue.toFixed(1)}</td>
-                      <td className={`${tdClass} text-right`}>{s.avgScoreOnClues.toFixed(1)}</td>
+                      <td className={`${tdClass} text-center`}>{s.cluesGiven}</td>
+                      <td className={`${tdClass} text-center`}>{s.avgWordsPerClue.toFixed(1)}</td>
+                      <td className={`${tdClass} text-center`}>{s.avgScoreOnClues.toFixed(1)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -231,9 +232,9 @@ export default function LeaderboardPage() {
                       <td className={`${tdClass} font-semibold truncate`}>
                         <button onClick={() => navigate(`/profile/${g.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{g.userId}</button>
                       </td>
-                      <td className={`${tdClass} text-right`}>{g.cluesSolved}</td>
-                      <td className={`${tdClass} text-right`}>{g.avgWordsPicked.toFixed(1)}</td>
-                      <td className={`${tdClass} text-right`}>{g.avgScore.toFixed(1)}</td>
+                      <td className={`${tdClass} text-center`}>{g.cluesSolved}</td>
+                      <td className={`${tdClass} text-center`}>{g.avgWordsPicked.toFixed(1)}</td>
+                      <td className={`${tdClass} text-center`}>{g.avgScore.toFixed(1)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -252,12 +253,13 @@ export default function LeaderboardPage() {
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className={`${thClass} text-left w-[6%]`}>{t.leaderboard.rank}</th>
-                    <th className={`${thClass} text-left w-[18%]`}>{t.leaderboard.author}</th>
-                    <th className={`${thSortClass} text-left w-[28%]`} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></th>
-                    <th className={`${thSortClass} w-[20%]`} onClick={() => toggleClueSort('attempts')}>{t.leaderboard.attempts}<SortArrow field="attempts" activeField={clueSort} dir={clueDir} /></th>
-                    <th className={`${thSortClass} w-[20%]`} onClick={() => toggleClueSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></th>
-                    <th className={`${thClass} text-center w-[8%]`}></th>
+                    <th className={`${thClass} text-left w-[5%]`}>{t.leaderboard.rank}</th>
+                    <th className={`${thClass} text-left w-[17%]`}>{t.leaderboard.author}</th>
+                    <th className={`${thSortClass} text-left w-[25%]`} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></th>
+                    <th className={`${thClass} text-center w-[5%]`} title="Рейтинговая">★</th>
+                    <th className={`${thSortClass} w-[18%]`} onClick={() => toggleClueSort('attempts')}>{t.leaderboard.attempts}<SortArrow field="attempts" activeField={clueSort} dir={clueDir} /></th>
+                    <th className={`${thSortClass} w-[18%]`} onClick={() => toggleClueSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></th>
+                    <th className={`${thClass} text-center w-[6%]`}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -277,8 +279,9 @@ export default function LeaderboardPage() {
                         <td className={`${tdClass} font-bold uppercase truncate`}>
                           {c.word} <span className="text-gray-500 font-semibold">{c.number}</span>
                         </td>
-                        <td className={`${tdClass} text-right`}>{c.attempts}</td>
-                        <td className={`${tdClass} text-right`}>{c.avgScore.toFixed(1)}</td>
+                        <td className={`${tdClass} text-center`}>{c.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</td>
+                        <td className={`${tdClass} text-center`}>{c.attempts}</td>
+                        <td className={`${tdClass} text-center`}>{c.avgScore.toFixed(1)}</td>
                         <td className={`${tdClass} text-center`}>
                           {user && (
                             (solved || isOwn) ? (

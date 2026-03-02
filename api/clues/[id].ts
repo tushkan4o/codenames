@@ -25,10 +25,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sql = neon(process.env.DATABASE_URL!);
 
   if (stats === 'true') {
-    const rows = await sql`SELECT score, guessed_indices FROM results WHERE clue_id = ${id}`;
+    const rows = await sql`SELECT user_id, score, guessed_indices, timestamp FROM results WHERE clue_id = ${id} ORDER BY timestamp ASC`;
 
     if (rows.length === 0) {
-      return res.json({ attempts: 0, avgScore: 0, scores: [], pickCounts: {} });
+      return res.json({ attempts: 0, avgScore: 0, scores: [], pickCounts: {}, details: [] });
     }
 
     const scores = rows.map((r: Record<string, unknown>) => Number(r.score) || 0);
@@ -45,11 +45,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Per-attempt details
+    const details = rows.map((r: Record<string, unknown>) => ({
+      userId: r.user_id as string,
+      score: Number(r.score) || 0,
+      timestamp: Number(r.timestamp),
+      guessedIndices: r.guessed_indices as number[],
+    }));
+
+    // Fetch clue creation date
+    const clueRows = await sql`SELECT created_at FROM clues WHERE id = ${id}`;
+    const createdAt = clueRows.length > 0 ? Number(clueRows[0].created_at) : 0;
+
     return res.json({
       attempts: rows.length,
       avgScore: Math.round((totalScore / rows.length) * 10) / 10,
       scores,
       pickCounts,
+      details,
+      createdAt,
     });
   }
 

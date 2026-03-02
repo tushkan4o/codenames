@@ -157,8 +157,13 @@ export default function ProfilePage() {
 
   function handleSolvedRowClick(entry: SolvedEntry) {
     if (!entry.clue) return;
-    setModalClue(entry.clue);
-    setModalResult(entry.result);
+    const iSolved = isOwnProfile || mySolvedClueIds.has(entry.result.clueId);
+    if (iSolved) {
+      setModalClue(entry.clue);
+      setModalResult(entry.result);
+    } else {
+      setConfirmTryClueId(entry.clue.id);
+    }
   }
 
   async function handleAdminDeleteUser() {

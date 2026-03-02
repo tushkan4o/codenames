@@ -199,6 +199,7 @@ export default function SetupPage() {
   const otherRanked = RANKED_CONFIG[String(!ranked) as 'true' | 'false'];
 
   const colorLocked = ranked || mode === 'guessing';
+  const showQuestionMarks = mode === 'guessing' && !ranked;
 
   return (
     <div className="min-h-screen">
@@ -271,7 +272,7 @@ export default function SetupPage() {
                     <div
                       className={`w-10 h-10 sm:w-11 sm:h-11 rounded-md ${bg} flex items-center justify-center text-white font-bold text-lg ${colorLocked ? 'opacity-60' : ''}`}
                     >
-                      {count}
+                      {showQuestionMarks ? '?' : count}
                     </div>
                     {adjustable ? (
                       <button
@@ -333,14 +334,10 @@ export default function SetupPage() {
                   {t.setup.continueGame}
                 </button>
                 <button
-                  onClick={() => {
-                    localStorage.removeItem('codenames_active_guess');
-                    setContinueGameId(null);
-                    startGuessing();
-                  }}
+                  onClick={() => setContinueGameId(null)}
                   className="px-4 py-2 text-sm font-bold text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
                 >
-                  {t.setup.newGame}
+                  {t.rating.cancel}
                 </button>
               </div>
             </div>

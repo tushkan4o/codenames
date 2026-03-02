@@ -57,6 +57,7 @@ export interface AdminClue {
   nullIndices: number[];
   reportCount: number;
   disabled: boolean;
+  ranked: boolean;
 }
 
 export interface RatingStats {
@@ -121,7 +122,14 @@ export const api = {
     return get(`/api/results?userId=${encodeURIComponent(userId)}`);
   },
 
-  async getClueStats(clueId: string): Promise<{ attempts: number; avgScore: number; scores: number[] }> {
+  async getClueStats(clueId: string): Promise<{
+    attempts: number;
+    avgScore: number;
+    scores: number[];
+    pickCounts?: Record<number, number>;
+    details?: { userId: string; score: number; timestamp: number; guessedIndices: number[] }[];
+    createdAt?: number;
+  }> {
     return get(`/api/clues/${encodeURIComponent(clueId)}?stats=true`);
   },
 

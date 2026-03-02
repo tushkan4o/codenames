@@ -62,6 +62,9 @@ export default function GuessingPage() {
   // Revealed targets — only populated after game ends (security: not sent initially)
   const [revealedTargets, setRevealedTargets] = useState<number[]>([]);
   const [revealedNulls, setRevealedNulls] = useState<number[]>([]);
+
+  // Viewing another player's attempt picks
+  const [viewingAttemptPicks, setViewingAttemptPicks] = useState<number[] | null>(null);
   const [pickPercents, setPickPercents] = useState<Record<number, number>>({});
 
   useEffect(() => {
@@ -115,6 +118,15 @@ export default function GuessingPage() {
     if (!board) return 0;
     return pickedIndices.filter((i) => board.cards[i].color === 'red').length;
   }, [pickedIndices, board]);
+
+  const colorCounts = useMemo(() => {
+    if (!board) return null;
+    const counts = { red: 0, blue: 0, neutral: 0, assassin: 0 };
+    for (const card of board.cards) {
+      counts[card.color as keyof typeof counts]++;
+    }
+    return counts;
+  }, [board]);
 
   function handleHome() {
     navigate('/');
@@ -322,6 +334,21 @@ export default function GuessingPage() {
       <GameHeader mode="guessing" config={config} />
       <ClueDisplay word={clue.word} number={clue.number} teamColor="red" />
 
+      {colorCounts && phase === 'picking' && (
+        <div className="flex items-center justify-center gap-1.5 mt-2">
+          {[
+            { key: 'red', bg: 'bg-board-red' },
+            { key: 'blue', bg: 'bg-board-blue' },
+            { key: 'neutral', bg: 'bg-board-neutral' },
+            { key: 'assassin', bg: 'bg-board-assassin border border-gray-600' },
+          ].map(({ key, bg }) => (
+            <div key={key} className={`w-7 h-7 rounded ${bg} flex items-center justify-center text-white font-bold text-xs opacity-60`}>
+              {colorCounts[key as keyof typeof colorCounts]}
+            </div>
+          ))}
+        </div>
+      )}
+
       <p className="text-center text-gray-400 text-sm mt-3 mb-1">
         {assassinHit
           ? t.game.gameOverAssassin
@@ -361,10 +388,10 @@ export default function GuessingPage() {
         nullIndices={doneNullIndices}
         onCardClick={isPicking ? handlePick : undefined}
         disabled={!isPicking}
-        pickOrder={pickedIndices}
+        pickOrder={viewingAttemptPicks && viewingAttemptPicks.length > 0 ? viewingAttemptPicks : pickedIndices}
         revealDelays={phase === 'revealing' ? revealDelays : undefined}
-        highlightTargets={phase === 'done'}
-        pickPercents={phase === 'done' ? pickPercents : undefined}
+        highlightTargets={phase === 'done' && (!viewingAttemptPicks || viewingAttemptPicks.length === 0)}
+        pickPercents={phase === 'done' && (!viewingAttemptPicks || viewingAttemptPicks.length === 0) ? pickPercents : undefined}
         revealingIndices={revealingIndices.size > 0 ? revealingIndices : undefined}
         revealDuration={revealDuration}
       />
@@ -409,7 +436,11 @@ export default function GuessingPage() {
             score={score}
           />
           <div className="max-w-md mx-auto mt-4">
-            <ClueStatsPanel clueId={clue.id} spymasterUserId={clue.userId} />
+            <ClueStatsPanel
+              clueId={clue.id}
+              spymasterUserId={clue.userId}
+              onShowAttemptPicks={(indices) => setViewingAttemptPicks(indices.length > 0 ? indices : null)}
+            />
           </div>
           <ClueRating
             onRate={(rating) => {

@@ -3,15 +3,36 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { useTranslation } from '../../i18n/useTranslation';
 
+interface AttemptDetail {
+  userId: string;
+  score: number;
+  timestamp: number;
+  guessedIndices: number[];
+}
+
 interface ClueStatsPanelProps {
   clueId: string;
   spymasterUserId: string;
+  onShowAttemptPicks?: (guessedIndices: number[]) => void;
 }
 
-export default function ClueStatsPanel({ clueId, spymasterUserId }: ClueStatsPanelProps) {
+function formatDate(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+}
+
+export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptPicks }: ClueStatsPanelProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [stats, setStats] = useState<{ attempts: number; avgScore: number; scores: number[] } | null>(null);
+  const [stats, setStats] = useState<{
+    attempts: number;
+    avgScore: number;
+    details?: AttemptDetail[];
+    createdAt?: number;
+  } | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [selectedAttemptIdx, setSelectedAttemptIdx] = useState<number | null>(null);
 
   useEffect(() => {
     api.getClueStats(clueId).then(setStats);
@@ -19,17 +40,21 @@ export default function ClueStatsPanel({ clueId, spymasterUserId }: ClueStatsPan
 
   if (!stats) return null;
 
-  // Build simple score distribution: count occurrences of each score value
-  const distribution = new Map<number, number>();
-  for (const s of stats.scores) {
-    distribution.set(s, (distribution.get(s) ?? 0) + 1);
+  function handleAttemptClick(idx: number) {
+    if (selectedAttemptIdx === idx) {
+      setSelectedAttemptIdx(null);
+      onShowAttemptPicks?.([]); // clear
+    } else {
+      setSelectedAttemptIdx(idx);
+      const detail = stats!.details?.[idx];
+      if (detail) onShowAttemptPicks?.(detail.guessedIndices);
+    }
   }
-  const sortedScores = Array.from(distribution.entries()).sort((a, b) => a[0] - b[0]);
 
   return (
     <div className="bg-gray-800/80 rounded-lg p-4 border border-gray-700 text-sm">
       {/* Spymaster */}
-      <div className="mb-3">
+      <div className="mb-2">
         <span className="text-gray-400">{t.results.clueBy} </span>
         <button
           onClick={() => navigate(`/profile/${spymasterUserId}`)}
@@ -39,15 +64,27 @@ export default function ClueStatsPanel({ clueId, spymasterUserId }: ClueStatsPan
         </button>
       </div>
 
+      {/* Creation date */}
+      {stats.createdAt ? (
+        <div className="text-gray-500 text-xs mb-3">
+          {formatDate(stats.createdAt)}
+        </div>
+      ) : null}
+
       {/* Stats summary */}
       {stats.attempts === 0 ? (
         <p className="text-blue-400 font-semibold">{t.results.firstSolve}</p>
       ) : (
         <>
-          <div className="flex gap-4 mb-3">
+          <div className="flex gap-4 mb-1">
             <div>
-              <span className="text-gray-400">{stats.attempts} </span>
-              <span className="text-gray-500">{t.results.attempts}</span>
+              <button
+                onClick={() => setExpanded((e) => !e)}
+                className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
+              >
+                {stats.attempts}
+              </button>
+              <span className="text-gray-500 ml-1">{t.results.attempts}</span>
             </div>
             <div>
               <span className="text-gray-400">{t.results.avgScoreLabel}: </span>
@@ -55,21 +92,31 @@ export default function ClueStatsPanel({ clueId, spymasterUserId }: ClueStatsPan
             </div>
           </div>
 
-          {/* Score distribution bars */}
-          {sortedScores.length > 1 && (
-            <div className="space-y-1">
-              {sortedScores.map(([score, count]) => (
-                <div key={score} className="flex items-center gap-2">
-                  <span className="w-4 text-right text-gray-400 text-xs">{score}</span>
-                  <div className="flex-1 h-3 bg-gray-700 rounded overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500/70 rounded"
-                      style={{ width: `${(count / stats.attempts) * 100}%` }}
-                    />
+          {/* Expanded per-attempt details */}
+          {expanded && stats.details && stats.details.length > 0 && (
+            <div className="mt-3 border-t border-gray-700/50 pt-3">
+              <div className="space-y-0.5 max-h-[200px] overflow-y-auto">
+                {stats.details.map((detail, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => handleAttemptClick(idx)}
+                    className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-colors text-xs ${
+                      selectedAttemptIdx === idx
+                        ? 'bg-board-blue/20 border border-board-blue/30'
+                        : 'hover:bg-gray-700/50'
+                    }`}
+                  >
+                    <span className="text-gray-500 w-[5.5rem] shrink-0">{formatDate(detail.timestamp)}</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/profile/${detail.userId}`); }}
+                      className="text-blue-400 hover:text-blue-300 transition-colors truncate flex-1 text-left"
+                    >
+                      {detail.userId}
+                    </button>
+                    <span className="text-white font-semibold w-6 text-right shrink-0">{detail.score}</span>
                   </div>
-                  <span className="w-4 text-left text-gray-500 text-xs">{count}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </>

@@ -104,7 +104,8 @@ export default function Card({
   // Dim/glow mode for reveal views
   const highlightGlow = glowing ? glowColors[color] : '';
   const brightnessClass = glowing ? 'brightness-125' : '';
-  const dimClass = dimmed ? 'opacity-50' : '';
+  // Dimming is now applied to word text only, not the whole card
+  const dimClass = '';
 
   const style: React.CSSProperties = {
     ...(revealDelay !== undefined ? { transitionDelay: `${revealDelay}ms` } : {}),
@@ -130,24 +131,42 @@ export default function Card({
       type="button"
       style={style}
     >
-      <span className="text-center leading-tight hyphens-auto" lang="ru" style={{ overflowWrap: 'break-word' }}>{word}</span>
-
-      {pickPercent !== undefined && pickPercent > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 min-w-[1.4rem] h-[0.9rem] sm:h-[1rem] px-0.5 rounded-sm bg-orange-500/90 text-white text-[0.5rem] sm:text-[0.55rem] font-bold flex items-center justify-center leading-none">
-          {pickPercent}%
-        </span>
-      )}
+      <span className={`text-center leading-tight hyphens-auto ${dimmed ? 'opacity-50' : ''}`} lang="ru" style={{ overflowWrap: 'break-word' }}>{word}</span>
 
       {showNullX && (
-        <span className="absolute inset-0 pointer-events-none overflow-hidden">
+        <span className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
           <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="drop-shadow-sm" style={{ opacity: 0.7 }}>
             <path d="M8,92 C30,70 70,30 92,8" stroke="#EF5350" strokeWidth="2.5" strokeLinecap="round" fill="none" vectorEffect="non-scaling-stroke" />
           </svg>
         </span>
       )}
 
+      {pickPercent !== undefined && pickPercent > 0 && (
+        <span
+          className="absolute top-0 right-0 flex items-start justify-end text-white font-bold text-[0.6rem] sm:text-[0.7rem]"
+          style={{
+            width: '1.6rem', height: '1.6rem',
+            borderBottomLeftRadius: '100%',
+            background: 'rgba(249,115,22,0.85)',
+            paddingTop: '0.05rem', paddingRight: '0.15rem',
+            zIndex: 2,
+          }}
+        >
+          {pickPercent}
+        </span>
+      )}
+
       {pickOrder !== undefined && (
-        <span className="absolute bottom-0.5 left-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white/80 text-gray-900 text-[0.6rem] sm:text-xs flex items-center justify-center font-bold">
+        <span
+          className="absolute bottom-0 left-0 flex items-end justify-start text-gray-900 font-bold text-[0.6rem] sm:text-xs"
+          style={{
+            width: '1.4rem', height: '1.4rem',
+            borderTopRightRadius: '100%',
+            background: 'rgba(255,255,255,0.8)',
+            paddingBottom: '0.05rem', paddingLeft: '0.2rem',
+            zIndex: 2,
+          }}
+        >
           {pickOrder}
         </span>
       )}

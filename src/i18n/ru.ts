@@ -13,7 +13,7 @@ export const ru = {
     errorShort: 'Имя должно быть не менее 2 символов',
     errorLong: 'Имя должно быть не более 20 символов',
     errorPassword: 'Неверный пароль',
-    errorChars: 'Допустимы только буквы и пробел',
+    errorChars: 'Допустимы буквы, цифры, пробелы, дефисы и скобки',
   },
   nav: {
     home: 'Главная',
@@ -69,7 +69,7 @@ export const ru = {
     selected: 'выбрано',
     selectWords: 'Выберите слова, подходящие к подсказке',
     resultsRevealed: 'Результаты раскрыты!',
-    gameOverAssassin: 'Вы выбрали убийцу! Счёт: 0',
+    gameOverAssassin: 'Вы выбрали черное слово!',
     pickedRedCount: 'красных найдено',
     targetsMismatch: 'Выберите ровно {n} целевых слов для подсказки',
     clueSubmitted: 'Подсказка отправлена!',
