@@ -41,10 +41,10 @@ const colorConfig: Record<CardColor, { bg: string; text: string; glow: string }>
 };
 
 const glowColors: Record<CardColor, string> = {
-  red: 'shadow-[0_0_12px_3px_rgba(239,83,80,0.45)]',
-  blue: 'shadow-[0_0_12px_3px_rgba(66,165,245,0.45)]',
-  neutral: 'shadow-[0_0_8px_2px_rgba(255,255,255,0.15)]',
-  assassin: 'shadow-[0_0_8px_2px_rgba(0,0,0,0.4)]',
+  red: 'shadow-[0_0_16px_4px_rgba(239,83,80,0.55)]',
+  blue: 'shadow-[0_0_16px_4px_rgba(66,165,245,0.55)]',
+  neutral: 'shadow-[0_0_10px_3px_rgba(255,255,255,0.2)]',
+  assassin: 'shadow-[0_0_10px_3px_rgba(0,0,0,0.5)]',
 };
 
 export default function Card({
@@ -88,7 +88,7 @@ export default function Card({
 
   // Dim/glow mode for reveal views
   const highlightGlow = glowing ? glowColors[color] : '';
-  const brightnessClass = glowing ? 'brightness-110' : '';
+  const brightnessClass = glowing ? 'brightness-125' : '';
   const dimClass = dimmed ? 'opacity-50' : '';
 
   const style = revealDelay !== undefined
