@@ -6,30 +6,26 @@ interface DragState {
   active: boolean;
   startX: number;
   startY: number;
-  visualIdx: number;
+  draggedOriginalIdx: number; // which original card we're dragging
   pointerId: number;
   cardRect: DOMRect | null;
-}
-
-export interface DragRenderState {
-  dragVisualIdx: number;
-  overVisualIdx: number | null;
 }
 
 export function useDragReorder(cardCount: number) {
   const [displayOrder, setDisplayOrder] = useState<number[]>(() =>
     Array.from({ length: cardCount }, (_, i) => i),
   );
-  const [dragRender, setDragRender] = useState<DragRenderState | null>(null);
+  const [draggingOrigIdx, setDraggingOrigIdx] = useState<number | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const floatingRef = useRef<HTMLDivElement | null>(null);
   const cardRefsMap = useRef<Map<number, HTMLElement>>(new Map());
-  const prevRectsRef = useRef<Map<number, DOMRect>>(new Map());
+  const displayOrderRef = useRef(displayOrder);
+  displayOrderRef.current = displayOrder;
 
   // Reset when cardCount changes (new board)
   useEffect(() => {
     setDisplayOrder(Array.from({ length: cardCount }, (_, i) => i));
-    setDragRender(null);
+    setDraggingOrigIdx(null);
   }, [cardCount]);
 
   const registerCardRef = useCallback((visualIdx: number, el: HTMLElement | null) => {
@@ -38,17 +34,23 @@ export function useDragReorder(cardCount: number) {
   }, []);
 
   const handlePointerDown = useCallback((visualIdx: number, e: React.PointerEvent) => {
-    if (e.button !== 0) return; // left button only
+    if (e.button !== 0) return;
     const el = cardRefsMap.current.get(visualIdx);
+    const originalIdx = displayOrderRef.current[visualIdx];
     dragRef.current = {
       active: false,
       startX: e.clientX,
       startY: e.clientY,
-      visualIdx,
+      draggedOriginalIdx: originalIdx,
       pointerId: e.pointerId,
       cardRect: el?.getBoundingClientRect() ?? null,
     };
   }, []);
+
+  // Helper: find visual index of an original card index
+  function findVisualIdx(origIdx: number): number {
+    return displayOrderRef.current.indexOf(origIdx);
+  }
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     const drag = dragRef.current;
@@ -60,12 +62,12 @@ export function useDragReorder(cardCount: number) {
 
     if (!drag.active) {
       if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
-      // Start dragging
       drag.active = true;
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
       // Create floating clone
-      const sourceEl = cardRefsMap.current.get(drag.visualIdx);
+      const currentVisualIdx = findVisualIdx(drag.draggedOriginalIdx);
+      const sourceEl = cardRefsMap.current.get(currentVisualIdx);
       if (sourceEl && drag.cardRect) {
         const clone = sourceEl.cloneNode(true) as HTMLDivElement;
         clone.className = 'card-drag-floating';
@@ -84,7 +86,7 @@ export function useDragReorder(cardCount: number) {
         floatingRef.current = clone;
       }
 
-      setDragRender({ dragVisualIdx: drag.visualIdx, overVisualIdx: null });
+      setDraggingOrigIdx(drag.draggedOriginalIdx);
     }
 
     // Move floating clone
@@ -94,22 +96,56 @@ export function useDragReorder(cardCount: number) {
     }
 
     // Detect which card we're over
-    if (floatingRef.current) {
-      floatingRef.current.style.display = 'none';
-    }
+    if (floatingRef.current) floatingRef.current.style.display = 'none';
     const elUnder = document.elementFromPoint(e.clientX, e.clientY);
-    if (floatingRef.current) {
-      floatingRef.current.style.display = '';
-    }
+    if (floatingRef.current) floatingRef.current.style.display = '';
 
     const slotEl = elUnder?.closest('[data-visual-index]') as HTMLElement | null;
-    const overIdx = slotEl ? Number(slotEl.dataset.visualIndex) : null;
+    if (!slotEl) return;
+    const overVisualIdx = Number(slotEl.dataset.visualIndex);
 
-    setDragRender((prev) => {
-      if (!prev) return prev;
-      if (prev.overVisualIdx === overIdx) return prev;
-      return { ...prev, overVisualIdx: overIdx };
-    });
+    // Live swap: if hovering over a different slot than where dragged card currently is
+    const currentDragVisualIdx = findVisualIdx(drag.draggedOriginalIdx);
+    if (overVisualIdx !== currentDragVisualIdx) {
+      // Record rects for FLIP
+      const rects = new Map<number, DOMRect>();
+      cardRefsMap.current.forEach((el, idx) => {
+        rects.set(idx, el.getBoundingClientRect());
+      });
+
+      setDisplayOrder((prev) => {
+        const next = [...prev];
+        [next[currentDragVisualIdx], next[overVisualIdx]] = [next[overVisualIdx], next[currentDragVisualIdx]];
+        return next;
+      });
+
+      // FLIP animation for the non-dragged card that moved
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          cardRefsMap.current.forEach((el, idx) => {
+            const prevRect = rects.get(idx);
+            if (!prevRect) return;
+            // Skip the dragged card's slot (it's invisible anyway)
+            const origAtSlot = displayOrderRef.current[idx];
+            if (origAtSlot === drag.draggedOriginalIdx) return;
+
+            const newRect = el.getBoundingClientRect();
+            const ddx = prevRect.left - newRect.left;
+            const ddy = prevRect.top - newRect.top;
+            if (Math.abs(ddx) < 1 && Math.abs(ddy) < 1) return;
+
+            el.style.transform = `translate(${ddx}px, ${ddy}px)`;
+            el.style.transition = 'none';
+            requestAnimationFrame(() => {
+              el.style.transition = 'transform 200ms cubic-bezier(0.2,0,0,1)';
+              el.style.transform = '';
+              const onEnd = () => { el.style.transition = ''; el.style.transform = ''; el.removeEventListener('transitionend', onEnd); };
+              el.addEventListener('transitionend', onEnd);
+            });
+          });
+        });
+      });
+    }
   }, []);
 
   const handlePointerUp = useCallback((e: React.PointerEvent): boolean => {
@@ -118,83 +154,18 @@ export function useDragReorder(cardCount: number) {
 
     const wasDrag = drag.active;
 
-    // Clean up floating clone
     if (floatingRef.current) {
       floatingRef.current.remove();
       floatingRef.current = null;
     }
 
-    if (wasDrag) {
-      // Find drop target
-      const elUnder = document.elementFromPoint(e.clientX, e.clientY);
-      const slotEl = elUnder?.closest('[data-visual-index]') as HTMLElement | null;
-      const toVisualIdx = slotEl ? Number(slotEl.dataset.visualIndex) : null;
-      const fromVisualIdx = drag.visualIdx;
-
-      if (toVisualIdx !== null && toVisualIdx !== fromVisualIdx) {
-        // Record rects before swap for FLIP animation
-        const rects = new Map<number, DOMRect>();
-        cardRefsMap.current.forEach((el, idx) => {
-          rects.set(idx, el.getBoundingClientRect());
-        });
-        prevRectsRef.current = rects;
-
-        // Perform swap
-        setDisplayOrder((prev) => {
-          const next = [...prev];
-          [next[fromVisualIdx], next[toVisualIdx]] = [next[toVisualIdx], next[fromVisualIdx]];
-          return next;
-        });
-
-        // FLIP animation after React re-render
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            cardRefsMap.current.forEach((el, idx) => {
-              const prevRect = prevRectsRef.current.get(idx);
-              if (!prevRect) return;
-              const newRect = el.getBoundingClientRect();
-              const dx = prevRect.left - newRect.left;
-              const dy = prevRect.top - newRect.top;
-              if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-
-              el.style.transform = `translate(${dx}px, ${dy}px)`;
-              el.style.transition = 'none';
-
-              requestAnimationFrame(() => {
-                el.style.transition = 'transform 250ms cubic-bezier(0.2,0,0,1)';
-                el.style.transform = '';
-
-                const onEnd = () => {
-                  el.style.transition = '';
-                  el.style.transform = '';
-                  el.removeEventListener('transitionend', onEnd);
-                };
-                el.addEventListener('transitionend', onEnd);
-              });
-            });
-          });
-        });
-      }
-    }
-
     dragRef.current = null;
-    setDragRender(null);
+    setDraggingOrigIdx(null);
 
     return wasDrag;
   }, []);
 
-  const resetOrder = useCallback(() => {
-    // Record rects for FLIP before reset
-    const rects = new Map<number, DOMRect>();
-    cardRefsMap.current.forEach((el, idx) => {
-      rects.set(idx, el.getBoundingClientRect());
-    });
-    prevRectsRef.current = rects;
-
-    setDisplayOrder(Array.from({ length: cardCount }, (_, i) => i));
-    setDragRender(null);
-
-    // FLIP animation
+  const flipAnimate = useCallback(() => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         cardRefsMap.current.forEach((el, idx) => {
@@ -204,29 +175,37 @@ export function useDragReorder(cardCount: number) {
           const dx = prevRect.left - newRect.left;
           const dy = prevRect.top - newRect.top;
           if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-
           el.style.transform = `translate(${dx}px, ${dy}px)`;
           el.style.transition = 'none';
-
           requestAnimationFrame(() => {
             el.style.transition = 'transform 250ms cubic-bezier(0.2,0,0,1)';
             el.style.transform = '';
-
-            const onEnd = () => {
-              el.style.transition = '';
-              el.style.transform = '';
-              el.removeEventListener('transitionend', onEnd);
-            };
+            const onEnd = () => { el.style.transition = ''; el.style.transform = ''; el.removeEventListener('transitionend', onEnd); };
             el.addEventListener('transitionend', onEnd);
           });
         });
       });
     });
-  }, [cardCount]);
+  }, []);
+
+  const prevRectsRef = useRef<Map<number, DOMRect>>(new Map());
+
+  const resetOrder = useCallback(() => {
+    const rects = new Map<number, DOMRect>();
+    cardRefsMap.current.forEach((el, idx) => {
+      rects.set(idx, el.getBoundingClientRect());
+    });
+    prevRectsRef.current = rects;
+
+    setDisplayOrder(Array.from({ length: cardCount }, (_, i) => i));
+    setDraggingOrigIdx(null);
+
+    flipAnimate();
+  }, [cardCount, flipAnimate]);
 
   return {
     displayOrder,
-    dragRender,
+    draggingOrigIdx,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,

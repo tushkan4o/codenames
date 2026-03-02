@@ -1,5 +1,4 @@
 import type { CardState } from '../../types/game';
-import type { DragRenderState } from '../../hooks/useDragReorder';
 import Card from './Card';
 
 interface BoardProps {
@@ -17,7 +16,7 @@ interface BoardProps {
   pickPercents?: Record<number, number>;
   // Drag-and-drop support
   displayOrder?: number[];
-  dragRender?: DragRenderState | null;
+  draggingOrigIdx?: number | null;
   onPointerDown?: (visualIdx: number, e: React.PointerEvent) => void;
   onPointerMove?: (e: React.PointerEvent) => void;
   onPointerUp?: (e: React.PointerEvent) => boolean;
@@ -43,7 +42,7 @@ export default function Board({
   highlightTargets,
   pickPercents,
   displayOrder,
-  dragRender,
+  draggingOrigIdx,
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -72,41 +71,53 @@ export default function Board({
         const isNull = nullSet?.has(originalIndex);
         const isHighlighted = isTarget || isNull;
 
-        const isDragged = dragRender?.dragVisualIdx === visualIdx;
-        const isOver = dragRender?.overVisualIdx === visualIdx && !isDragged;
+        const isDragged = draggingOrigIdx === originalIndex;
 
-        const cardEl = (
-          <Card
-            key={originalIndex}
-            word={card.word}
-            color={card.color}
-            revealed={card.revealed}
-            selected={selectedIndices.includes(originalIndex)}
-            showColor={showColors}
-            onClick={!isDragEnabled && onCardClick ? () => onCardClick(originalIndex) : undefined}
-            disabled={disabled}
-            targetMarked={!highlightTargets && targetIndices.includes(originalIndex)}
-            nullMarked={nullIndices.includes(originalIndex)}
-            dimmed={hasHighlight ? !isHighlighted : false}
-            glowing={hasHighlight ? !!isTarget : false}
-            pickPercent={pickPercents?.[originalIndex]}
-            pickOrder={order}
-            revealDelay={revealDelays?.[originalIndex]}
-          />
-        );
-
-        if (!isDragEnabled) return cardEl;
+        if (!isDragEnabled) {
+          return (
+            <Card
+              key={originalIndex}
+              word={card.word}
+              color={card.color}
+              revealed={card.revealed}
+              selected={selectedIndices.includes(originalIndex)}
+              showColor={showColors}
+              onClick={onCardClick ? () => onCardClick(originalIndex) : undefined}
+              disabled={disabled}
+              targetMarked={!highlightTargets && targetIndices.includes(originalIndex)}
+              nullMarked={nullIndices.includes(originalIndex)}
+              dimmed={hasHighlight ? !isHighlighted : false}
+              glowing={hasHighlight ? !!isTarget : false}
+              pickPercent={pickPercents?.[originalIndex]}
+              pickOrder={order}
+              revealDelay={revealDelays?.[originalIndex]}
+            />
+          );
+        }
 
         return (
           <div
             key={originalIndex}
             data-visual-index={visualIdx}
             ref={(el) => registerCardRef?.(visualIdx, el)}
-            className={`${isDragged ? 'opacity-30' : ''} ${isOver ? 'ring-2 ring-white/40 rounded-lg' : ''}`}
-            style={{ touchAction: 'none' }}
+            style={{ touchAction: 'none', opacity: isDragged ? 0.3 : 1 }}
             onPointerDown={(e) => onPointerDown?.(visualIdx, e)}
           >
-            {cardEl}
+            <Card
+              word={card.word}
+              color={card.color}
+              revealed={card.revealed}
+              selected={selectedIndices.includes(originalIndex)}
+              showColor={showColors}
+              disabled={disabled}
+              targetMarked={!highlightTargets && targetIndices.includes(originalIndex)}
+              nullMarked={nullIndices.includes(originalIndex)}
+              dimmed={hasHighlight ? !isHighlighted : false}
+              glowing={hasHighlight ? !!isTarget : false}
+              pickPercent={pickPercents?.[originalIndex]}
+              pickOrder={order}
+              revealDelay={revealDelays?.[originalIndex]}
+            />
           </div>
         );
       })}

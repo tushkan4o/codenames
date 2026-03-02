@@ -46,7 +46,7 @@ export default function ClueGivingPage() {
   }, [currentSeed, config]);
 
   const {
-    displayOrder, dragRender,
+    displayOrder, draggingOrigIdx,
     handlePointerDown, handlePointerMove, handlePointerUp,
     registerCardRef, resetOrder,
   } = useDragReorder(board.cards.length);
@@ -239,7 +239,7 @@ export default function ClueGivingPage() {
         targetIndices={selectedTargets}
         nullIndices={selectedNulls}
         displayOrder={displayOrder}
-        dragRender={dragRender}
+        draggingOrigIdx={draggingOrigIdx}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={onBoardPointerUp}
