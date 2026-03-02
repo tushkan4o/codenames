@@ -174,7 +174,7 @@ export const ru = {
     cancel: 'Отмена',
   },
   admin: {
-    title: 'Админ-панель',
+    title: 'Админка',
     allClues: 'Все подсказки',
     deleteUser: 'Удалить пользователя',
     deleteClue: 'Удалить подсказку',

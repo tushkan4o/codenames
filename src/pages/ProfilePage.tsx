@@ -204,11 +204,11 @@ export default function ProfilePage() {
   const td = 'py-2 text-xs sm:text-sm';
 
   return (
-    <div className="min-h-screen">
+    <div className="h-screen flex flex-col overflow-hidden">
       <NavBar showBack />
-      <div className="max-w-2xl mx-auto px-4 pt-8">
+      <div className="max-w-2xl mx-auto px-4 pt-4 flex flex-col flex-1 min-h-0 w-full">
         <h1 className="text-2xl font-extrabold text-white mb-1 text-center">{t.profile.title}</h1>
-        <p className="text-center text-gray-400 mb-6">{profileId}</p>
+        <p className="text-center text-gray-400 mb-4">{profileId}</p>
 
         {user?.isAdmin && !isOwnProfile && (
           <div className="flex justify-center mb-6">
@@ -225,7 +225,7 @@ export default function ProfilePage() {
         )}
 
         {stats && (
-          <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-3 gap-4 mb-4">
             <div className="bg-gray-800/60 rounded-lg p-4 text-center border border-gray-700/30">
               <p className="text-2xl font-bold text-white">{stats.cluesGiven}</p>
               <p className="text-xs text-gray-400">{t.profile.cluesGiven}</p>
@@ -260,7 +260,7 @@ export default function ProfilePage() {
           cluesGiven.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesGiven}</p>
           ) : (
-            <div className="overflow-y-auto max-h-[calc(100vh-20rem)]">
+            <div className="overflow-y-auto flex-1 min-h-0">
               <table className="w-full table-fixed">
                 <thead className="sticky top-0 bg-board-bg z-10">
                   <tr className="text-gray-400 border-b border-gray-700/50">
@@ -344,7 +344,7 @@ export default function ProfilePage() {
           solvedEntries.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesSolved}</p>
           ) : (
-            <div className="overflow-y-auto max-h-[calc(100vh-20rem)]">
+            <div className="overflow-y-auto flex-1 min-h-0">
               <table className="w-full table-fixed">
                 <thead className="sticky top-0 bg-board-bg z-10">
                   <tr className="text-gray-400 border-b border-gray-700/50">

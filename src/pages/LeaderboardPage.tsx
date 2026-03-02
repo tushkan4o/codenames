@@ -152,10 +152,10 @@ export default function LeaderboardPage() {
   const thSortClass = `${thClass} text-center cursor-pointer hover:text-white transition-colors select-none`;
 
   return (
-    <div className="min-h-screen">
+    <div className="h-screen flex flex-col overflow-hidden">
       <NavBar showBack />
-      <div className="max-w-2xl mx-auto px-4 pt-8">
-        <h1 className="text-2xl font-extrabold text-white mb-6 text-center">{t.leaderboard.title}</h1>
+      <div className="max-w-2xl mx-auto px-4 pt-4 flex flex-col flex-1 min-h-0 w-full">
+        <h1 className="text-2xl font-extrabold text-white mb-4 text-center">{t.leaderboard.title}</h1>
 
         <div className="flex justify-center gap-2 mb-4">
           <button onClick={() => setTab('spymasters')} className={tabBtnClass(tab === 'spymasters', 'bg-board-blue')}>{t.leaderboard.spymasters}</button>
@@ -167,7 +167,7 @@ export default function LeaderboardPage() {
           sortedSpymasters.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
-            <div className="overflow-y-auto max-h-[calc(100vh-14rem)]">
+            <div className="overflow-y-auto flex-1 min-h-0">
               <table className="w-full table-fixed">
                 <thead className="sticky top-0 bg-board-bg z-10">
                   <tr className="text-gray-400 border-b border-gray-700/50">
@@ -200,7 +200,7 @@ export default function LeaderboardPage() {
           sortedGuessers.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
-            <div className="overflow-y-auto max-h-[calc(100vh-14rem)]">
+            <div className="overflow-y-auto flex-1 min-h-0">
               <table className="w-full table-fixed">
                 <thead className="sticky top-0 bg-board-bg z-10">
                   <tr className="text-gray-400 border-b border-gray-700/50">
@@ -233,7 +233,7 @@ export default function LeaderboardPage() {
           sortedClues.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
-            <div className="overflow-y-auto max-h-[calc(100vh-14rem)]">
+            <div className="overflow-y-auto flex-1 min-h-0">
               <table className="w-full table-fixed">
                 <thead className="sticky top-0 bg-board-bg z-10">
                   <tr className="text-gray-400 border-b border-gray-700/50">

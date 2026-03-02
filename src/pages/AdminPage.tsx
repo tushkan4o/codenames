@@ -259,14 +259,12 @@ export default function AdminPage() {
   const thClass = 'py-2 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
 
   return (
-    <div className="min-h-screen">
+    <div className="h-screen flex flex-col overflow-hidden">
       <NavBar showBack />
-      <div className="max-w-5xl mx-auto px-4 pt-8">
-        <h1 className="text-2xl font-extrabold text-white mb-6 text-center">
-          {t.admin.title}
-        </h1>
+      <div className="max-w-5xl mx-auto px-4 pt-4 flex flex-col flex-1 min-h-0 w-full">
 
-        <div className="flex justify-center gap-2 mb-6">
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <span className="text-lg font-extrabold text-white">{t.admin.title}</span>
           <button
             onClick={() => setAdminTab('clues')}
             className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${adminTab === 'clues' ? 'bg-board-red text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
@@ -294,7 +292,7 @@ export default function AdminPage() {
         )}
 
         {/* ======== CLUES TAB ======== */}
-        {adminTab === 'clues' && (<>
+        {adminTab === 'clues' && (<div className="flex flex-col flex-1 min-h-0">
         <div className="mb-4">
           <input
             type="text"
@@ -321,7 +319,7 @@ export default function AdminPage() {
           <span></span>
         </div>
 
-        <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-16rem)]">
+        <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
           {sorted.map((clue) => (
             <div key={clue.id}>
               {/* Row */}
@@ -448,10 +446,10 @@ export default function AdminPage() {
             </div>
           ))}
         </div>
-        </>)}
+        </div>)}
 
         {/* ======== RESULTS TAB ======== */}
-        {adminTab === 'results' && (<>
+        {adminTab === 'results' && (<div className="flex flex-col flex-1 min-h-0">
           <div className="mb-4">
             <input
               type="text"
@@ -476,7 +474,7 @@ export default function AdminPage() {
             <span></span>
           </div>
 
-          <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-16rem)]">
+          <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
             {sortedResults.map((r, i) => (
               <div
                 key={`${r.clueId}-${r.userId}-${r.timestamp}-${i}`}
@@ -512,10 +510,10 @@ export default function AdminPage() {
               </div>
             ))}
           </div>
-        </>)}
+        </div>)}
 
         {/* ======== USERS TAB ======== */}
-        {adminTab === 'users' && (<>
+        {adminTab === 'users' && (<div className="flex flex-col flex-1 min-h-0">
           <div className="mb-4">
             <input
               type="text"
@@ -541,7 +539,7 @@ export default function AdminPage() {
             <span></span>
           </div>
 
-          <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-16rem)]">
+          <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
             {sortedUsers.map((u) => (
               <div
                 key={u.id}
@@ -571,7 +569,7 @@ export default function AdminPage() {
               </div>
             ))}
           </div>
-        </>)}
+        </div>)}
       </div>
 
       {/* Confirm delete clue modal */}
