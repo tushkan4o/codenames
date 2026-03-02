@@ -41,10 +41,10 @@ const colorConfig: Record<CardColor, { bg: string; text: string; glow: string }>
 };
 
 const glowColors: Record<CardColor, string> = {
-  red: 'shadow-[0_0_14px_4px_rgba(239,83,80,0.6)]',
-  blue: 'shadow-[0_0_14px_4px_rgba(66,165,245,0.6)]',
-  neutral: 'shadow-[0_0_10px_3px_rgba(255,255,255,0.2)]',
-  assassin: 'shadow-[0_0_10px_3px_rgba(0,0,0,0.5)]',
+  red: 'shadow-[0_0_12px_3px_rgba(239,83,80,0.45)]',
+  blue: 'shadow-[0_0_12px_3px_rgba(66,165,245,0.45)]',
+  neutral: 'shadow-[0_0_8px_2px_rgba(255,255,255,0.15)]',
+  assassin: 'shadow-[0_0_8px_2px_rgba(0,0,0,0.4)]',
 };
 
 export default function Card({
@@ -91,11 +91,15 @@ export default function Card({
 
   // Dim/glow mode for reveal views
   const highlightGlow = glowing ? glowColors[color] : '';
-  const dimClass = dimmed ? 'opacity-35' : '';
+  const brightnessClass = glowing ? 'brightness-110' : '';
+  const dimClass = dimmed ? 'opacity-50' : '';
 
   const style = revealDelay !== undefined
     ? { transitionDelay: `${revealDelay}ms` }
     : undefined;
+
+  // Show null × marker in reveal mode (dimmed/glowing active)
+  const showNullX = nullMarked && (dimmed || glowing);
 
   return (
     <button
@@ -103,10 +107,10 @@ export default function Card({
         card-reveal relative flex items-center justify-center
         h-[3.2rem] sm:h-[3.6rem] rounded-lg font-bold uppercase tracking-wide select-none
         text-[clamp(0.55rem,2.5vw,0.85rem)] p-1 sm:p-2 border border-white/5
-        transition-opacity duration-300
+        transition-all duration-300
         ${bgClass} ${textClass} ${glowClass} ${interactiveClass}
         ${ringClass} ${targetClass} ${nullClass}
-        ${highlightGlow} ${dimClass}
+        ${highlightGlow} ${brightnessClass} ${dimClass}
       `}
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
@@ -118,6 +122,12 @@ export default function Card({
       {pickPercent !== undefined && pickPercent > 0 && (
         <span className="absolute -top-0.5 -right-0.5 min-w-[1.4rem] h-[0.9rem] sm:h-[1rem] px-0.5 rounded-sm bg-orange-500/90 text-white text-[0.5rem] sm:text-[0.55rem] font-bold flex items-center justify-center leading-none">
           {pickPercent}%
+        </span>
+      )}
+
+      {showNullX && (
+        <span className="absolute bottom-0 left-0.5 text-board-red text-[0.7rem] sm:text-[0.85rem] font-black leading-none drop-shadow-sm">
+          &times;
         </span>
       )}
 
