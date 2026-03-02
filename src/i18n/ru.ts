@@ -87,6 +87,7 @@ export const ru = {
   },
   clue: {
     word: 'Слово-подсказка',
+    placeholder: 'подсказка',
     number: 'Число',
     submit: 'Отправить',
     errorEmpty: 'Подсказка не может быть пустой',

@@ -214,15 +214,6 @@ export default function SetupPage() {
           </div>
         </div>
 
-        {/* Puzzle count */}
-        {mode === 'guessing' && puzzleCount && (
-          <p className={`text-center text-sm mb-4 ${puzzleCount.available > 0 ? 'text-gray-400' : 'text-board-red'}`}>
-            {puzzleCount.available > 0
-              ? t.setup.availablePuzzles.replace('{available}', String(puzzleCount.available)).replace('{total}', String(puzzleCount.total))
-              : t.setup.noPuzzlesAvailable}
-          </p>
-        )}
-
         <button
           onClick={handleStart}
           disabled={loading || (mode === 'guessing' && puzzleCount?.available === 0)}
@@ -230,6 +221,15 @@ export default function SetupPage() {
         >
           {loading ? t.game.findingClue : t.setup.start}
         </button>
+
+        {/* Puzzle count — below button so layout doesn't shift */}
+        {mode === 'guessing' && puzzleCount && (
+          <p className={`text-center text-sm mt-3 ${puzzleCount.available > 0 ? 'text-gray-400' : 'text-board-red'}`}>
+            {puzzleCount.available > 0
+              ? t.setup.availablePuzzles.replace('{available}', String(puzzleCount.available)).replace('{total}', String(puzzleCount.total))
+              : t.setup.noPuzzlesAvailable}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -79,11 +79,11 @@ function MiniBoard({ clue, pickPercents }: { clue: AdminClue; pickPercents?: Rec
               </span>
             )}
             {isNull && hasHighlight && (
-              <span
-                className="absolute inset-0 flex items-center justify-center text-board-red text-[1.1rem] leading-none pointer-events-none"
-                style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 900, opacity: 0.85 }}
-              >
-                ✗
+              <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <svg width="50%" height="60%" viewBox="0 0 40 20" style={{ opacity: 0.8 }}>
+                  <line x1="4" y1="3" x2="36" y2="17" stroke="#EF5350" strokeWidth="3" strokeLinecap="round" />
+                  <line x1="4" y1="17" x2="36" y2="3" stroke="#EF5350" strokeWidth="3" strokeLinecap="round" />
+                </svg>
               </span>
             )}
           </div>
