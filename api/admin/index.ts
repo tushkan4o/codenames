@@ -30,13 +30,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'clues') {
       const rows = await sql`
         SELECT c.*,
-          COALESCE(r.report_count, 0) as report_count
+          COALESCE(rp.report_count, 0) as report_count,
+          COALESCE(rs.attempt_count, 0) as attempt_count,
+          COALESCE(rs.avg_score, 0) as avg_score
         FROM clues c
         LEFT JOIN (
           SELECT clue_id, COUNT(*)::int as report_count
           FROM reports
           GROUP BY clue_id
-        ) r ON r.clue_id = c.id
+        ) rp ON rp.clue_id = c.id
+        LEFT JOIN (
+          SELECT clue_id, COUNT(*)::int as attempt_count, ROUND(AVG(score)::numeric, 1) as avg_score
+          FROM results
+          GROUP BY clue_id
+        ) rs ON rs.clue_id = c.id
         ORDER BY c.created_at DESC
       `;
       return res.json(rows.map((row: Record<string, unknown>) => ({
@@ -53,6 +60,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         reportCount: Number(row.report_count) || 0,
         disabled: row.disabled || false,
         ranked: row.ranked ?? true,
+        attempts: Number(row.attempt_count) || 0,
+        avgScore: Number(row.avg_score) || 0,
       })));
     }
 

@@ -14,7 +14,7 @@ import BoardReviewModal from '../components/game/BoardReviewModal';
 import type { Clue, GuessResult } from '../types/game';
 
 type AdminTab = 'clues' | 'users' | 'results';
-type SortField = 'createdAt' | 'reportCount' | 'word' | 'userId';
+type SortField = 'createdAt' | 'reportCount' | 'word' | 'userId' | 'attempts' | 'avgScore';
 type UserSortField = 'lastActivity' | 'createdAt' | 'cluesGiven' | 'cluesSolved' | 'avgScore' | 'displayName';
 type ResultSortField = 'timestamp' | 'score' | 'userId' | 'clueWord';
 type SortDir = 'asc' | 'desc';
@@ -221,6 +221,8 @@ export default function AdminPage() {
     else if (sortField === 'reportCount') diff = b.reportCount - a.reportCount;
     else if (sortField === 'word') diff = a.word.localeCompare(b.word);
     else if (sortField === 'userId') diff = a.userId.localeCompare(b.userId);
+    else if (sortField === 'attempts') diff = b.attempts - a.attempts;
+    else if (sortField === 'avgScore') diff = b.avgScore - a.avgScore;
     return sortDir === 'desc' ? diff : -diff;
   });
 
@@ -308,12 +310,14 @@ export default function AdminPage() {
         </div>
 
         {/* Table header */}
-        <div className="hidden md:grid grid-cols-[1.2fr_1fr_2rem_1.2fr_0.5fr_2rem] gap-2 px-4 py-2">
+        <div className="hidden md:grid grid-cols-[1.2fr_1fr_2rem_3rem_3.5rem_1.2fr_0.5fr_2rem] gap-2 px-4 py-2 items-center">
           <span className={thClass} onClick={() => toggleSort('word')}>{t.admin.clueWord}<SortArrow field="word" activeField={sortField} dir={sortDir} /></span>
           <span className={thClass} onClick={() => toggleSort('userId')}>{t.admin.clueAuthor}<SortArrow field="userId" activeField={sortField} dir={sortDir} /></span>
           <span className={`${thClass} text-center`} title="Рейтинговая">★</span>
+          <span className={`${thClass} text-right`} onClick={() => toggleSort('attempts')}>{t.admin.attempts}<SortArrow field="attempts" activeField={sortField} dir={sortDir} /></span>
+          <span className={`${thClass} text-right`} onClick={() => toggleSort('avgScore')}>{t.admin.avgScore}<SortArrow field="avgScore" activeField={sortField} dir={sortDir} /></span>
           <span className={thClass} onClick={() => toggleSort('createdAt')}>{t.admin.clueDate}<SortArrow field="createdAt" activeField={sortField} dir={sortDir} /></span>
-          <span className={thClass} onClick={() => toggleSort('reportCount')}>{t.admin.reportsCount}<SortArrow field="reportCount" activeField={sortField} dir={sortDir} /></span>
+          <span className={`${thClass} text-center`} onClick={() => toggleSort('reportCount')}>{t.admin.reportsCount}<SortArrow field="reportCount" activeField={sortField} dir={sortDir} /></span>
           <span></span>
         </div>
 
@@ -329,7 +333,7 @@ export default function AdminPage() {
                     : 'border-gray-700/30'
                 }`}
               >
-                <div className="grid grid-cols-2 md:grid-cols-[1.2fr_1fr_2rem_1.2fr_0.5fr_2rem] gap-2 items-center">
+                <div className="grid grid-cols-2 md:grid-cols-[1.2fr_1fr_2rem_3rem_3.5rem_1.2fr_0.5fr_2rem] gap-2 items-center">
                   <span className="font-bold text-white uppercase text-sm">
                     {clue.word} <span className="text-gray-500 font-semibold">{clue.number}</span>
                     {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
@@ -338,6 +342,8 @@ export default function AdminPage() {
                     {clue.userId}
                   </span>
                   <span className="text-sm text-center">{clue.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
+                  <span className="text-sm text-right text-gray-400">{clue.attempts || '—'}</span>
+                  <span className="text-sm text-right text-gray-400">{clue.avgScore > 0 ? clue.avgScore.toFixed(1) : '—'}</span>
                   <span className="text-gray-400 text-sm">
                     {formatDateTime(clue.createdAt)}
                   </span>
@@ -445,161 +451,127 @@ export default function AdminPage() {
         </>)}
 
         {/* ======== RESULTS TAB ======== */}
-        {adminTab === 'results' && (
-          <>
-            <div className="mb-4">
-              <input
-                type="text"
-                placeholder={t.admin.searchResults}
-                value={resultSearch}
-                onChange={(e) => setResultSearch(e.target.value)}
-                className="w-full bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
-              />
-            </div>
+        {adminTab === 'results' && (<>
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder={t.admin.searchResults}
+              value={resultSearch}
+              onChange={(e) => setResultSearch(e.target.value)}
+              className="w-full bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
+            />
+          </div>
 
-            <div className="text-sm text-gray-400 mb-2">
-              {t.admin.allResults} ({filteredResults.length})
-            </div>
+          <div className="text-sm text-gray-400 mb-2">
+            {t.admin.allResults} ({filteredResults.length})
+          </div>
 
-            <table className="w-full table-fixed">
-              <thead>
-                <tr className="text-gray-400 border-b border-gray-700/50">
-                  <th className={`${thClass} text-left w-[25%]`} onClick={() => toggleResultSort('clueWord')}>
-                    {t.admin.clueWord}<SortArrow field="clueWord" activeField={resultSort} dir={resultDir} />
-                  </th>
-                  <th className={`${thClass} text-left w-[20%]`} onClick={() => toggleResultSort('userId')}>
-                    {t.admin.player}<SortArrow field="userId" activeField={resultSort} dir={resultDir} />
-                  </th>
-                  <th className={`${thClass} text-center w-[15%]`} onClick={() => toggleResultSort('score')}>
-                    {t.admin.score}<SortArrow field="score" activeField={resultSort} dir={resultDir} />
-                  </th>
-                  <th className={`${thClass} text-center w-[4%]`} title="Рейтинговая">★</th>
-                  <th className={`${thClass} text-right w-[22%]`} onClick={() => toggleResultSort('timestamp')}>
-                    {t.admin.clueDate}<SortArrow field="timestamp" activeField={resultSort} dir={resultDir} />
-                  </th>
-                  <th className={`${thClass} text-center w-[4%]`}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedResults.map((r, i) => (
-                  <tr
-                    key={`${r.clueId}-${r.userId}-${r.timestamp}-${i}`}
-                    className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 cursor-pointer"
-                    onClick={() => handleViewResult(r)}
+          {/* Table header */}
+          <div className="hidden md:grid grid-cols-[1.2fr_1fr_4rem_2rem_1.2fr_2rem] gap-2 px-4 py-2 items-center">
+            <span className={thClass} onClick={() => toggleResultSort('clueWord')}>{t.admin.clueWord}<SortArrow field="clueWord" activeField={resultSort} dir={resultDir} /></span>
+            <span className={thClass} onClick={() => toggleResultSort('userId')}>{t.admin.player}<SortArrow field="userId" activeField={resultSort} dir={resultDir} /></span>
+            <span className={`${thClass} text-right`} onClick={() => toggleResultSort('score')}>{t.admin.score}<SortArrow field="score" activeField={resultSort} dir={resultDir} /></span>
+            <span className={`${thClass} text-center`} title="Рейтинговая">★</span>
+            <span className={thClass} onClick={() => toggleResultSort('timestamp')}>{t.admin.clueDate}<SortArrow field="timestamp" activeField={resultSort} dir={resultDir} /></span>
+            <span></span>
+          </div>
+
+          <div className="space-y-1">
+            {sortedResults.map((r, i) => (
+              <div
+                key={`${r.clueId}-${r.userId}-${r.timestamp}-${i}`}
+                onClick={() => handleViewResult(r)}
+                className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600"
+              >
+                <div className="grid grid-cols-2 md:grid-cols-[1.2fr_1fr_4rem_2rem_1.2fr_2rem] gap-2 items-center">
+                  <span className="font-bold text-white uppercase text-sm">
+                    {r.clueWord || r.clueId.slice(0, 12)}
+                    {r.clueNumber != null && <span className="ml-1 text-gray-500 font-semibold">{r.clueNumber}</span>}
+                  </span>
+                  <span className="text-sm truncate">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/profile/${r.userId}`); }}
+                      className="text-board-blue hover:text-blue-300 transition-colors"
+                    >
+                      {r.userId}
+                    </button>
+                  </span>
+                  <span className="text-sm text-right font-bold text-white">
+                    {r.score}
+                    <span className="text-gray-500 font-normal ml-0.5 text-xs">({r.correctCount}/{r.totalTargets})</span>
+                  </span>
+                  <span className="text-sm text-center">{r.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
+                  <span className="text-gray-400 text-sm">{formatDateTime(r.timestamp)}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteResult({ clueId: r.clueId, userId: r.userId, timestamp: r.timestamp }); }}
+                    className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
                   >
-                    <td className="py-2 text-sm truncate">
-                      <span className="font-bold text-white uppercase">{r.clueWord || r.clueId.slice(0, 12)}</span>
-                      {r.clueNumber != null && <span className="ml-1 text-gray-500 font-semibold">{r.clueNumber}</span>}
-                    </td>
-                    <td className="py-2 text-sm truncate">
-                      <button
-                        onClick={() => navigate(`/profile/${r.userId}`)}
-                        className="text-board-blue hover:text-blue-300 transition-colors"
-                      >
-                        {r.userId}
-                      </button>
-                    </td>
-                    <td className="py-2 text-sm text-center font-bold text-white">
-                      {r.score}
-                      <span className="text-gray-500 font-normal ml-0.5 text-xs">
-                        ({r.correctCount}/{r.totalTargets})
-                      </span>
-                    </td>
-                    <td className="py-2 text-sm text-center">
-                      {r.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
-                    </td>
-                    <td className="py-2 text-sm text-right text-gray-400">
-                      {formatDateTime(r.timestamp)}
-                    </td>
-                    <td className="py-2 text-center">
-                      <button
-                        onClick={() => setConfirmDeleteResult({ clueId: r.clueId, userId: r.userId, timestamp: r.timestamp })}
-                        className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
-                      >
-                        &times;
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
+                    &times;
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>)}
 
         {/* ======== USERS TAB ======== */}
-        {adminTab === 'users' && (
-          <>
-            <div className="mb-4">
-              <input
-                type="text"
-                placeholder="Поиск по имени..."
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
-              />
-            </div>
+        {adminTab === 'users' && (<>
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Поиск по имени..."
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              className="w-full bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
+            />
+          </div>
 
-            <div className="text-sm text-gray-400 mb-2">
-              {t.admin.userCount}: {filteredUsers.length}
-            </div>
+          <div className="text-sm text-gray-400 mb-2">
+            {t.admin.userCount}: {filteredUsers.length}
+          </div>
 
-            <table className="w-full table-fixed">
-              <thead>
-                <tr className="text-gray-400 border-b border-gray-700/50">
-                  <th className={`${thClass} text-left w-[22%]`} onClick={() => toggleUserSort('displayName')}>
-                    {t.leaderboard.player}<SortArrow field="displayName" activeField={userSort} dir={userDir} />
-                  </th>
-                  <th className={`${thClass} text-right w-[13%]`} onClick={() => toggleUserSort('cluesGiven')}>
-                    {t.admin.given}<SortArrow field="cluesGiven" activeField={userSort} dir={userDir} />
-                  </th>
-                  <th className={`${thClass} text-right w-[13%]`} onClick={() => toggleUserSort('cluesSolved')}>
-                    {t.admin.solved}<SortArrow field="cluesSolved" activeField={userSort} dir={userDir} />
-                  </th>
-                  <th className={`${thClass} text-right w-[14%]`} onClick={() => toggleUserSort('avgScore')}>
-                    {t.admin.avgScore}<SortArrow field="avgScore" activeField={userSort} dir={userDir} />
-                  </th>
-                  <th className={`${thClass} text-right w-[17%]`} onClick={() => toggleUserSort('createdAt')}>
-                    {t.admin.registered}<SortArrow field="createdAt" activeField={userSort} dir={userDir} />
-                  </th>
-                  <th className={`${thClass} text-right w-[17%]`} onClick={() => toggleUserSort('lastActivity')}>
-                    {t.admin.lastActive}<SortArrow field="lastActivity" activeField={userSort} dir={userDir} />
-                  </th>
-                  <th className={`${thClass} text-center w-[4%]`}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedUsers.map((u) => (
-                  <tr
-                    key={u.id}
-                    className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 cursor-pointer"
-                    onClick={() => navigate(`/profile/${u.id}`)}
-                  >
-                    <td className="py-2 text-sm truncate">
-                      <span className="font-semibold text-white">{u.displayName}</span>
-                      {u.isAdmin && <span className="ml-1 text-[0.6rem] text-board-blue font-bold">ADM</span>}
-                    </td>
-                    <td className="py-2 text-sm text-right">{u.cluesGiven}</td>
-                    <td className="py-2 text-sm text-right">{u.cluesSolved}</td>
-                    <td className="py-2 text-sm text-right">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</td>
-                    <td className="py-2 text-sm text-right text-gray-500">{formatDateTime(u.createdAt)}</td>
-                    <td className="py-2 text-sm text-right text-gray-400">{formatDateTime(u.lastActivity)}</td>
-                    <td className="py-2 text-center">
-                      {!u.isAdmin && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteUserId(u.id); }}
-                          className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
-                          title={t.admin.deleteUser}
-                        >
-                          &times;
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
+          {/* Table header */}
+          <div className="hidden md:grid grid-cols-[1.2fr_3rem_3rem_3.5rem_1fr_1fr_2rem] gap-2 px-4 py-2 items-center">
+            <span className={thClass} onClick={() => toggleUserSort('displayName')}>{t.leaderboard.player}<SortArrow field="displayName" activeField={userSort} dir={userDir} /></span>
+            <span className={`${thClass} text-right`} onClick={() => toggleUserSort('cluesGiven')}>{t.admin.given}<SortArrow field="cluesGiven" activeField={userSort} dir={userDir} /></span>
+            <span className={`${thClass} text-right`} onClick={() => toggleUserSort('cluesSolved')}>{t.admin.solved}<SortArrow field="cluesSolved" activeField={userSort} dir={userDir} /></span>
+            <span className={`${thClass} text-right`} onClick={() => toggleUserSort('avgScore')}>{t.admin.avgScore}<SortArrow field="avgScore" activeField={userSort} dir={userDir} /></span>
+            <span className={thClass} onClick={() => toggleUserSort('createdAt')}>{t.admin.registered}<SortArrow field="createdAt" activeField={userSort} dir={userDir} /></span>
+            <span className={thClass} onClick={() => toggleUserSort('lastActivity')}>{t.admin.lastActive}<SortArrow field="lastActivity" activeField={userSort} dir={userDir} /></span>
+            <span></span>
+          </div>
+
+          <div className="space-y-1">
+            {sortedUsers.map((u) => (
+              <div
+                key={u.id}
+                onClick={() => navigate(`/profile/${u.id}`)}
+                className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600"
+              >
+                <div className="grid grid-cols-2 md:grid-cols-[1.2fr_3rem_3rem_3.5rem_1fr_1fr_2rem] gap-2 items-center">
+                  <span className="text-sm truncate">
+                    <span className="font-semibold text-white">{u.displayName}</span>
+                    {u.isAdmin && <span className="ml-1 text-[0.6rem] text-board-blue font-bold">ADM</span>}
+                  </span>
+                  <span className="text-sm text-right text-gray-300">{u.cluesGiven}</span>
+                  <span className="text-sm text-right text-gray-300">{u.cluesSolved}</span>
+                  <span className="text-sm text-right text-gray-300">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</span>
+                  <span className="text-sm text-gray-500">{formatDateTime(u.createdAt)}</span>
+                  <span className="text-sm text-gray-400">{formatDateTime(u.lastActivity)}</span>
+                  {!u.isAdmin ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteUserId(u.id); }}
+                      className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
+                      title={t.admin.deleteUser}
+                    >
+                      &times;
+                    </button>
+                  ) : <span></span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>)}
       </div>
 
       {/* Confirm delete clue modal */}

@@ -227,7 +227,7 @@ export default function ProfilePage() {
   }
 
   const thBase = 'py-2 text-xs sm:text-sm';
-  const thSort = `${thBase} text-center cursor-pointer hover:text-white transition-colors select-none`;
+  const thSort = `${thBase} cursor-pointer hover:text-white transition-colors select-none`;
   const td = 'py-2 text-xs sm:text-sm';
 
   return (
@@ -292,8 +292,8 @@ export default function ProfilePage() {
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
                     <th className={`${thSort} text-left ${user?.isAdmin ? 'w-[36%]' : 'w-[40%]'}`} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></th>
-                    <th className={`${thSort} w-[15%]`} onClick={() => toggleGivenSort('attempts')}>{t.profile.solveCount}<SortArrow field="attempts" activeField={givenSort} dir={givenDir} /></th>
-                    <th className={`${thSort} w-[15%]`} onClick={() => toggleGivenSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={givenSort} dir={givenDir} /></th>
+                    <th className={`${thSort} text-center w-[15%]`} onClick={() => toggleGivenSort('attempts')}>{t.profile.solveCount}<SortArrow field="attempts" activeField={givenSort} dir={givenDir} /></th>
+                    <th className={`${thSort} text-center w-[15%]`} onClick={() => toggleGivenSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={givenSort} dir={givenDir} /></th>
                     <th className={`${thBase} text-center w-[6%] cursor-pointer hover:text-white transition-colors select-none`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
                       {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
                     </th>
@@ -378,9 +378,9 @@ export default function ProfilePage() {
                   <tr className="text-gray-400 border-b border-gray-700/50">
                     <th className={`${thSort} text-left ${user?.isAdmin ? 'w-[26%]' : 'w-[30%]'}`} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></th>
                     <th className={`${thBase} text-left w-[18%]`}>{t.leaderboard.author}</th>
-                    <th className={`${thSort} w-[12%]`} onClick={() => toggleSolvedSort('attempts')}>{t.profile.solveCount}<SortArrow field="attempts" activeField={solvedSort} dir={solvedDir} /></th>
-                    <th className={`${thSort} w-[12%]`} onClick={() => toggleSolvedSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></th>
-                    <th className={`${thSort} w-[12%]`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></th>
+                    <th className={`${thSort} text-center w-[12%]`} onClick={() => toggleSolvedSort('attempts')}>{t.profile.solveCount}<SortArrow field="attempts" activeField={solvedSort} dir={solvedDir} /></th>
+                    <th className={`${thSort} text-center w-[12%]`} onClick={() => toggleSolvedSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></th>
+                    <th className={`${thSort} text-center w-[12%]`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></th>
                     <th className={`${thBase} text-center w-[5%] cursor-pointer hover:text-white transition-colors select-none`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
                       {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
                     </th>

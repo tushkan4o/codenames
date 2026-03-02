@@ -58,6 +58,8 @@ export interface AdminClue {
   reportCount: number;
   disabled: boolean;
   ranked: boolean;
+  attempts: number;
+  avgScore: number;
 }
 
 export interface RatingStats {

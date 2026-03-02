@@ -77,6 +77,8 @@ export default function GuessingPage() {
       setRevealingIndices(new Set());
       setRevealedTargets([]);
       setRevealedNulls([]);
+      setViewingAttemptPicks(null);
+      setPickPercents({});
       setLoading(true);
       const found = await api.getClueById(clueId);
       setClue(found);

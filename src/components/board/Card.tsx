@@ -170,10 +170,10 @@ export default function Card({
           className="absolute flex items-end justify-end text-gray-900 font-bold text-[0.6rem] sm:text-xs"
           style={{
             bottom: 0, right: 0,
-            width: '1.9rem', height: '1.9rem',
-            clipPath: 'polygon(100% 25%, 25% 100%, 100% 100%)',
+            width: '2.4rem', height: '2.4rem',
+            clipPath: 'polygon(100% 30%, 30% 100%, 100% 100%)',
             background: 'rgba(255,255,255,0.85)',
-            paddingBottom: '0.05rem', paddingRight: '0.25rem',
+            paddingBottom: '0.05rem', paddingRight: '0.3rem',
             zIndex: 3,
           }}
         >
