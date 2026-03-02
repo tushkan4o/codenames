@@ -40,9 +40,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     resultsByUser.get(uid)!.push(r);
   }
 
-  // Spymasters
-  const spymasters = Array.from(cluesByUser.entries()).map(([userId, userClues]) => {
-    const avgWordsPerClue = userClues.reduce((s, c) => s + (Number(c.number) || 0), 0) / userClues.length;
+  // Build clue ranked lookup
+  const clueRankedMap = new Map<string, boolean>();
+  for (const c of clues) {
+    clueRankedMap.set(c.id as string, c.ranked !== false);
+  }
+
+  // Spymasters — ranked clues only, exclude clue-0 from avg words
+  const rankedCluesByUser = new Map<string, typeof clues>();
+  for (const c of clues) {
+    if (c.ranked === false) continue;
+    const uid = c.user_id as string;
+    if (!rankedCluesByUser.has(uid)) rankedCluesByUser.set(uid, []);
+    rankedCluesByUser.get(uid)!.push(c);
+  }
+
+  const spymasters = Array.from(rankedCluesByUser.entries()).map(([userId, userClues]) => {
+    const nonZeroClues = userClues.filter((c) => Number(c.number) > 0);
+    const avgWordsPerClue = nonZeroClues.length > 0
+      ? nonZeroClues.reduce((s, c) => s + Number(c.number), 0) / nonZeroClues.length
+      : 0;
     const clueIds = new Set(userClues.map((c) => c.id as string));
     const othersResults = results.filter((r) => clueIds.has(r.clue_id as string) && r.user_id !== userId);
     const avgScoreOnClues = othersResults.length > 0
@@ -56,8 +73,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
   }).sort((a, b) => b.avgScoreOnClues - a.avgScoreOnClues);
 
-  // Guessers
-  const guessers = Array.from(resultsByUser.entries()).map(([userId, userResults]) => {
+  // Guessers — ranked results only
+  const rankedResultsByUser = new Map<string, typeof results>();
+  for (const r of results) {
+    const clueId = r.clue_id as string;
+    if (!clueRankedMap.get(clueId)) continue;
+    const uid = r.user_id as string;
+    if (!rankedResultsByUser.has(uid)) rankedResultsByUser.set(uid, []);
+    rankedResultsByUser.get(uid)!.push(r);
+  }
+
+  const guessers = Array.from(rankedResultsByUser.entries()).map(([userId, userResults]) => {
     const avgWordsPicked = userResults.reduce((s, r) => s + ((r.guessed_indices as number[])?.length || 0), 0) / userResults.length;
     const avgScore = userResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / userResults.length;
     return {

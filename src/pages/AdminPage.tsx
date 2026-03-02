@@ -321,7 +321,7 @@ export default function AdminPage() {
           <span></span>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-16rem)]">
           {sorted.map((clue) => (
             <div key={clue.id}>
               {/* Row */}
@@ -476,7 +476,7 @@ export default function AdminPage() {
             <span></span>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-16rem)]">
             {sortedResults.map((r, i) => (
               <div
                 key={`${r.clueId}-${r.userId}-${r.timestamp}-${i}`}
@@ -541,7 +541,7 @@ export default function AdminPage() {
             <span></span>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-16rem)]">
             {sortedUsers.map((u) => (
               <div
                 key={u.id}
