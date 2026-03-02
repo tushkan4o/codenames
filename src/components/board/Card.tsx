@@ -81,7 +81,7 @@ export default function Card({
   const cfg = colorConfig[color];
 
   const bgClass = shouldShowColor ? cfg.bg : 'bg-board-card';
-  const textClass = shouldShowColor ? cfg.text : 'text-gray-700';
+  const textClass = shouldShowColor ? cfg.text : 'text-gray-800';
   const glowClass = shouldShowColor && !glowing && !dimmed ? cfg.glow : '';
   const revealingClass = revealing ? 'card-border-reveal' : '';
 
