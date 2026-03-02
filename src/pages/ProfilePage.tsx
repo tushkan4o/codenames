@@ -262,10 +262,10 @@ export default function ProfilePage() {
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className={`${thSort} text-left w-[40%]`} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></th>
-                    <th className={`${thSort} w-[20%]`} onClick={() => toggleGivenSort('attempts')}>{t.profile.solveCount}<SortArrow field="attempts" activeField={givenSort} dir={givenDir} /></th>
-                    <th className={`${thSort} w-[20%]`} onClick={() => toggleGivenSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={givenSort} dir={givenDir} /></th>
-                    <th className={`${thBase} text-center w-[20%]`}></th>
+                    <th className={`${thSort} text-left w-[44%]`} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></th>
+                    <th className={`${thSort} w-[17%]`} onClick={() => toggleGivenSort('attempts')}>{t.profile.solveCount}<SortArrow field="attempts" activeField={givenSort} dir={givenDir} /></th>
+                    <th className={`${thSort} w-[17%]`} onClick={() => toggleGivenSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={givenSort} dir={givenDir} /></th>
+                    <th className={`${thBase} text-center w-[22%]`}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -340,11 +340,12 @@ export default function ProfilePage() {
               <table className="w-full table-fixed">
                 <thead>
                   <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className={`${thSort} text-left w-[30%]`} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></th>
-                    <th className={`${thBase} text-left w-[18%]`}>{t.leaderboard.author}</th>
-                    <th className={`${thSort} w-[16%]`} onClick={() => toggleSolvedSort('attempts')}>{t.profile.solveCount}<SortArrow field="attempts" activeField={solvedSort} dir={solvedDir} /></th>
-                    <th className={`${thSort} w-[16%]`} onClick={() => toggleSolvedSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></th>
-                    <th className={`${thSort} w-[20%]`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></th>
+                    <th className={`${thSort} text-left w-[32%]`} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></th>
+                    <th className={`${thBase} text-left w-[20%]`}>{t.leaderboard.author}</th>
+                    <th className={`${thSort} w-[14%]`} onClick={() => toggleSolvedSort('attempts')}>{t.profile.solveCount}<SortArrow field="attempts" activeField={solvedSort} dir={solvedDir} /></th>
+                    <th className={`${thSort} w-[14%]`} onClick={() => toggleSolvedSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></th>
+                    <th className={`${thSort} w-[14%]`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></th>
+                    <th className={`${thBase} text-center w-[6%]`}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -384,6 +385,9 @@ export default function ProfilePage() {
                           <span className="text-gray-500 font-normal ml-0.5 text-xs">
                             ({entry.result.correctCount}/{entry.result.totalTargets})
                           </span>
+                        </td>
+                        <td className={`${td} text-center`}>
+                          <span className="text-board-blue text-sm">✓</span>
                         </td>
                       </tr>
                     );

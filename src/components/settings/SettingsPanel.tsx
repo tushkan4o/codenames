@@ -8,12 +8,8 @@ interface SettingsPanelProps {
   mode: 'clue-giving' | 'guessing';
 }
 
-const REVEAL_OPTIONS = [
-  { value: 500, labelKey: 'fast' as const },
-  { value: 1000, labelKey: 'normal' as const },
-  { value: 1500, labelKey: 'slow' as const },
-  { value: 2000, labelKey: 'verySlow' as const },
-];
+const REVEAL_STEPS = [500, 1000, 1500, 2000];
+const REVEAL_LABELS: Record<number, string> = { 500: '0.5', 1000: '1', 1500: '1.5', 2000: '2' };
 
 const FONT_OPTIONS: { value: CardFontSize; labelKey: 'fontSmall' | 'fontMedium' | 'fontLarge' }[] = [
   { value: 'sm', labelKey: 'fontSmall' },
@@ -61,16 +57,30 @@ export default function SettingsPanel({ mode }: SettingsPanelProps) {
           {mode === 'guessing' && (
             <div className="mb-3">
               <label className="text-gray-400 text-xs mb-1.5 block">{t.settings.revealDuration}</label>
-              <div className="flex gap-1 flex-wrap">
-                {REVEAL_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => updatePref('revealDuration', opt.value)}
-                    className={prefs.revealDuration === opt.value ? btnActive : btnInactive}
-                  >
-                    {t.settings[opt.labelKey]}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const idx = REVEAL_STEPS.indexOf(prefs.revealDuration);
+                    if (idx > 0) updatePref('revealDuration', REVEAL_STEPS[idx - 1]);
+                  }}
+                  disabled={REVEAL_STEPS.indexOf(prefs.revealDuration) <= 0}
+                  className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white disabled:opacity-30 disabled:hover:bg-gray-700 transition-colors text-sm font-bold flex items-center justify-center"
+                >
+                  ▼
+                </button>
+                <span className="text-white text-sm font-semibold min-w-[3.5rem] text-center">
+                  {REVEAL_LABELS[prefs.revealDuration] || (prefs.revealDuration / 1000).toFixed(1)} {t.settings.sec}
+                </span>
+                <button
+                  onClick={() => {
+                    const idx = REVEAL_STEPS.indexOf(prefs.revealDuration);
+                    if (idx < REVEAL_STEPS.length - 1) updatePref('revealDuration', REVEAL_STEPS[idx + 1]);
+                  }}
+                  disabled={REVEAL_STEPS.indexOf(prefs.revealDuration) >= REVEAL_STEPS.length - 1}
+                  className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white disabled:opacity-30 disabled:hover:bg-gray-700 transition-colors text-sm font-bold flex items-center justify-center"
+                >
+                  ▲
+                </button>
               </div>
             </div>
           )}

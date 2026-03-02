@@ -214,6 +214,7 @@ export const ru = {
     normal: 'Обычно',
     slow: 'Медленно',
     verySlow: 'Очень медленно',
+    sec: 'сек',
   },
 };
 

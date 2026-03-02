@@ -102,9 +102,24 @@ export default function GuessingPage() {
     }
   }
 
+  // Track reveal timeouts so we can cancel them
+  const [revealTimers, setRevealTimers] = useState<Record<number, ReturnType<typeof setTimeout>>>({});
+
   function handlePick(index: number) {
     if (phase !== 'picking' || !board || !clue) return;
-    if (pickedIndices.includes(index) || revealingIndices.has(index)) return;
+    if (pickedIndices.includes(index)) return;
+
+    // If clicking a card that's currently revealing, cancel the reveal
+    if (revealingIndices.has(index)) {
+      clearTimeout(revealTimers[index]);
+      setRevealTimers((prev) => { const next = { ...prev }; delete next[index]; return next; });
+      setRevealingIndices((prev) => {
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
+      });
+      return;
+    }
 
     setConfirmEnd(false);
 
@@ -112,7 +127,8 @@ export default function GuessingPage() {
     setRevealingIndices((prev) => new Set(prev).add(index));
 
     // After animation completes, reveal the card
-    setTimeout(() => {
+    const timer = setTimeout(() => {
+      setRevealTimers((prev) => { const next = { ...prev }; delete next[index]; return next; });
       setRevealingIndices((prev) => {
         const next = new Set(prev);
         next.delete(index);
@@ -140,6 +156,7 @@ export default function GuessingPage() {
         return newPicked;
       });
     }, revealDuration);
+    setRevealTimers((prev) => ({ ...prev, [index]: timer }));
   }
 
   const finishGame = useCallback(
@@ -246,7 +263,7 @@ export default function GuessingPage() {
     return card;
   });
 
-  const isPicking = phase === 'picking' && !assassinHit && revealingIndices.size === 0;
+  const isPicking = phase === 'picking' && !assassinHit;
 
   // For done phase: show target markers using revealed data (not from initial clue load)
   const doneTargetIndices = phase === 'done' ? revealedTargets : [];
@@ -295,7 +312,7 @@ export default function GuessingPage() {
         targetIndices={doneTargetIndices}
         nullIndices={doneNullIndices}
         onCardClick={isPicking ? handlePick : undefined}
-        disabled={!isPicking && revealingIndices.size === 0}
+        disabled={!isPicking}
         pickOrder={pickedIndices}
         revealDelays={phase === 'revealing' ? revealDelays : undefined}
         highlightTargets={phase === 'done'}

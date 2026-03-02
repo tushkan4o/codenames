@@ -16,6 +16,23 @@ const COLOR_CONFIG = [
   { key: 'assassin' as const, bg: 'bg-board-assassin border border-gray-600' },
 ];
 
+const MODE_CONFIG = {
+  'clue-giving': {
+    border: 'border-board-red',
+    borderBack: 'border-board-blue/40',
+    titleKey: 'clueing' as const,
+    descKey: 'clueingDesc' as const,
+    accent: 'text-board-red',
+  },
+  guessing: {
+    border: 'border-board-blue',
+    borderBack: 'border-board-red/40',
+    titleKey: 'guessing' as const,
+    descKey: 'guessingDesc' as const,
+    accent: 'text-board-blue',
+  },
+};
+
 export default function SetupPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -26,6 +43,7 @@ export default function SetupPage() {
   const boardSize: BoardSize = '5x5';
   const [loading, setLoading] = useState(false);
   const [puzzleCount, setPuzzleCount] = useState<{ available: number; total: number } | null>(null);
+  const [animating, setAnimating] = useState(false);
 
   const defaults = BOARD_CONFIGS[boardSize];
   const [redCount, setRedCount] = useState(defaults.redCount);
@@ -94,6 +112,15 @@ export default function SetupPage() {
     assassin: assassinCount,
   };
 
+  function handleModeSwitch() {
+    if (animating) return;
+    setAnimating(true);
+    setTimeout(() => {
+      setMode((m) => (m === 'clue-giving' ? 'guessing' : 'clue-giving'));
+      setAnimating(false);
+    }, 300);
+  }
+
   async function handleStart() {
     if (!user) return;
 
@@ -123,7 +150,9 @@ export default function SetupPage() {
     }
   }
 
-  const toggleBtnBase = 'px-4 py-2 rounded-lg font-bold text-sm transition-colors';
+  const current = MODE_CONFIG[mode];
+  const otherMode: GameMode = mode === 'clue-giving' ? 'guessing' : 'clue-giving';
+  const other = MODE_CONFIG[otherMode];
 
   return (
     <div className="min-h-screen">
@@ -131,35 +160,53 @@ export default function SetupPage() {
       <div className="max-w-lg mx-auto px-4 pt-10">
         <h1 className="text-2xl font-extrabold text-white mb-8 text-center">{t.setup.title}</h1>
 
-        {/* Mode + Ranked toggles */}
+        {/* Mode selector — stacked cards */}
+        <div className="relative mb-6 mx-auto" style={{ maxWidth: '320px' }}>
+          {/* Back card (other mode) */}
+          <div
+            onClick={handleModeSwitch}
+            className={`absolute inset-0 translate-x-2 translate-y-2 rounded-xl border-2 ${other.border} bg-gray-900/40 cursor-pointer transition-all duration-300 ${animating ? 'opacity-0 scale-95' : 'opacity-60'}`}
+          />
+
+          {/* Front card (selected mode) */}
+          <div
+            onClick={handleModeSwitch}
+            className={`relative rounded-xl border-2 ${current.border} bg-gray-900/80 backdrop-blur-sm p-5 cursor-pointer transition-all duration-300 ${animating ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}
+          >
+            <h2 className={`text-lg font-extrabold ${current.accent} mb-1`}>
+              {t.setup[current.titleKey]}
+            </h2>
+            <p className="text-gray-400 text-sm leading-snug">
+              {t.setup[current.descKey]}
+            </p>
+          </div>
+        </div>
+
+        {/* Ranked toggle */}
         <div className="flex justify-center gap-2 mb-6">
           <button
-            onClick={() => setMode(mode === 'clue-giving' ? 'guessing' : 'clue-giving')}
-            className={`${toggleBtnBase} ${
-              mode === 'clue-giving'
-                ? 'bg-board-red text-white'
-                : 'bg-board-blue text-white'
+            onClick={() => setRanked(true)}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${
+              ranked ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
             }`}
           >
-            {mode === 'clue-giving' ? t.setup.clueing : t.setup.guessing}
+            {t.setup.ranked}
           </button>
           <button
-            onClick={() => setRanked(!ranked)}
-            className={`${toggleBtnBase} ${
-              ranked
-                ? 'bg-amber-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:text-white'
+            onClick={() => setRanked(false)}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${
+              !ranked ? 'bg-gray-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
             }`}
           >
-            {ranked ? t.setup.ranked : t.setup.casual}
+            {t.setup.casual}
           </button>
         </div>
 
         {/* Color Config — only for clue-giving mode */}
         {mode === 'clue-giving' && (
           <div className="mb-8">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 flex-1">
+            <div className="flex items-center gap-3 justify-center">
+              <div className="flex items-center gap-2">
                 {COLOR_CONFIG.map(({ key, bg }) => {
                   const count = counts[key];
                   const isNeutral = key === 'neutral';
