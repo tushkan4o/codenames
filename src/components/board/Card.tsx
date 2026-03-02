@@ -103,7 +103,7 @@ export default function Card({
       className={`
         card-reveal relative flex items-center justify-center
         h-[3.2rem] sm:h-[3.6rem] rounded-lg font-card font-bold uppercase tracking-wide select-none
-        text-[clamp(0.6rem,2.8vw,0.9rem)] p-1 sm:p-2 border border-white/5
+        text-[clamp(0.7rem,3vw,1rem)] p-1 sm:p-2 border border-white/5
         transition-all duration-300
         ${bgClass} ${textClass} ${glowClass} ${interactiveClass}
         ${ringClass} ${targetClass}
@@ -124,8 +124,8 @@ export default function Card({
 
       {showNullX && (
         <span
-          className="absolute bottom-0 left-0.5 text-board-red text-[0.85rem] sm:text-[1rem] leading-none drop-shadow-sm pointer-events-none"
-          style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 900, transform: 'rotate(-12deg)' }}
+          className="absolute inset-0 flex items-center justify-center text-board-red text-[1.6rem] sm:text-[1.9rem] leading-none pointer-events-none drop-shadow-sm"
+          style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 900, opacity: 0.85 }}
         >
           ✗
         </span>

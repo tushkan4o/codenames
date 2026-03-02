@@ -49,10 +49,10 @@ function MiniBoard({ clue, pickPercents }: { clue: AdminClue; pickPercents?: Rec
   const hasHighlight = targetSet.size > 0 || nullSet.size > 0;
 
   const colorMap: Record<string, string> = {
-    red: 'bg-board-red',
-    blue: 'bg-board-blue',
-    neutral: 'bg-board-neutral',
-    assassin: 'bg-board-assassin',
+    red: 'bg-board-red text-gray-900',
+    blue: 'bg-board-blue text-gray-900',
+    neutral: 'bg-board-neutral text-gray-900',
+    assassin: 'bg-board-assassin text-gray-400',
   };
 
   return (
@@ -66,7 +66,7 @@ function MiniBoard({ clue, pickPercents }: { clue: AdminClue; pickPercents?: Rec
         return (
           <div
             key={idx}
-            className={`${colorMap[card.color]} rounded px-1 flex items-center justify-center font-card font-bold uppercase text-[0.65rem] leading-tight relative transition-opacity duration-300 ${
+            className={`${colorMap[card.color]} rounded px-1 flex items-center justify-center font-card font-bold uppercase text-[0.75rem] leading-tight relative transition-opacity duration-300 ${
               hasHighlight && !isHighlighted ? 'opacity-50' : ''
             } ${isTarget ? `${glowColorsAdmin[card.color] || ''} brightness-110` : ''}`}
             style={{ height: '2.2rem' }}
@@ -80,8 +80,8 @@ function MiniBoard({ clue, pickPercents }: { clue: AdminClue; pickPercents?: Rec
             )}
             {isNull && hasHighlight && (
               <span
-                className="absolute bottom-0 left-0.5 text-board-red text-[0.7rem] leading-none pointer-events-none"
-                style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 900, transform: 'rotate(-12deg)' }}
+                className="absolute inset-0 flex items-center justify-center text-board-red text-[1.1rem] leading-none pointer-events-none"
+                style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontWeight: 900, opacity: 0.85 }}
               >
                 ✗
               </span>
