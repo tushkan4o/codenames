@@ -32,7 +32,8 @@ export default function ClueInput({ boardCards, targetCount, onSubmit }: ClueInp
           type="text"
           value={word}
           onChange={(e) => {
-            setWord(e.target.value);
+            const filtered = e.target.value.replace(/[\d\s]/g, '');
+            setWord(filtered);
             setError('');
           }}
           onFocus={() => { if (word) setWord(''); }}
