@@ -16,6 +16,26 @@ body {
   min-height: 100vh;
 }
 
+/* Custom scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a45 transparent;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a3a45;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525e;
+}
+
 /* Card color transitions for reveal */
 .card-reveal {
   transition: background-color 500ms ease, box-shadow 500ms ease, border-color 500ms ease;
