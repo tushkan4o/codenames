@@ -468,7 +468,8 @@ export default function GuessingPage() {
           </button>
           <button
             onClick={handleAnotherClue}
-            className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
+            disabled={pickedIndices.length > 0}
+            className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1 disabled:opacity-30 disabled:pointer-events-none"
           >
             <ArrowPathIcon className="w-4 h-4" />
             <span className="hidden sm:inline">{t.game.anotherClue}</span>
