@@ -27,8 +27,14 @@ export default function SetupPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
 
-  const [mode, setMode] = useState<GameMode>('clue-giving');
-  const [ranked, setRanked] = useState(true);
+  const [mode, setMode] = useState<GameMode>(() => {
+    const saved = localStorage.getItem('codenames_setup_mode');
+    return saved === 'clue-giving' || saved === 'guessing' ? saved : 'clue-giving';
+  });
+  const [ranked, setRanked] = useState(() => {
+    const saved = localStorage.getItem('codenames_setup_ranked');
+    return saved === null ? false : saved === 'true';
+  });
   const boardSize: BoardSize = '5x5';
   const [loading, setLoading] = useState(false);
   const [puzzleCount, setPuzzleCount] = useState<{ available: number; total: number } | null>(null);
@@ -41,6 +47,10 @@ export default function SetupPage() {
 
   const totalCards = defaults.totalCards;
   const neutralCount = totalCards - redCount - blueCount - assassinCount;
+
+  // Persist setup preferences
+  useEffect(() => { localStorage.setItem('codenames_setup_mode', mode); }, [mode]);
+  useEffect(() => { localStorage.setItem('codenames_setup_ranked', String(ranked)); }, [ranked]);
 
   // When switching to ranked, reset to defaults
   useEffect(() => {
@@ -192,7 +202,6 @@ export default function SetupPage() {
             ))}
           </div>
 
-          <p className="text-xs font-semibold text-gray-500 uppercase text-center mt-2">{t.setup.boardConfig}</p>
           {/* Ranked toggle — casual left, ranked right */}
           <div className="relative flex bg-gray-800/80 rounded-xl p-1 border border-gray-700/30">
             <div
@@ -226,6 +235,7 @@ export default function SetupPage() {
         </div>
 
         {/* Color Config — always visible */}
+        <p className="text-xs font-semibold text-gray-500 uppercase text-center mb-3">{t.setup.boardConfig}</p>
         <div className="mb-8">
           <div className="flex items-center gap-3 justify-center">
             <div className="flex items-center gap-2">
