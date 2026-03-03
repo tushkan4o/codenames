@@ -24,6 +24,12 @@ interface ClueStats {
   avgScore: number;
 }
 
+function formatDate(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function SortArrow({ field, activeField, dir }: { field: string; activeField: string; dir: SortDir }) {
   if (field !== activeField) return <span className="ml-0.5 invisible text-[0.5em]">{'\u25BC'}</span>;
   return <span className="ml-0.5 text-gray-400 text-[0.5em]">{dir === 'desc' ? '\u25BC' : '\u25B2'}</span>;
@@ -275,13 +281,11 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           cluesGiven.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesGiven}</p>
           ) : (<>
-            <div className="hidden sm:grid grid-cols-[1fr_3.5rem_auto] gap-2 px-4 py-1 items-center">
+            <div className="hidden sm:grid grid-cols-[1fr_3.5rem_4.5rem] gap-x-2 px-4 py-1 items-center">
               <span className={thClass} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></span>
               <span className={`${thClass} text-center`} onClick={() => toggleGivenSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={givenSort} dir={givenDir} /></span>
-              <span className="flex items-center gap-2 justify-end">
-                <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
-                  {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
-                </span>
+              <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
+                {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
               </span>
             </div>
             <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
@@ -297,13 +301,13 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       onClick={() => setExpandedGivenId(isExpanded ? null : clue.id)}
                       className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      <div className="grid grid-cols-[1fr_3.5rem_auto] gap-2 items-center">
+                      <div className="grid grid-cols-[1fr_3.5rem_4.5rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {clue.word} <span className="text-gray-500 font-semibold">{clue.number}</span>
                           {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                         </span>
                         <span className="text-sm text-gray-400 text-center">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span>
-                        <span className="flex items-center gap-2">
+                        <span className="flex items-center justify-center gap-1.5">
                           <span className="text-sm">{clue.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                           {isOwnProfile ? (
                             <button
@@ -334,7 +338,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>
-                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span></span>
+                          {clue.createdAt > 0 && <span className="text-gray-500">{formatDate(clue.createdAt)}</span>}
                           <button
                             onClick={() => handleGivenAction(clue)}
                             className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
@@ -362,14 +366,12 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           solvedEntries.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesSolved}</p>
           ) : (<>
-            <div className="hidden sm:grid grid-cols-[1fr_3rem_3.5rem_auto] gap-2 px-4 py-1 items-center">
+            <div className="hidden sm:grid grid-cols-[1fr_3rem_3.5rem_4.5rem] gap-x-2 px-4 py-1 items-center">
               <span className={thClass} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
               <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></span>
               <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></span>
-              <span className="flex items-center gap-2 justify-end">
-                <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
-                  {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
-                </span>
+              <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
+                {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
               </span>
             </div>
             <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
@@ -384,7 +386,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       onClick={() => setExpandedSolvedKey(isExpanded ? null : solvedKey)}
                       className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      <div className="grid grid-cols-[1fr_3rem_3.5rem_auto] gap-2 items-center">
+                      <div className="grid grid-cols-[1fr_3rem_3.5rem_4.5rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {entry.clue?.word ?? entry.result.clueId.slice(0, 12)}
                           <span className="ml-1 text-gray-500 font-semibold">{entry.clue?.number ?? entry.result.totalTargets}</span>
@@ -394,7 +396,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           <span className="text-gray-500 font-normal ml-0.5 text-xs">({entry.result.correctCount}/{entry.result.totalTargets})</span>
                         </span>
                         <span className="text-sm text-gray-400 text-center">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span>
-                        <span className="flex items-center gap-2">
+                        <span className="flex items-center justify-center gap-1.5">
                           <span className="text-sm">{entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                           {canView ? (
                             <span className="text-board-blue text-sm">✓</span>
@@ -423,7 +425,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                             </span>
                           )}
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>
-                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span></span>
+                          {entry.result.timestamp > 0 && <span className="text-gray-500">{formatDate(entry.result.timestamp)}</span>}
                           <button
                             onClick={() => handleSolvedAction(entry)}
                             className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"

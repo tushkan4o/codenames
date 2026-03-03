@@ -244,13 +244,11 @@ export default function LeaderboardPage() {
           sortedClues.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (<>
-            <div className="hidden sm:grid grid-cols-[1fr_3.5rem_auto] gap-2 px-4 py-1 items-center">
+            <div className="hidden sm:grid grid-cols-[1fr_3.5rem_4.5rem] gap-x-2 px-4 py-1 items-center">
               <span className={thAccordion} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></span>
               <span className={`${thAccordion} text-center`} onClick={() => toggleClueSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></span>
-              <span className="flex items-center gap-2 justify-end">
-                <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
-                  {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
-                </span>
+              <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
+                {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
               </span>
             </div>
             <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
@@ -265,12 +263,12 @@ export default function LeaderboardPage() {
                       onClick={() => setExpandedClueId(isExpanded ? null : c.id)}
                       className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      <div className="grid grid-cols-[1fr_3.5rem_auto] gap-2 items-center">
+                      <div className="grid grid-cols-[1fr_3.5rem_4.5rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {c.word} <span className="text-gray-500 font-semibold">{c.number}</span>
                         </span>
                         <span className="text-sm text-gray-400 text-center">{c.avgScore > 0 ? c.avgScore.toFixed(1) : '—'}</span>
-                        <span className="flex items-center gap-2">
+                        <span className="flex items-center justify-center gap-1.5">
                           <span className="text-sm">{c.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                           {user && (
                             canView ? (
@@ -290,7 +288,6 @@ export default function LeaderboardPage() {
                             <button onClick={() => openProfile(c.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{c.userId}</button>
                           </span>
                           <span><span className="text-gray-400">{t.leaderboard.attempts}:</span> <span className="text-white font-semibold">{c.attempts}</span></span>
-                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{c.avgScore.toFixed(1)}</span></span>
                           {c.createdAt > 0 && <span className="text-gray-500">{formatDate(c.createdAt)}</span>}
                           <button
                             onClick={() => user && handleClueAction(c.id, solved, isOwn)}
