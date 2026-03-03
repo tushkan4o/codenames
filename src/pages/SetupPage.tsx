@@ -21,10 +21,6 @@ const MODE_OPTIONS = [
   { value: 'guessing' as GameMode, titleKey: 'guessing' as const, descKey: 'guessingDesc' as const, bg: 'bg-board-blue' },
 ];
 
-const RANKED_OPTIONS = [
-  { value: true, titleKey: 'ranked' as const, descKey: 'rankedDesc' as const, bg: 'bg-amber-600' },
-  { value: false, titleKey: 'casual' as const, descKey: 'casualDesc' as const, bg: 'bg-gray-600' },
-];
 
 export default function SetupPage() {
   const navigate = useNavigate();
@@ -173,6 +169,7 @@ export default function SetupPage() {
 
         {/* Mode toggle */}
         <div className="flex gap-3 sm:gap-4 mb-6 mx-auto flex-col" style={{ maxWidth: '400px' }}>
+          <p className="text-xs font-semibold text-gray-500 uppercase text-center">{t.setup.mode}</p>
           <div className="relative flex bg-gray-800/80 rounded-xl p-1 border border-gray-700/30">
             <div
               className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-lg transition-all duration-300 ease-out ${
@@ -195,27 +192,36 @@ export default function SetupPage() {
             ))}
           </div>
 
-          {/* Ranked toggle */}
+          <p className="text-xs font-semibold text-gray-500 uppercase text-center mt-2">{t.setup.boardConfig}</p>
+          {/* Ranked toggle — casual left, ranked right */}
           <div className="relative flex bg-gray-800/80 rounded-xl p-1 border border-gray-700/30">
             <div
               className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-lg transition-all duration-300 ease-out ${
-                ranked ? 'left-1 bg-amber-600' : 'left-[calc(50%+0.25rem)] bg-gray-600'
+                ranked ? 'left-[calc(50%+0.25rem)] bg-amber-600' : 'left-1 bg-gray-600'
               }`}
             />
-            {RANKED_OPTIONS.map((opt) => (
-              <button
-                key={String(opt.value)}
-                onClick={() => setRanked(opt.value)}
-                className="relative z-10 flex-1 py-2.5 px-3 text-center rounded-lg transition-colors duration-300"
-              >
-                <span className={`text-sm font-bold block ${ranked === opt.value ? 'text-white' : 'text-gray-500'}`}>
-                  {t.setup[opt.titleKey]}
-                </span>
-                <span className={`text-[0.6rem] sm:text-xs block mt-0.5 transition-colors duration-300 ${ranked === opt.value ? 'text-white/70' : 'text-gray-600'}`}>
-                  {t.setup[opt.descKey]}
-                </span>
-              </button>
-            ))}
+            <button
+              onClick={() => setRanked(false)}
+              className="relative z-10 flex-1 py-2.5 px-3 text-center rounded-lg transition-colors duration-300"
+            >
+              <span className={`text-sm font-bold block ${!ranked ? 'text-white' : 'text-gray-500'}`}>
+                {t.setup.casual}
+              </span>
+              <span className={`text-[0.6rem] sm:text-xs block mt-0.5 transition-colors duration-300 ${!ranked ? 'text-white/70' : 'text-gray-600'}`}>
+                {t.setup.casualDesc}
+              </span>
+            </button>
+            <button
+              onClick={() => setRanked(true)}
+              className="relative z-10 flex-1 py-2.5 px-3 text-center rounded-lg transition-colors duration-300"
+            >
+              <span className={`text-sm font-bold block ${ranked ? 'text-white' : 'text-gray-500'}`}>
+                ★ {t.setup.ranked} ★
+              </span>
+              <span className={`text-[0.6rem] sm:text-xs block mt-0.5 transition-colors duration-300 ${ranked ? 'text-white/70' : 'text-gray-600'}`}>
+                {t.setup.rankedDesc}
+              </span>
+            </button>
           </div>
         </div>
 
@@ -241,7 +247,7 @@ export default function SetupPage() {
                       <span className="text-xs text-transparent leading-none select-none">▲</span>
                     )}
                     <div
-                      className={`w-10 h-10 sm:w-11 sm:h-11 rounded-md ${bg} flex items-center justify-center text-white font-bold text-lg ${colorLocked ? 'opacity-60' : ''}`}
+                      className={`w-10 h-10 sm:w-11 sm:h-11 rounded-md ${bg} flex items-center justify-center text-white font-bold text-lg`}
                     >
                       {showQuestionMarks ? '?' : count}
                     </div>

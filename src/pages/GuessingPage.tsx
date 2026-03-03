@@ -465,7 +465,7 @@ export default function GuessingPage() {
             { key: 'neutral', bg: 'bg-board-neutral' },
             { key: 'assassin', bg: 'bg-board-assassin border border-gray-600' },
           ].map(({ key, bg }) => (
-            <div key={key} className={`w-7 h-7 rounded ${bg} flex items-center justify-center text-white font-bold text-xs opacity-60`}>
+            <div key={key} className={`w-7 h-7 rounded ${bg} flex items-center justify-center text-white font-bold text-xs`}>
               {colorCounts[key as keyof typeof colorCounts]}
             </div>
           ))}

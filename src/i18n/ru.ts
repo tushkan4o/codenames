@@ -37,6 +37,7 @@ export const ru = {
     boardSize: 'Размер поля',
     start: 'Начать',
     resetConfig: 'Сброс',
+    boardConfig: 'Настройки поля',
     ranked: 'Рейтинговая',
     rankedDesc: 'Стандартное поле, результаты в рейтинге',
     casual: 'Обычная',
