@@ -71,6 +71,10 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [expandedGivenId, setExpandedGivenId] = useState<string | null>(null);
   const [expandedSolvedKey, setExpandedSolvedKey] = useState<string | null>(null);
 
+  // OAuth linked accounts
+  const [linkedAccounts, setLinkedAccounts] = useState<{ provider: string; providerName: string; email: string | null; linkedAt: number }[]>([]);
+  const [unlinkConfirm, setUnlinkConfirm] = useState<string | null>(null);
+
   useEffect(() => {
     if (!profileId) return;
     setStats(null);
@@ -113,6 +117,9 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       api.getResultsByUser(user.id).then((results) => {
         setMySolvedClueIds(new Set(results.map((r) => r.clueId)));
       });
+    }
+    if (isOwnProfile) {
+      api.getOAuthAccounts(profileId).then(setLinkedAccounts).catch(() => {});
     }
   }, [profileId, user]);
 
@@ -234,6 +241,19 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     setConfirmDeleteSolved(null);
   }
 
+  async function handleLinkOAuth(provider: string) {
+    if (!user) return;
+    const { url } = await api.getOAuthUrl(provider, user.id);
+    window.location.href = url;
+  }
+
+  async function handleUnlinkOAuth(provider: string) {
+    if (!user) return;
+    await api.unlinkOAuth(user.id, provider);
+    setLinkedAccounts((prev) => prev.filter((a) => a.provider !== provider));
+    setUnlinkConfirm(null);
+  }
+
   function toggleGivenSort(field: GivenSortField) {
     if (givenSort === field) {
       if (givenDir === 'desc') setGivenDir('asc');
@@ -288,6 +308,50 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             <div className="bg-gray-800/60 rounded-lg p-4 text-center border border-gray-700/30">
               <p className="text-2xl font-bold text-white">{stats.avgScore}</p>
               <p className="text-xs text-gray-400">{t.leaderboard.avgScore}</p>
+            </div>
+          </div>
+        )}
+
+        {isOwnProfile && (
+          <div className="mb-4">
+            <h2 className="text-sm font-bold text-gray-400 uppercase mb-2">{t.oauth.linkedAccounts}</h2>
+            <div className="space-y-2">
+              {(['google', 'discord'] as const).map((provider) => {
+                const account = linkedAccounts.find((a) => a.provider === provider);
+                const label = provider === 'google' ? 'Google' : 'Discord';
+                const iconColor = provider === 'google' ? 'text-white' : 'text-[#5865F2]';
+                return (
+                  <div key={provider} className="flex items-center justify-between bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`font-bold text-sm ${iconColor}`}>{label}</span>
+                      {account && (
+                        <span className="text-xs text-gray-500 truncate">
+                          {account.providerName || account.email || t.oauth.linked}
+                        </span>
+                      )}
+                    </div>
+                    {account ? (
+                      unlinkConfirm === provider ? (
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => handleUnlinkOAuth(provider)} className="px-2 py-1 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
+                          <button onClick={() => setUnlinkConfirm(null)} className="px-2 py-1 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setUnlinkConfirm(provider)} className="px-3 py-1 text-xs font-bold text-gray-400 hover:text-white bg-gray-700 hover:bg-gray-600 rounded transition-colors">
+                          {t.oauth.unlink}
+                        </button>
+                      )
+                    ) : (
+                      <button
+                        onClick={() => handleLinkOAuth(provider)}
+                        className="px-3 py-1 text-xs font-bold text-white bg-board-blue hover:brightness-110 rounded transition-colors"
+                      >
+                        {provider === 'google' ? t.oauth.linkGoogle : t.oauth.linkDiscord}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

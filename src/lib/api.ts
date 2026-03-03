@@ -224,4 +224,27 @@ export const api = {
   async adminUpdateClue(adminId: string, clueId: string, updates: { targetIndices?: number[]; number?: number; nullIndices?: number[] }): Promise<void> {
     await patch(`/api/admin?action=updateClue&adminId=${encodeURIComponent(adminId)}&clueId=${encodeURIComponent(clueId)}`, updates);
   },
+
+  // OAuth
+  async getOAuthUrl(provider: string, linkUserId?: string): Promise<{ url: string }> {
+    const params = new URLSearchParams({ provider });
+    if (linkUserId) params.set('linkUserId', linkUserId);
+    return get(`/api/auth/oauth/url?${params}`);
+  },
+
+  async resolveOAuthToken(token: string): Promise<Record<string, unknown>> {
+    return post('/api/auth/oauth/resolve', { token });
+  },
+
+  async completeOAuthRegistration(token: string, displayName: string): Promise<Record<string, unknown>> {
+    return post('/api/auth/oauth/complete', { token, displayName });
+  },
+
+  async getOAuthAccounts(userId: string): Promise<{ provider: string; providerName: string; email: string | null; linkedAt: number }[]> {
+    return get(`/api/auth/oauth/accounts?userId=${encodeURIComponent(userId)}`);
+  },
+
+  async unlinkOAuth(userId: string, provider: string): Promise<void> {
+    await post('/api/auth/oauth/unlink', { userId, provider });
+  },
 };

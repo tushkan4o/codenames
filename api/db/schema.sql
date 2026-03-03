@@ -48,3 +48,14 @@ CREATE TABLE IF NOT EXISTS reports (
   reason TEXT NOT NULL,
   created_at BIGINT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS oauth_accounts (
+  provider TEXT NOT NULL,
+  provider_id TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  email TEXT,
+  provider_name TEXT,
+  linked_at BIGINT NOT NULL,
+  PRIMARY KEY (provider, provider_id)
+);
+CREATE INDEX IF NOT EXISTS idx_oauth_user ON oauth_accounts(user_id);

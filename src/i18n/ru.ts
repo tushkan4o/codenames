@@ -249,6 +249,22 @@ export const ru = {
     sortColumns: 'Столбцы',
     submitDelay: 'Задержка отправки',
   },
+  oauth: {
+    loginGoogle: 'Войти через Google',
+    loginDiscord: 'Войти через Discord',
+    linkGoogle: 'Привязать Google',
+    linkDiscord: 'Привязать Discord',
+    unlink: 'Отвязать',
+    linked: 'Привязано',
+    linkedAccounts: 'Привязанные аккаунты',
+    enterName: 'Введите игровое имя',
+    nameHint: 'Это имя увидят другие игроки',
+    unlinkConfirm: 'Отвязать {provider}?',
+    linkSuccess: 'Аккаунт привязан',
+    errorNameTaken: 'Это имя уже занято',
+    errorExpired: 'Сессия истекла, попробуйте снова',
+    or: 'или',
+  },
 };
 
 export type TranslationKeys = typeof ru;
