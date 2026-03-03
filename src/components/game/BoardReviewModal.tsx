@@ -1,5 +1,4 @@
 import { useMemo, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { generateBoard } from '../../lib/boardGenerator';
 import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../../types/game';
 import type { Clue, GuessResult } from '../../types/game';
@@ -10,6 +9,7 @@ import Board from '../board/Board';
 import RevealOverlay from './RevealOverlay';
 import ClueStatsPanel, { type AttemptDetail, pluralAttempts } from './ClueStatsPanel';
 import ClueRating from './ClueRating';
+import { useProfileModal } from '../../context/ProfileModalContext';
 
 interface BoardReviewModalProps {
   clue: Clue;
@@ -26,7 +26,7 @@ function formatDate(ts: number): string {
 export default function BoardReviewModal({ clue, result, onClose }: BoardReviewModalProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const { openProfile } = useProfileModal();
   const [pickPercents, setPickPercents] = useState<Record<number, number>>({});
   const [viewingAttemptPicks, setViewingAttemptPicks] = useState<number[] | null>(null);
   const [existingRating, setExistingRating] = useState<number | null>(null);
@@ -162,7 +162,7 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
                     >
                       <td className="py-1.5 pr-2 text-left">
                         <button
-                          onClick={(e) => { e.stopPropagation(); navigate(`/profile/${detail.userId}`); }}
+                          onClick={(e) => { e.stopPropagation(); openProfile(detail.userId); }}
                           className="text-blue-400 hover:text-blue-300 transition-colors truncate max-w-[10rem] block text-left"
                         >
                           {detail.userId}

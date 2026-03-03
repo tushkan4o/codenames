@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
+import { useProfileModal } from '../context/ProfileModalContext';
 import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
 import BoardReviewModal from '../components/game/BoardReviewModal';
@@ -34,6 +35,13 @@ interface ClueStatEntry {
   ranked: boolean;
   attempts: number;
   avgScore: number;
+  createdAt: number;
+}
+
+function formatDate(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function SortArrow({ field, activeField, dir }: { field: string; activeField: string; dir: SortDir }) {
@@ -45,6 +53,7 @@ export default function LeaderboardPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { openProfile } = useProfileModal();
   const [tab, setTab] = useState<Tab>('spymasters');
   const sizeFilter: SizeFilter = 'all';
   const [spymasters, setSpymasters] = useState<SpymasterEntry[]>([]);
@@ -52,7 +61,6 @@ export default function LeaderboardPage() {
   const [clueStats, setClueStats] = useState<ClueStatEntry[]>([]);
   const [mySolvedClueIds, setMySolvedClueIds] = useState<Set<string>>(new Set());
   const [myResults, setMyResults] = useState<Map<string, GuessResult>>(new Map());
-  const [confirmTryId, setConfirmTryId] = useState<string | null>(null);
   const [modalClue, setModalClue] = useState<Clue | null>(null);
   const [modalResult, setModalResult] = useState<GuessResult | undefined>(undefined);
   const [rankedFilter, setRankedFilter] = useState<RankedFilter>('all');
@@ -85,14 +93,14 @@ export default function LeaderboardPage() {
     }
   }, [user]);
 
-  async function handleClueRowClick(clueId: string, solved: boolean, isOwn: boolean) {
+  async function handleClueAction(clueId: string, solved: boolean, isOwn: boolean) {
     if (solved || isOwn) {
       const clue = await api.getClueById(clueId, true);
       if (!clue) return;
       setModalClue(clue);
       setModalResult(myResults.get(clueId));
     } else {
-      setConfirmTryId(clueId);
+      navigate(`/guess/${clueId}`);
     }
   }
 
@@ -186,7 +194,7 @@ export default function LeaderboardPage() {
                     <tr key={s.userId} className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 transition-colors">
                       <td className={`${tdClass} text-center`}>{i + 1}</td>
                       <td className={`${tdClass} font-semibold truncate`}>
-                        <button onClick={() => navigate(`/profile/${s.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{s.userId}</button>
+                        <button onClick={() => openProfile(s.userId)} className="text-board-blue hover:text-blue-300 transition-colors">{s.userId}</button>
                       </td>
                       <td className={`${tdClass} text-center`}>{s.cluesGiven}</td>
                       <td className={`${tdClass} text-center`}>{s.avgWordsPerClue.toFixed(1)}</td>
@@ -219,7 +227,7 @@ export default function LeaderboardPage() {
                     <tr key={g.userId} className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 transition-colors">
                       <td className={`${tdClass} text-center`}>{i + 1}</td>
                       <td className={`${tdClass} font-semibold truncate`}>
-                        <button onClick={() => navigate(`/profile/${g.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{g.userId}</button>
+                        <button onClick={() => openProfile(g.userId)} className="text-board-blue hover:text-blue-300 transition-colors">{g.userId}</button>
                       </td>
                       <td className={`${tdClass} text-center`}>{g.cluesSolved}</td>
                       <td className={`${tdClass} text-center`}>{g.avgWordsPicked.toFixed(1)}</td>
@@ -236,32 +244,36 @@ export default function LeaderboardPage() {
           sortedClues.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (<>
-            <div className="hidden sm:grid grid-cols-[1fr_2rem_2rem] gap-2 px-4 py-1 items-center">
+            <div className="hidden sm:grid grid-cols-[1fr_3.5rem_auto] gap-2 px-4 py-1 items-center">
               <span className={thAccordion} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></span>
-              <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
-                {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
+              <span className={`${thAccordion} text-center`} onClick={() => toggleClueSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></span>
+              <span className="flex items-center gap-2 justify-end">
+                <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
+                  {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
+                </span>
               </span>
-              <span></span>
             </div>
             <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
               {sortedClues.map((c, i) => {
                 const isOwn = c.userId === user?.id;
                 const solved = mySolvedClueIds.has(c.id);
                 const isExpanded = expandedClueId === c.id;
+                const canView = solved || isOwn;
                 return (
                   <div key={`${c.id}-${i}`}>
                     <div
                       onClick={() => setExpandedClueId(isExpanded ? null : c.id)}
                       className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                      <div className="grid grid-cols-[1fr_3.5rem_auto] gap-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {c.word} <span className="text-gray-500 font-semibold">{c.number}</span>
                         </span>
+                        <span className="text-sm text-gray-400 text-center">{c.avgScore > 0 ? c.avgScore.toFixed(1) : '—'}</span>
                         <span className="flex items-center gap-2">
                           <span className="text-sm">{c.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                           {user && (
-                            (solved || isOwn) ? (
+                            canView ? (
                               <span className="text-board-blue text-sm">✓</span>
                             ) : (
                               <span className="text-gray-500 text-sm">–</span>
@@ -271,32 +283,22 @@ export default function LeaderboardPage() {
                       </div>
                     </div>
                     {isExpanded && (
-                      <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg p-4">
-                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm mb-3">
-                          <div>
+                      <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                          <span>
                             <span className="text-gray-400">{t.leaderboard.author}: </span>
-                            <button
-                              onClick={() => navigate(`/profile/${c.userId}`)}
-                              className="text-board-blue hover:text-blue-300 transition-colors font-semibold"
-                            >
-                              {c.userId}
-                            </button>
-                          </div>
-                          <div>
-                            <span className="text-gray-400">{t.leaderboard.attempts}: </span>
-                            <span className="text-white font-semibold">{c.attempts}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-400">{t.leaderboard.avgScore}: </span>
-                            <span className="text-white font-semibold">{c.avgScore.toFixed(1)}</span>
-                          </div>
+                            <button onClick={() => openProfile(c.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{c.userId}</button>
+                          </span>
+                          <span><span className="text-gray-400">{t.leaderboard.attempts}:</span> <span className="text-white font-semibold">{c.attempts}</span></span>
+                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{c.avgScore.toFixed(1)}</span></span>
+                          {c.createdAt > 0 && <span className="text-gray-500">{formatDate(c.createdAt)}</span>}
+                          <button
+                            onClick={() => user && handleClueAction(c.id, solved, isOwn)}
+                            className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                          >
+                            {canView ? t.profile.viewBoard : t.profile.solve}
+                          </button>
                         </div>
-                        <button
-                          onClick={() => user && handleClueRowClick(c.id, solved, isOwn)}
-                          className="px-4 py-1.5 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
-                        >
-                          {t.profile.viewBoard}
-                        </button>
                       </div>
                     )}
                   </div>
@@ -306,19 +308,6 @@ export default function LeaderboardPage() {
           </>)
         )}
       </div>
-
-      {confirmTryId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setConfirmTryId(null)}>
-          <div className="bg-gray-800 rounded-xl p-6 max-w-xs text-center relative" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setConfirmTryId(null)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
-            <p className="text-white mb-4">{t.profile.tryIt}?</p>
-            <div className="flex justify-center gap-3">
-              <button onClick={() => { navigate(`/guess/${confirmTryId}`); setConfirmTryId(null); }} className="px-4 py-2 text-sm font-bold text-white bg-board-blue hover:bg-blue-600 rounded-lg transition-colors">✓</button>
-              <button onClick={() => setConfirmTryId(null)} className="px-4 py-2 text-sm font-bold text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">✗</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {modalClue && (
         <BoardReviewModal clue={modalClue} result={modalResult} onClose={() => { setModalClue(null); setModalResult(undefined); }} />

@@ -15,6 +15,7 @@ import RevealOverlay from '../components/game/RevealOverlay';
 import ClueRating from '../components/game/ClueRating';
 import ClueStatsPanel, { type AttemptDetail, pluralAttempts } from '../components/game/ClueStatsPanel';
 import SettingsPanel from '../components/settings/SettingsPanel';
+import { useProfileModal } from '../context/ProfileModalContext';
 
 type GamePhase = 'picking' | 'revealing' | 'done';
 
@@ -78,6 +79,7 @@ export default function GuessingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { openProfile } = useProfileModal();
 
   const [clue, setClue] = useState<Clue | null>(null);
   const [pickedIndices, setPickedIndices] = useState<number[]>([]);
@@ -572,7 +574,7 @@ export default function GuessingPage() {
                       >
                         <td className="py-1.5 pr-2 text-left">
                           <button
-                            onClick={(e) => { e.stopPropagation(); navigate(`/profile/${detail.userId}`); }}
+                            onClick={(e) => { e.stopPropagation(); openProfile(detail.userId); }}
                             className="text-blue-400 hover:text-blue-300 transition-colors truncate max-w-[10rem] block text-left"
                           >
                             {detail.userId}

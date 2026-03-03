@@ -163,7 +163,9 @@ export const ru = {
     sortDate: 'Дата',
     sortAttempts: 'Решения',
     sortScore: 'Счёт',
-    viewBoard: 'Открыть доску',
+    viewBoard: 'Посмотреть',
+    solve: 'Решить',
+    rating: 'Рейтинг',
   },
   rating: {
     rateClue: 'Оцените подсказку:',
@@ -217,6 +219,7 @@ export const ru = {
     player: 'Игрок',
     allResults: 'Все отгадывания',
     searchResults: 'Поиск по игроку или подсказке...',
+    viewProfile: 'Профиль',
   },
   settings: {
     title: 'Настройки',

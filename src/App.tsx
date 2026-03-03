@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { GameProvider } from './context/GameContext';
 import { useAuth } from './context/AuthContext';
+import ProfileModal from './components/profile/ProfileModal';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import SetupPage from './pages/SetupPage';
@@ -21,6 +22,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <GameProvider>
+        <ProfileModal />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />

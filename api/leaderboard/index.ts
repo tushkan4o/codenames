@@ -116,6 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ranked: c.ranked ?? true,
       attempts,
       avgScore,
+      createdAt: Number(c.created_at) || 0,
     };
   }).sort((a, b) => b.attempts - a.attempts);
 

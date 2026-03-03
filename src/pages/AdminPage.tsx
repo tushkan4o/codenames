@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
+import { useProfileModal } from '../context/ProfileModalContext';
 import { api } from '../lib/api';
 import { generateBoard } from '../lib/boardGenerator';
 import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../types/game';
@@ -62,6 +63,7 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { openProfile } = useProfileModal();
 
   const [adminTab, setAdminTab] = useState<AdminTab>('clues');
   const [clues, setClues] = useState<AdminClue[]>([]);
@@ -76,6 +78,7 @@ export default function AdminPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteResult, setConfirmDeleteResult] = useState<{ clueId: string; userId: string; timestamp: number } | null>(null);
   const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null);
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [deletedMessage, setDeletedMessage] = useState<string | null>(null);
 
   const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -488,7 +491,7 @@ export default function AdminPage() {
                   </span>
                   <span className="text-sm truncate">
                     <button
-                      onClick={(e) => { e.stopPropagation(); navigate(`/profile/${r.userId}`); }}
+                      onClick={(e) => { e.stopPropagation(); openProfile(r.userId); }}
                       className="text-board-blue hover:text-blue-300 transition-colors"
                     >
                       {r.userId}
@@ -540,34 +543,59 @@ export default function AdminPage() {
           </div>
 
           <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
-            {sortedUsers.map((u) => (
-              <div
-                key={u.id}
-                onClick={() => navigate(`/profile/${u.id}`)}
-                className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600"
-              >
-                <div className="grid grid-cols-2 md:grid-cols-[1.5fr_4.5rem_4.5rem_4rem_1fr_1fr_2rem] gap-2 items-center">
-                  <span className="text-sm truncate">
-                    <span className="font-semibold text-white">{u.displayName}</span>
-                    {u.isAdmin && <span className="ml-1 text-[0.6rem] text-board-blue font-bold">ADM</span>}
-                  </span>
-                  <span className="text-sm text-center text-gray-300">{u.cluesGiven}</span>
-                  <span className="text-sm text-center text-gray-300">{u.cluesSolved}</span>
-                  <span className="text-sm text-center text-gray-300">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</span>
-                  <span className="text-sm text-center text-gray-500">{formatDateTime(u.createdAt)}</span>
-                  <span className="text-sm text-center text-gray-400">{formatDateTime(u.lastActivity)}</span>
-                  {!u.isAdmin ? (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteUserId(u.id); }}
-                      className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
-                      title={t.admin.deleteUser}
-                    >
-                      &times;
-                    </button>
-                  ) : <span></span>}
+            {sortedUsers.map((u) => {
+              const isExpanded = expandedUserId === u.id;
+              return (
+                <div key={u.id}>
+                  <div
+                    onClick={() => setExpandedUserId(isExpanded ? null : u.id)}
+                    className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
+                  >
+                    <div className="grid grid-cols-2 md:grid-cols-[1.5fr_4.5rem_4.5rem_4rem_1fr_1fr_2rem] gap-2 items-center">
+                      <span className="text-sm truncate">
+                        <span className="font-semibold text-white">{u.displayName}</span>
+                        {u.isAdmin && <span className="ml-1 text-[0.6rem] text-board-blue font-bold">ADM</span>}
+                      </span>
+                      <span className="text-sm text-center text-gray-300">{u.cluesGiven}</span>
+                      <span className="text-sm text-center text-gray-300">{u.cluesSolved}</span>
+                      <span className="text-sm text-center text-gray-300">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</span>
+                      <span className="text-sm text-center text-gray-500">{formatDateTime(u.createdAt)}</span>
+                      <span className="text-sm text-center text-gray-400">{formatDateTime(u.lastActivity)}</span>
+                      {!u.isAdmin ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setExpandedUserId(u.id); setConfirmDeleteUserId(u.id); }}
+                          className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
+                          title={t.admin.deleteUser}
+                        >
+                          &times;
+                        </button>
+                      ) : <span></span>}
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                        <span><span className="text-gray-400">{t.admin.registered}:</span> <span className="text-white">{formatDateTime(u.createdAt)}</span></span>
+                        <span><span className="text-gray-400">{t.admin.lastActive}:</span> <span className="text-white">{formatDateTime(u.lastActivity)}</span></span>
+                        <button
+                          onClick={() => openProfile(u.id)}
+                          className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                        >
+                          {t.admin.viewProfile}
+                        </button>
+                      </div>
+                      {confirmDeleteUserId === u.id && (
+                        <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-700/30">
+                          <span className="text-sm text-board-red">{t.admin.confirmDeleteUser.replace('{name}', u.displayName)}</span>
+                          <button onClick={() => handleDeleteUser(u.id)} className="px-2 py-1 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
+                          <button onClick={() => setConfirmDeleteUserId(null)} className="px-2 py-1 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>)}
       </div>
@@ -589,32 +617,6 @@ export default function AdminPage() {
               </button>
               <button
                 onClick={() => handleDeleteClue(confirmDeleteId)}
-                className="bg-board-red hover:bg-board-red/80 text-white text-sm font-bold px-4 py-2 rounded transition-colors"
-              >
-                {t.admin.confirm}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm delete user modal */}
-      {confirmDeleteUserId && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setConfirmDeleteUserId(null)}>
-          <div className="bg-gray-800 border border-gray-700/30 rounded-lg p-6 max-w-sm mx-4 relative" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setConfirmDeleteUserId(null)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
-            <p className="text-white font-bold mb-4">
-              {t.admin.confirmDeleteUser.replace('{name}', users.find((u) => u.id === confirmDeleteUserId)?.displayName || confirmDeleteUserId)}
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setConfirmDeleteUserId(null)}
-                className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold px-4 py-2 rounded transition-colors"
-              >
-                {t.admin.cancel}
-              </button>
-              <button
-                onClick={() => handleDeleteUser(confirmDeleteUserId)}
                 className="bg-board-red hover:bg-board-red/80 text-white text-sm font-bold px-4 py-2 rounded transition-colors"
               >
                 {t.admin.confirm}
