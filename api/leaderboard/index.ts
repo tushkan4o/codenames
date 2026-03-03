@@ -102,11 +102,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     resultsByClue.get(cid)!.push(r);
   }
 
+  // Fetch all ratings for rating stats per clue
+  const ratings: Record<string, unknown>[] = await sql`SELECT clue_id, rating FROM ratings`;
+  const ratingsByClue = new Map<string, number[]>();
+  for (const r of ratings) {
+    const cid = r.clue_id as string;
+    if (!ratingsByClue.has(cid)) ratingsByClue.set(cid, []);
+    ratingsByClue.get(cid)!.push(Number(r.rating));
+  }
+
   const clueStats = clues.map((c) => {
     const clueResults = resultsByClue.get(c.id as string) || [];
     const attempts = clueResults.length;
     const avgScore = attempts > 0
       ? Math.round(clueResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / attempts * 10) / 10
+      : 0;
+    const clueRatings = ratingsByClue.get(c.id as string) || [];
+    const ratingsCount = clueRatings.length;
+    const avgRating = ratingsCount > 0
+      ? Math.round(clueRatings.reduce((s, v) => s + v, 0) / ratingsCount * 10) / 10
       : 0;
     return {
       id: c.id as string,
@@ -117,6 +131,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       attempts,
       avgScore,
       createdAt: Number(c.created_at) || 0,
+      ratingsCount,
+      avgRating,
     };
   }).sort((a, b) => b.attempts - a.attempts);
 

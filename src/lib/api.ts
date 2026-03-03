@@ -145,6 +145,8 @@ export const api = {
     pickCounts?: Record<number, number>;
     details?: { userId: string; score: number; timestamp: number; guessedIndices: number[] }[];
     createdAt?: number;
+    ratingsCount?: number;
+    avgRating?: number;
   }> {
     return get(`/api/clues/${encodeURIComponent(clueId)}?stats=true`);
   },

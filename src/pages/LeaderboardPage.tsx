@@ -37,6 +37,8 @@ interface ClueStatEntry {
   attempts: number;
   avgScore: number;
   createdAt: number;
+  ratingsCount: number;
+  avgRating: number;
 }
 
 function formatDate(ts: number): string {
@@ -192,7 +194,7 @@ export default function LeaderboardPage() {
           sortedSpymasters.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
-            <div className="overflow-y-auto flex-1 min-h-0">
+            <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
               <table className="w-full table-fixed">
                 <thead className="sticky top-0 bg-board-bg z-10">
                   <tr className="text-gray-400 border-b border-gray-700/50">
@@ -225,7 +227,7 @@ export default function LeaderboardPage() {
           sortedGuessers.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
-            <div className="overflow-y-auto flex-1 min-h-0">
+            <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
               <table className="w-full table-fixed">
                 <thead className="sticky top-0 bg-board-bg z-10">
                   <tr className="text-gray-400 border-b border-gray-700/50">
@@ -264,7 +266,7 @@ export default function LeaderboardPage() {
               <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
               <span className={`${thAccordion} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
             </div>
-            <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
+            <div className="space-y-1 overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
               {sortedClues.map((c, i) => {
                 const isOwn = c.userId === user?.id;
                 const solved = mySolvedClueIds.has(c.id);
@@ -295,20 +297,25 @@ export default function LeaderboardPage() {
                     </div>
                     {isExpanded && (
                       <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                           {c.createdAt > 0 && <span className="text-gray-500">{formatDate(c.createdAt)}</span>}
+                          {!c.createdAt && <span />}
                           <span>
                             <span className="text-gray-400">{t.leaderboard.author}: </span>
                             <button onClick={() => openProfile(c.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{c.userId}</button>
                           </span>
-                          <span><span className="text-gray-400">{t.leaderboard.attempts}:</span> <span className="text-white font-semibold">{c.attempts}</span></span>
-                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{c.avgScore.toFixed(1)}</span></span>
-                          <button
-                            onClick={() => user && handleClueAction(c.id, solved, isOwn)}
-                            className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors ml-auto"
-                          >
-                            {canView ? t.profile.viewBoard : t.profile.solve}
-                          </button>
+                          <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{c.attempts}</span></span>
+                          <span><span className="text-gray-400">{t.results.avgScoreLabel}:</span> <span className="text-white font-semibold">{c.avgScore.toFixed(1)}</span></span>
+                          <span><span className="text-gray-400">{t.results.ratingsCount}:</span> <span className="text-white font-semibold">{c.ratingsCount ?? 0}</span></span>
+                          <span><span className="text-gray-400">{t.admin.avgRating}:</span> <span className="text-white font-semibold">{c.ratingsCount > 0 ? c.avgRating.toFixed(1) : '—'}</span></span>
+                          <div className="col-span-2 flex items-center gap-2 justify-end mt-1">
+                            <button
+                              onClick={() => user && handleClueAction(c.id, solved, isOwn)}
+                              className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                            >
+                              {canView ? t.profile.viewBoard : t.profile.solve}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}

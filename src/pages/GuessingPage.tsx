@@ -416,6 +416,28 @@ export default function GuessingPage() {
     );
   }
 
+  if (clue.disabled) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-white gap-4">
+        <p>{t.game.clueDisabled}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate('/setup')}
+            className="px-6 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold transition-colors"
+          >
+            {t.game.tryAnother}
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors"
+          >
+            {t.results.backHome}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const displayCards: CardState[] = board.cards.map((card, idx) => {
     if (pickedIndices.includes(idx)) return { ...card, revealed: true };
     if (phase === 'done') return { ...card, revealed: true };

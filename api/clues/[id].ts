@@ -57,6 +57,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const clueRows = await sql`SELECT created_at FROM clues WHERE id = ${id}`;
     const createdAt = clueRows.length > 0 ? Number(clueRows[0].created_at) : 0;
 
+    // Fetch rating stats
+    const ratingRows = await sql`SELECT COUNT(*)::int as count, COALESCE(AVG(rating), 0) as avg FROM ratings WHERE clue_id = ${id}`;
+    const ratingsCount = ratingRows.length > 0 ? Number(ratingRows[0].count) : 0;
+    const avgRating = ratingRows.length > 0 ? Math.round(Number(ratingRows[0].avg) * 10) / 10 : 0;
+
     return res.json({
       attempts: rows.length,
       avgScore: Math.round((totalScore / rows.length) * 10) / 10,
@@ -64,6 +69,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       pickCounts,
       details,
       createdAt,
+      ratingsCount,
+      avgRating,
     });
   }
 
