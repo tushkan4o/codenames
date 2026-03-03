@@ -13,6 +13,7 @@ type SortDir = 'asc' | 'desc';
 type GivenSortField = 'number' | 'attempts' | 'avgScore';
 type SolvedSortField = 'number' | 'attempts' | 'avgScore' | 'myScore';
 type RankedFilter = 'all' | 'ranked' | 'casual';
+type SolvedFilter = 'all' | 'solved' | 'unsolved';
 
 interface SolvedEntry {
   result: GuessResult;
@@ -42,7 +43,7 @@ interface ProfileContentProps {
 export default function ProfileContent({ profileId }: ProfileContentProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { openProfile } = useProfileModal();
+  const { openProfile, closeProfile } = useProfileModal();
   const { t } = useTranslation();
 
   const isOwnProfile = profileId === user?.id;
@@ -57,6 +58,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [confirmDeleteClue, setConfirmDeleteClue] = useState<string | null>(null);
   const [clueStatsMap, setClueStatsMap] = useState<Record<string, ClueStats>>({});
   const [rankedFilter, setRankedFilter] = useState<RankedFilter>('all');
+  const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>('all');
   const [confirmDeleteSolved, setConfirmDeleteSolved] = useState<string | null>(null);
 
   const [givenSort, setGivenSort] = useState<GivenSortField>('number');
@@ -69,7 +71,6 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
 
   useEffect(() => {
     if (!profileId) return;
-    // Reset state when profileId changes
     setStats(null);
     setCluesGiven([]);
     setSolvedEntries([]);
@@ -117,6 +118,8 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     let filtered = cluesGiven;
     if (rankedFilter === 'ranked') filtered = filtered.filter((c) => c.ranked !== false);
     else if (rankedFilter === 'casual') filtered = filtered.filter((c) => c.ranked === false);
+    if (solvedFilter === 'solved') filtered = filtered.filter((c) => mySolvedClueIds.has(c.id));
+    else if (solvedFilter === 'unsolved') filtered = filtered.filter((c) => !mySolvedClueIds.has(c.id));
     const sorted = [...filtered];
     sorted.sort((a, b) => {
       let diff = 0;
@@ -126,12 +129,14 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       return givenDir === 'desc' ? diff : -diff;
     });
     return sorted;
-  }, [cluesGiven, givenSort, givenDir, clueStatsMap, rankedFilter]);
+  }, [cluesGiven, givenSort, givenDir, clueStatsMap, rankedFilter, solvedFilter, mySolvedClueIds]);
 
   const sortedSolved = useMemo(() => {
     let filtered = solvedEntries;
     if (rankedFilter === 'ranked') filtered = filtered.filter((e) => e.clue?.ranked !== false);
     else if (rankedFilter === 'casual') filtered = filtered.filter((e) => e.clue?.ranked === false);
+    if (solvedFilter === 'solved') filtered = filtered.filter((e) => canViewClue(e.result.clueId, e.clue?.userId));
+    else if (solvedFilter === 'unsolved') filtered = filtered.filter((e) => !canViewClue(e.result.clueId, e.clue?.userId));
     const sorted = [...filtered];
     sorted.sort((a, b) => {
       let diff = 0;
@@ -148,7 +153,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       return solvedDir === 'desc' ? diff : -diff;
     });
     return sorted;
-  }, [solvedEntries, solvedSort, solvedDir, clueStatsMap, rankedFilter]);
+  }, [solvedEntries, solvedSort, solvedDir, clueStatsMap, rankedFilter, solvedFilter, mySolvedClueIds, isOwnProfile, user]);
 
   function handleGivenAction(clue: Clue) {
     const solved = mySolvedClueIds.has(clue.id);
@@ -157,6 +162,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       setModalClue(clue);
       setModalResult(undefined);
     } else {
+      closeProfile();
       navigate(`/guess/${clue.id}`);
     }
   }
@@ -168,6 +174,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       setModalClue(entry.clue);
       setModalResult(entry.result);
     } else {
+      closeProfile();
       navigate(`/guess/${entry.clue.id}`);
     }
   }
@@ -204,6 +211,10 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     setRankedFilter((f) => f === 'all' ? 'ranked' : f === 'ranked' ? 'casual' : 'all');
   }
 
+  function cycleSolvedFilter() {
+    setSolvedFilter((f) => f === 'all' ? 'solved' : f === 'solved' ? 'unsolved' : 'all');
+  }
+
   async function handleAdminDeleteResult(clueId: string) {
     if (!user?.isAdmin) return;
     const entry = solvedEntries.find((e) => e.result.clueId === clueId);
@@ -224,6 +235,11 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   }
 
   const thClass = 'py-2 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
+
+  const starIcon = rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>;
+  const checkIcon = solvedFilter === 'all' ? '✓' : solvedFilter === 'solved' ? <span className="text-board-blue">✓</span> : <span className="text-gray-600">✓</span>;
+  const starTitle = rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные';
+  const checkTitle = solvedFilter === 'all' ? 'Все' : solvedFilter === 'solved' ? 'Решённые' : 'Нерешённые';
 
   return (
     <>
@@ -277,16 +293,16 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           </button>
         </div>
 
+        {/* ===== GIVEN TAB ===== */}
         {tab === 'given' && (
           cluesGiven.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesGiven}</p>
           ) : (<>
-            <div className="hidden sm:grid grid-cols-[1fr_3.5rem_4.5rem] gap-x-2 px-4 py-1 items-center">
+            <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
               <span className={thClass} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></span>
               <span className={`${thClass} text-center`} onClick={() => toggleGivenSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={givenSort} dir={givenDir} /></span>
-              <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
-                {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
-              </span>
+              <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
+              <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
             </div>
             <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
               {sortedGiven.map((clue) => {
@@ -301,35 +317,26 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       onClick={() => setExpandedGivenId(isExpanded ? null : clue.id)}
                       className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      <div className="grid grid-cols-[1fr_3.5rem_4.5rem] gap-x-2 items-center">
+                      <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {clue.word} <span className="text-gray-500 font-semibold">{clue.number}</span>
                           {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                         </span>
                         <span className="text-sm text-gray-400 text-center">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span>
-                        <span className="flex items-center justify-center gap-1.5">
-                          <span className="text-sm">{clue.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
+                        <span className="text-sm text-center">{clue.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
+                        <span className="text-sm text-center">
                           {isOwnProfile ? (
                             <button
                               onClick={(e) => { e.stopPropagation(); handleToggleDisabled(clue); }}
-                              className={`text-sm font-bold transition-colors ${clue.disabled ? 'text-board-red hover:text-red-300' : 'text-board-blue hover:text-blue-300'}`}
+                              className={`font-bold transition-colors ${clue.disabled ? 'text-board-red hover:text-red-300' : 'text-board-blue hover:text-blue-300'}`}
                               title={clue.disabled ? 'Активировать' : 'Деактивировать'}
                             >
                               {clue.disabled ? '✗' : '✓'}
                             </button>
                           ) : canView ? (
-                            <span className="text-board-blue text-sm">✓</span>
+                            <span className="text-board-blue">✓</span>
                           ) : (
-                            <span className="text-gray-500 text-sm">–</span>
-                          )}
-                          {user?.isAdmin && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setExpandedGivenId(clue.id); setConfirmDeleteClue(clue.id); }}
-                              className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
-                              title={t.admin.deleteClue}
-                            >
-                              &times;
-                            </button>
+                            <span className="text-gray-500">–</span>
                           )}
                         </span>
                       </div>
@@ -337,14 +344,30 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                     {isExpanded && (
                       <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                          <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>
                           {clue.createdAt > 0 && <span className="text-gray-500">{formatDate(clue.createdAt)}</span>}
-                          <button
-                            onClick={() => handleGivenAction(clue)}
-                            className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
-                          >
-                            {canView ? t.profile.viewBoard : t.profile.solve}
-                          </button>
+                          <span>
+                            <span className="text-gray-400">{t.leaderboard.author}: </span>
+                            <button onClick={() => openProfile(clue.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{clue.userId}</button>
+                          </span>
+                          <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>
+                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span></span>
+                          <div className="flex items-center gap-2 ml-auto">
+                            <button
+                              onClick={() => handleGivenAction(clue)}
+                              className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                            >
+                              {canView ? t.profile.viewBoard : t.profile.solve}
+                            </button>
+                            {user?.isAdmin && confirmDeleteClue !== clue.id && (
+                              <button
+                                onClick={() => setConfirmDeleteClue(clue.id)}
+                                className="px-2 py-1 rounded bg-board-red/60 hover:bg-board-red text-white text-sm font-bold transition-colors"
+                                title={t.admin.deleteClue}
+                              >
+                                &times;
+                              </button>
+                            )}
+                          </div>
                         </div>
                         {user?.isAdmin && confirmDeleteClue === clue.id && (
                           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-700/30">
@@ -362,17 +385,17 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           </>)
         )}
 
+        {/* ===== SOLVED TAB ===== */}
         {tab === 'solved' && (
           solvedEntries.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesSolved}</p>
           ) : (<>
-            <div className="hidden sm:grid grid-cols-[1fr_3rem_3.5rem_4.5rem] gap-x-2 px-4 py-1 items-center">
+            <div className="grid grid-cols-[1fr_3rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
               <span className={thClass} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
               <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></span>
               <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></span>
-              <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
-                {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
-              </span>
+              <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
+              <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
             </div>
             <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
               {sortedSolved.map((entry, i) => {
@@ -386,7 +409,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       onClick={() => setExpandedSolvedKey(isExpanded ? null : solvedKey)}
                       className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      <div className="grid grid-cols-[1fr_3rem_3.5rem_4.5rem] gap-x-2 items-center">
+                      <div className="grid grid-cols-[1fr_3rem_3.5rem_2rem_2rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {entry.clue?.word ?? entry.result.clueId.slice(0, 12)}
                           <span className="ml-1 text-gray-500 font-semibold">{entry.clue?.number ?? entry.result.totalTargets}</span>
@@ -396,21 +419,12 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           <span className="text-gray-500 font-normal ml-0.5 text-xs">({entry.result.correctCount}/{entry.result.totalTargets})</span>
                         </span>
                         <span className="text-sm text-gray-400 text-center">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span>
-                        <span className="flex items-center justify-center gap-1.5">
-                          <span className="text-sm">{entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
+                        <span className="text-sm text-center">{entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
+                        <span className="text-sm text-center">
                           {canView ? (
-                            <span className="text-board-blue text-sm">✓</span>
+                            <span className="text-board-blue">✓</span>
                           ) : (
-                            <span className="text-gray-500 text-sm">–</span>
-                          )}
-                          {user?.isAdmin && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setExpandedSolvedKey(solvedKey); setConfirmDeleteSolved(solvedKey); }}
-                              className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
-                              title={t.admin.confirmDeleteResult}
-                            >
-                              &times;
-                            </button>
+                            <span className="text-gray-500">–</span>
                           )}
                         </span>
                       </div>
@@ -418,6 +432,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                     {isExpanded && (
                       <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                          {entry.result.timestamp > 0 && <span className="text-gray-500">{formatDate(entry.result.timestamp)}</span>}
                           {entry.clue && (
                             <span>
                               <span className="text-gray-400">{t.leaderboard.author}: </span>
@@ -425,13 +440,24 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                             </span>
                           )}
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>
-                          {entry.result.timestamp > 0 && <span className="text-gray-500">{formatDate(entry.result.timestamp)}</span>}
-                          <button
-                            onClick={() => handleSolvedAction(entry)}
-                            className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
-                          >
-                            {canView ? t.profile.viewBoard : t.profile.solve}
-                          </button>
+                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span></span>
+                          <div className="flex items-center gap-2 ml-auto">
+                            <button
+                              onClick={() => handleSolvedAction(entry)}
+                              className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                            >
+                              {canView ? t.profile.viewBoard : t.profile.solve}
+                            </button>
+                            {user?.isAdmin && confirmDeleteSolved !== solvedKey && (
+                              <button
+                                onClick={() => setConfirmDeleteSolved(solvedKey)}
+                                className="px-2 py-1 rounded bg-board-red/60 hover:bg-board-red text-white text-sm font-bold transition-colors"
+                                title={t.admin.confirmDeleteResult}
+                              >
+                                &times;
+                              </button>
+                            )}
+                          </div>
                         </div>
                         {user?.isAdmin && confirmDeleteSolved === solvedKey && (
                           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-700/30">

@@ -12,6 +12,7 @@ type Tab = 'spymasters' | 'guessers' | 'clues';
 type SizeFilter = 'all' | BoardSize;
 type SortDir = 'asc' | 'desc';
 type RankedFilter = 'all' | 'ranked' | 'casual';
+type SolvedFilter = 'all' | 'solved' | 'unsolved';
 
 interface SpymasterEntry {
   userId: string;
@@ -53,7 +54,7 @@ export default function LeaderboardPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { openProfile } = useProfileModal();
+  const { openProfile, closeProfile } = useProfileModal();
   const [tab, setTab] = useState<Tab>('spymasters');
   const sizeFilter: SizeFilter = 'all';
   const [spymasters, setSpymasters] = useState<SpymasterEntry[]>([]);
@@ -64,6 +65,7 @@ export default function LeaderboardPage() {
   const [modalClue, setModalClue] = useState<Clue | null>(null);
   const [modalResult, setModalResult] = useState<GuessResult | undefined>(undefined);
   const [rankedFilter, setRankedFilter] = useState<RankedFilter>('all');
+  const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>('all');
 
   const [spySort, setSpySort] = useState<'avgScoreOnClues' | 'cluesGiven' | 'avgWordsPerClue'>('avgScoreOnClues');
   const [spyDir, setSpyDir] = useState<SortDir>('desc');
@@ -100,12 +102,17 @@ export default function LeaderboardPage() {
       setModalClue(clue);
       setModalResult(myResults.get(clueId));
     } else {
+      closeProfile();
       navigate(`/guess/${clueId}`);
     }
   }
 
   function cycleRankedFilter() {
     setRankedFilter((f) => f === 'all' ? 'ranked' : f === 'ranked' ? 'casual' : 'all');
+  }
+
+  function cycleSolvedFilter() {
+    setSolvedFilter((f) => f === 'all' ? 'solved' : f === 'solved' ? 'unsolved' : 'all');
   }
 
   const sortedSpymasters = useMemo(() =>
@@ -126,8 +133,10 @@ export default function LeaderboardPage() {
     let filtered = clueStats;
     if (rankedFilter === 'ranked') filtered = filtered.filter((c) => c.ranked);
     else if (rankedFilter === 'casual') filtered = filtered.filter((c) => !c.ranked);
+    if (solvedFilter === 'solved') filtered = filtered.filter((c) => mySolvedClueIds.has(c.id) || c.userId === user?.id);
+    else if (solvedFilter === 'unsolved') filtered = filtered.filter((c) => !mySolvedClueIds.has(c.id) && c.userId !== user?.id);
     return filtered;
-  }, [clueStats, rankedFilter]);
+  }, [clueStats, rankedFilter, solvedFilter, mySolvedClueIds, user]);
 
   const sortedClues = useMemo(() =>
     [...filteredClues].sort((a, b) => {
@@ -162,6 +171,11 @@ export default function LeaderboardPage() {
   const thSortClass = `${thClass} text-center cursor-pointer hover:text-white transition-colors select-none`;
   const thAccordion = 'py-2 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
 
+  const starIcon = rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>;
+  const checkIcon = solvedFilter === 'all' ? '✓' : solvedFilter === 'solved' ? <span className="text-board-blue">✓</span> : <span className="text-gray-600">✓</span>;
+  const starTitle = rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные';
+  const checkTitle = solvedFilter === 'all' ? 'Все' : solvedFilter === 'solved' ? 'Решённые' : 'Нерешённые';
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <NavBar showBack />
@@ -194,7 +208,7 @@ export default function LeaderboardPage() {
                     <tr key={s.userId} className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 transition-colors">
                       <td className={`${tdClass} text-center`}>{i + 1}</td>
                       <td className={`${tdClass} font-semibold truncate`}>
-                        <button onClick={() => openProfile(s.userId)} className="text-board-blue hover:text-blue-300 transition-colors">{s.userId}</button>
+                        <button onClick={() => navigate(`/profile/${s.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{s.userId}</button>
                       </td>
                       <td className={`${tdClass} text-center`}>{s.cluesGiven}</td>
                       <td className={`${tdClass} text-center`}>{s.avgWordsPerClue.toFixed(1)}</td>
@@ -227,7 +241,7 @@ export default function LeaderboardPage() {
                     <tr key={g.userId} className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 transition-colors">
                       <td className={`${tdClass} text-center`}>{i + 1}</td>
                       <td className={`${tdClass} font-semibold truncate`}>
-                        <button onClick={() => openProfile(g.userId)} className="text-board-blue hover:text-blue-300 transition-colors">{g.userId}</button>
+                        <button onClick={() => navigate(`/profile/${g.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{g.userId}</button>
                       </td>
                       <td className={`${tdClass} text-center`}>{g.cluesSolved}</td>
                       <td className={`${tdClass} text-center`}>{g.avgWordsPicked.toFixed(1)}</td>
@@ -244,12 +258,11 @@ export default function LeaderboardPage() {
           sortedClues.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (<>
-            <div className="hidden sm:grid grid-cols-[1fr_3.5rem_4.5rem] gap-x-2 px-4 py-1 items-center">
+            <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
               <span className={thAccordion} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></span>
               <span className={`${thAccordion} text-center`} onClick={() => toggleClueSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></span>
-              <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
-                {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
-              </span>
+              <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
+              <span className={`${thAccordion} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
             </div>
             <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
               {sortedClues.map((c, i) => {
@@ -263,18 +276,18 @@ export default function LeaderboardPage() {
                       onClick={() => setExpandedClueId(isExpanded ? null : c.id)}
                       className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      <div className="grid grid-cols-[1fr_3.5rem_4.5rem] gap-x-2 items-center">
+                      <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {c.word} <span className="text-gray-500 font-semibold">{c.number}</span>
                         </span>
                         <span className="text-sm text-gray-400 text-center">{c.avgScore > 0 ? c.avgScore.toFixed(1) : '—'}</span>
-                        <span className="flex items-center justify-center gap-1.5">
-                          <span className="text-sm">{c.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
+                        <span className="text-sm text-center">{c.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
+                        <span className="text-sm text-center">
                           {user && (
                             canView ? (
-                              <span className="text-board-blue text-sm">✓</span>
+                              <span className="text-board-blue">✓</span>
                             ) : (
-                              <span className="text-gray-500 text-sm">–</span>
+                              <span className="text-gray-500">–</span>
                             )
                           )}
                         </span>
@@ -283,15 +296,16 @@ export default function LeaderboardPage() {
                     {isExpanded && (
                       <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                          {c.createdAt > 0 && <span className="text-gray-500">{formatDate(c.createdAt)}</span>}
                           <span>
                             <span className="text-gray-400">{t.leaderboard.author}: </span>
                             <button onClick={() => openProfile(c.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{c.userId}</button>
                           </span>
                           <span><span className="text-gray-400">{t.leaderboard.attempts}:</span> <span className="text-white font-semibold">{c.attempts}</span></span>
-                          {c.createdAt > 0 && <span className="text-gray-500">{formatDate(c.createdAt)}</span>}
+                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{c.avgScore.toFixed(1)}</span></span>
                           <button
                             onClick={() => user && handleClueAction(c.id, solved, isOwn)}
-                            className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                            className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors ml-auto"
                           >
                             {canView ? t.profile.viewBoard : t.profile.solve}
                           </button>
