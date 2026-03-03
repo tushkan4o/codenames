@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let results: Record<string, unknown>[];
 
   if (boardSize && typeof boardSize === 'string') {
-    clues = await sql`SELECT id, user_id, number, word, ranked FROM clues WHERE board_size = ${boardSize}`;
+    clues = await sql`SELECT id, user_id, number, word, ranked, created_at FROM clues WHERE board_size = ${boardSize}`;
     const clueIds = clues.map((c) => c.id as string);
     if (clueIds.length > 0) {
       results = await sql`SELECT clue_id, user_id, score, guessed_indices FROM results WHERE (board_size = ${boardSize} OR clue_id = ANY(${clueIds}))`;
@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       results = await sql`SELECT clue_id, user_id, score, guessed_indices FROM results WHERE board_size = ${boardSize}`;
     }
   } else {
-    clues = await sql`SELECT id, user_id, number, word, ranked FROM clues`;
+    clues = await sql`SELECT id, user_id, number, word, ranked, created_at FROM clues`;
     results = await sql`SELECT clue_id, user_id, score, guessed_indices FROM results`;
   }
 

@@ -66,6 +66,7 @@ export default function LeaderboardPage() {
   const [myResults, setMyResults] = useState<Map<string, GuessResult>>(new Map());
   const [modalClue, setModalClue] = useState<Clue | null>(null);
   const [modalResult, setModalResult] = useState<GuessResult | undefined>(undefined);
+  const [confirmDeleteClue, setConfirmDeleteClue] = useState<string | null>(null);
   const [rankedFilter, setRankedFilter] = useState<RankedFilter>('all');
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>('all');
 
@@ -107,6 +108,13 @@ export default function LeaderboardPage() {
       closeProfile();
       navigate(`/guess/${clueId}`);
     }
+  }
+
+  async function handleAdminDeleteClue(clueId: string) {
+    if (!user?.isAdmin) return;
+    await api.adminDeleteClue(user.id, clueId);
+    setClueStats((prev) => prev.filter((c) => c.id !== clueId));
+    setConfirmDeleteClue(null);
   }
 
   function cycleRankedFilter() {
@@ -324,8 +332,24 @@ export default function LeaderboardPage() {
                             >
                               {canView ? t.profile.viewBoard : t.profile.solve}
                             </button>
+                            {user?.isAdmin && confirmDeleteClue !== c.id && (
+                              <button
+                                onClick={() => setConfirmDeleteClue(c.id)}
+                                className="px-2 py-1 rounded bg-board-red/60 hover:bg-board-red text-white text-sm font-bold transition-colors"
+                                title={t.admin.deleteClue}
+                              >
+                                &times;
+                              </button>
+                            )}
                           </div>
                         </div>
+                        {user?.isAdmin && confirmDeleteClue === c.id && (
+                          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-700/30">
+                            <span className="text-sm text-board-red">{t.admin.confirmDeleteClue}</span>
+                            <button onClick={() => handleAdminDeleteClue(c.id)} className="px-2 py-1 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
+                            <button onClick={() => setConfirmDeleteClue(null)} className="px-2 py-1 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

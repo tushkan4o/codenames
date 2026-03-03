@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../types/game';
 import type { Clue, CardState } from '../types/game';
-import { HomeIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, ArrowPathIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import Board from '../components/board/Board';
 import GameHeader from '../components/game/GameHeader';
 import ClueDisplay from '../components/clue/ClueDisplay';
@@ -91,6 +91,7 @@ export default function GuessingPage() {
   const [revealDelays, setRevealDelays] = useState<Record<number, number>>({});
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [showHomeConfirm, setShowHomeConfirm] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [revealingIndices, setRevealingIndices] = useState<Set<number>>(new Set());
 
   // Revealed targets — only populated after game ends (security: not sent initially)
@@ -498,7 +499,24 @@ export default function GuessingPage() {
             <ArrowPathIcon className="w-4 h-4" />
             <span className="hidden sm:inline">{t.game.anotherClue}</span>
           </button>
+          <button
+            onClick={() => setShowHelp(true)}
+            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center"
+            title={t.help.title}
+          >
+            <QuestionMarkCircleIcon className="w-4 h-4" />
+          </button>
           <SettingsPanel mode="guessing" />
+        </div>
+      )}
+
+      {showHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowHelp(false)}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowHelp(false)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
+            <h3 className="text-white font-bold text-lg mb-3">{t.help.scoutTitle}</h3>
+            <p className="text-gray-300 text-sm whitespace-pre-line">{t.help.scoutRules}</p>
+          </div>
         </div>
       )}
 

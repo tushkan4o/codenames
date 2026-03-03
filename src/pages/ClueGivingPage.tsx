@@ -7,7 +7,7 @@ import { useTranslation } from '../i18n/useTranslation';
 import { BOARD_CONFIGS } from '../types/game';
 import type { BoardSize, Clue } from '../types/game';
 import { useDragReorder } from '../hooks/useDragReorder';
-import { HomeIcon, ArrowPathIcon, ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, ArrowPathIcon, ArrowUturnLeftIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { BarsArrowDownIcon } from '@heroicons/react/24/solid';
 import Board from '../components/board/Board';
 import GameHeader from '../components/game/GameHeader';
@@ -63,6 +63,7 @@ export default function ClueGivingPage() {
   const [isSorted, setIsSorted] = useState(false);
   const [showReshuffleConfirm, setShowReshuffleConfirm] = useState(false);
   const [showHomeConfirm, setShowHomeConfirm] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   // Auto-detect clue-0: if any non-red cards are selected as nulls
   const isClueZero = selectedNulls.length > 0;
@@ -318,8 +319,25 @@ export default function ClueGivingPage() {
         >
           <ArrowUturnLeftIcon className="w-4 h-4" />
         </button>
+        <button
+          onClick={() => setShowHelp(true)}
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center"
+          title={t.help.title}
+        >
+          <QuestionMarkCircleIcon className="w-4 h-4" />
+        </button>
         <SettingsPanel mode="clue-giving" />
       </div>
+
+      {showHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowHelp(false)}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowHelp(false)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
+            <h3 className="text-white font-bold text-lg mb-3">{t.help.captainTitle}</h3>
+            <p className="text-gray-300 text-sm whitespace-pre-line">{t.help.captainRules}</p>
+          </div>
+        </div>
+      )}
 
       {showHomeConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowHomeConfirm(false)}>

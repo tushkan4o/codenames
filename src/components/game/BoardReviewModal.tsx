@@ -33,6 +33,8 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
   const [ratingLoaded, setRatingLoaded] = useState(false);
   const [attemptsView, setAttemptsView] = useState<AttemptDetail[] | null>(null);
   const [selectedAttemptIdx, setSelectedAttemptIdx] = useState<number | null>(null);
+  const [attemptSort, setAttemptSort] = useState<'timestamp' | 'score'>('timestamp');
+  const [attemptDir, setAttemptDir] = useState<'asc' | 'desc'>('asc');
 
   const config = useMemo(() => {
     const base = clue.boardSize ? BOARD_CONFIGS[clue.boardSize] : BOARD_CONFIG_LEGACY_5x5;
@@ -137,12 +139,27 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
                 <thead className="sticky top-0 bg-gray-800">
                   <tr className="text-gray-500 border-b border-gray-700/50">
                     <th className="text-left py-1 pr-2 font-medium">{t.admin.player}</th>
-                    <th className="text-center py-1 px-2 font-medium">{t.results.score}</th>
-                    <th className="text-center py-1 pl-2 font-medium">{t.admin.clueDate}</th>
+                    <th
+                      className="text-center py-1 px-2 font-medium cursor-pointer select-none hover:text-gray-300 transition-colors"
+                      onClick={() => { if (attemptSort === 'score') { setAttemptDir(d => d === 'desc' ? 'asc' : 'desc'); } else { setAttemptSort('score'); setAttemptDir('desc'); } setSelectedAttemptIdx(null); setViewingAttemptPicks(null); }}
+                    >
+                      {t.results.score}
+                      <span className="ml-0.5 text-[0.5em]">{attemptSort === 'score' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
+                    </th>
+                    <th
+                      className="text-center py-1 pl-2 font-medium cursor-pointer select-none hover:text-gray-300 transition-colors"
+                      onClick={() => { if (attemptSort === 'timestamp') { setAttemptDir(d => d === 'desc' ? 'asc' : 'desc'); } else { setAttemptSort('timestamp'); setAttemptDir('asc'); } setSelectedAttemptIdx(null); setViewingAttemptPicks(null); }}
+                    >
+                      {t.admin.clueDate}
+                      <span className="ml-0.5 text-[0.5em]">{attemptSort === 'timestamp' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {attemptsView.map((detail, idx) => (
+                  {[...attemptsView].sort((a, b) => {
+                    const mul = attemptDir === 'asc' ? 1 : -1;
+                    return mul * (a[attemptSort] - b[attemptSort]);
+                  }).map((detail, idx) => (
                     <tr
                       key={idx}
                       onClick={() => {
