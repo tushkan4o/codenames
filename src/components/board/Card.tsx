@@ -22,9 +22,9 @@ interface CardProps {
 }
 
 const fontSizeMap: Record<CardFontSize, string> = {
-  sm: 'text-[clamp(0.6rem,2.6vw,0.85rem)]',
-  md: 'text-[clamp(0.75rem,3.2vw,1.05rem)]',
-  lg: 'text-[clamp(0.9rem,3.8vw,1.25rem)]',
+  sm: 'text-[clamp(0.6rem,2.6vw,0.85rem)] lg:text-[clamp(0.6rem,2.6vw,1rem)]',
+  md: 'text-[clamp(0.75rem,3.2vw,1.05rem)] lg:text-[clamp(0.75rem,3.2vw,1.25rem)]',
+  lg: 'text-[clamp(0.9rem,3.8vw,1.25rem)] lg:text-[clamp(0.9rem,3.8vw,1.5rem)]',
 };
 
 const colorConfig: Record<CardColor, { bg: string; text: string; glow: string }> = {
@@ -123,7 +123,7 @@ export default function Card({
     <button
       className={`
         card-reveal relative flex items-center justify-center overflow-hidden w-full
-        h-[3.2rem] sm:h-[3.8rem] rounded-lg font-card font-bold uppercase tracking-wide select-none
+        h-[3.2rem] sm:h-[3.8rem] lg:h-[4.6rem] rounded-lg font-card font-bold uppercase tracking-wide select-none
         ${fontSizeMap[fontSize || 'md']} p-1 sm:p-2 ${borderClass}
         transition-all duration-300
         ${bgClass} ${textClass} ${glowClass} ${interactiveClass}

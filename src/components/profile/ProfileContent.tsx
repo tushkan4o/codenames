@@ -412,10 +412,10 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             <p className="text-center text-gray-500">{t.profile.noCluesSolved}</p>
           ) : (
             <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_3rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
                 <span className={thClass} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
                 <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></span>
-                <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></span>
+                <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></span>
                 <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
                 <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
               </div>
@@ -431,7 +431,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       onClick={() => setExpandedSolvedKey(isExpanded ? null : solvedKey)}
                       className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      <div className="grid grid-cols-[1fr_3rem_3.5rem_2rem_2rem] gap-x-2 items-center">
+                      <div className="grid grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_3rem_3.5rem_2rem_2rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {entry.clue?.word ?? entry.result.clueId.slice(0, 12)}
                           <span className="ml-1 text-gray-500 font-semibold">{entry.clue?.number ?? entry.result.totalTargets}</span>
@@ -440,7 +440,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           {entry.result.score ?? 0}
                           <span className="text-gray-500 font-normal ml-0.5 text-xs">({entry.result.correctCount}/{entry.result.totalTargets})</span>
                         </span>
-                        <span className="text-sm text-gray-400 text-center">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span>
+                        <span className="text-sm text-gray-400 text-center hidden sm:block">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span>
                         <span className="text-sm text-center">{entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
                           {canView ? (

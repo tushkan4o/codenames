@@ -48,10 +48,10 @@ export default function SettingsPanel({ mode }: SettingsPanelProps) {
     <div className="relative inline-flex">
       <button
         onClick={() => setOpen(!open)}
-        className={`p-1.5 rounded-lg transition-colors ${open ? 'bg-gray-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+        className={`px-3 py-1.5 rounded-lg transition-colors inline-flex items-center ${open ? 'bg-gray-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
         title={t.settings.title}
       >
-        <Cog6ToothIcon className="w-5 h-5" />
+        <Cog6ToothIcon className="w-4 h-4" />
       </button>
 
       {open && (

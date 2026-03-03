@@ -486,7 +486,7 @@ export default function GuessingPage() {
         <div className="flex flex-wrap justify-center gap-2 mb-3 mt-2">
           <button
             onClick={handleHome}
-            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
+            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center gap-1"
           >
             <HomeIcon className="w-4 h-4" />
             <span className="hidden sm:inline">{t.results.backHome}</span>
@@ -494,7 +494,7 @@ export default function GuessingPage() {
           <button
             onClick={handleAnotherClue}
             disabled={pickedIndices.length > 0}
-            className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1 disabled:opacity-30 disabled:pointer-events-none"
+            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center gap-1 disabled:opacity-30 disabled:pointer-events-none"
           >
             <ArrowPathIcon className="w-4 h-4" />
             <span className="hidden sm:inline">{t.game.anotherClue}</span>

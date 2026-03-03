@@ -286,14 +286,14 @@ export default function ClueGivingPage() {
       <div className={`flex flex-wrap justify-center gap-2 mb-3 transition-opacity ${submitting ? 'opacity-30 pointer-events-none' : ''}`}>
         <button
           onClick={() => setShowHomeConfirm(true)}
-          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors inline-flex items-center"
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center"
           title={t.game.home}
         >
           <HomeIcon className="w-4 h-4" />
         </button>
         <button
           onClick={() => setShowReshuffleConfirm(true)}
-          className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center gap-1"
           title={t.game.reshuffle}
         >
           <ArrowPathIcon className="w-4 h-4" />
