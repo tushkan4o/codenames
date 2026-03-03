@@ -163,6 +163,7 @@ export const ru = {
     sortDate: 'Дата',
     sortAttempts: 'Решения',
     sortScore: 'Счёт',
+    viewBoard: 'Открыть доску',
   },
   rating: {
     rateClue: 'Оцените подсказку:',

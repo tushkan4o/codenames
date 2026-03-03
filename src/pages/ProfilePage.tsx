@@ -199,9 +199,10 @@ export default function ProfilePage() {
     else { setSolvedSort(field); setSolvedDir('desc'); }
   }
 
-  const thBase = 'py-2 text-xs sm:text-sm';
-  const thSort = `${thBase} cursor-pointer hover:text-white transition-colors select-none`;
-  const td = 'py-2 text-xs sm:text-sm';
+  const [expandedGivenId, setExpandedGivenId] = useState<string | null>(null);
+  const [expandedSolvedKey, setExpandedSolvedKey] = useState<string | null>(null);
+
+  const thClass = 'py-2 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -259,46 +260,34 @@ export default function ProfilePage() {
         {tab === 'given' && (
           cluesGiven.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesGiven}</p>
-          ) : (
-            <div className="overflow-y-auto flex-1 min-h-0">
-              <table className="w-full table-fixed">
-                <thead className="sticky top-0 bg-board-bg z-10">
-                  <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className={`${thSort} text-left ${user?.isAdmin ? 'w-[36%]' : 'w-[40%]'}`} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></th>
-                    <th className={`${thSort} text-center w-[15%]`} onClick={() => toggleGivenSort('attempts')}>{t.profile.solveCount}<SortArrow field="attempts" activeField={givenSort} dir={givenDir} /></th>
-                    <th className={`${thSort} text-center w-[15%]`} onClick={() => toggleGivenSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={givenSort} dir={givenDir} /></th>
-                    <th className={`${thBase} text-center w-[6%] cursor-pointer hover:text-white transition-colors select-none`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
-                      {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
-                    </th>
-                    <th className={`${thBase} text-center w-[6%]`}></th>
-                    {user?.isAdmin && <th className={`${thBase} text-center w-[6%]`}></th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedGiven.map((clue) => {
-                    const isOwn = clue.userId === user?.id;
-                    const solved = mySolvedClueIds.has(clue.id);
-                    const cStats = clueStatsMap[clue.id];
-                    return (
-                      <tr
-                        key={clue.id}
-                        onClick={() => handleGivenRowClick(clue)}
-                        className="border-b border-gray-800/50 text-gray-300 cursor-pointer hover:bg-gray-800/40 transition-colors"
-                      >
-                        <td className={`${td} truncate`}>
-                          <span className="font-bold text-white uppercase">{clue.word}</span>
-                          <span className="ml-1 text-gray-500 font-semibold">{clue.number}</span>
-                        </td>
-                        <td className={`${td} text-center`}>
-                          {cStats?.attempts ?? '—'}
-                        </td>
-                        <td className={`${td} text-center`}>
-                          {cStats ? cStats.avgScore.toFixed(1) : '—'}
-                        </td>
-                        <td className={`${td} text-center`}>
-                          {clue.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
-                        </td>
-                        <td className={`${td} text-center`}>
+          ) : (<>
+            {/* Sort header */}
+            <div className="hidden sm:grid grid-cols-[1fr_2rem_2rem] gap-2 px-4 py-1 items-center">
+              <span className={thClass} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></span>
+              <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
+                {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
+              </span>
+              <span></span>
+            </div>
+            <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
+              {sortedGiven.map((clue) => {
+                const isOwn = clue.userId === user?.id;
+                const solved = mySolvedClueIds.has(clue.id);
+                const cStats = clueStatsMap[clue.id];
+                const isExpanded = expandedGivenId === clue.id;
+                return (
+                  <div key={clue.id}>
+                    <div
+                      onClick={() => setExpandedGivenId(isExpanded ? null : clue.id)}
+                      className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
+                    >
+                      <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                        <span className="font-bold text-white uppercase text-sm truncate">
+                          {clue.word} <span className="text-gray-500 font-semibold">{clue.number}</span>
+                          {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-sm">{clue.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                           {isOwnProfile ? (
                             <button
                               onClick={(e) => { e.stopPropagation(); handleToggleDisabled(clue); }}
@@ -312,127 +301,148 @@ export default function ProfilePage() {
                           ) : (
                             <span className="text-gray-500 text-sm">–</span>
                           )}
-                        </td>
-                        {user?.isAdmin && (
-                          <td className={`${td} text-center`}>
-                            {confirmDeleteClue === clue.id ? (
-                              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                <button onClick={(e) => { e.stopPropagation(); handleAdminDeleteClue(clue.id); }} className="px-1.5 py-0.5 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
-                                <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteClue(null); }} className="px-1.5 py-0.5 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteClue(clue.id); }}
-                                className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
-                                title={t.admin.deleteClue}
-                              >
-                                &times;
-                              </button>
-                            )}
-                          </td>
+                          {user?.isAdmin && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setConfirmDeleteClue(clue.id); }}
+                              className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
+                              title={t.admin.deleteClue}
+                            >
+                              &times;
+                            </button>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg p-4">
+                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm mb-3">
+                          <div>
+                            <span className="text-gray-400">{t.profile.solveCount}: </span>
+                            <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">{t.leaderboard.avgScore}: </span>
+                            <span className="text-white font-semibold">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleGivenRowClick(clue)}
+                          className="px-4 py-1.5 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                        >
+                          {t.profile.viewBoard}
+                        </button>
+                        {user?.isAdmin && confirmDeleteClue === clue.id && (
+                          <div className="flex items-center gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-sm text-board-red">{t.admin.confirmDeleteClue}</span>
+                            <button onClick={() => handleAdminDeleteClue(clue.id)} className="px-2 py-1 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
+                            <button onClick={() => setConfirmDeleteClue(null)} className="px-2 py-1 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>
+                          </div>
                         )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          )
+          </>)
         )}
 
         {tab === 'solved' && (
           solvedEntries.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesSolved}</p>
-          ) : (
-            <div className="overflow-y-auto flex-1 min-h-0">
-              <table className="w-full table-fixed">
-                <thead className="sticky top-0 bg-board-bg z-10">
-                  <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className={`${thSort} text-left ${user?.isAdmin ? 'w-[26%]' : 'w-[30%]'}`} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></th>
-                    <th className={`${thBase} text-left w-[18%]`}>{t.leaderboard.author}</th>
-                    <th className={`${thSort} text-center w-[12%]`} onClick={() => toggleSolvedSort('attempts')}>{t.profile.solveCount}<SortArrow field="attempts" activeField={solvedSort} dir={solvedDir} /></th>
-                    <th className={`${thSort} text-center w-[12%]`} onClick={() => toggleSolvedSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></th>
-                    <th className={`${thSort} text-center w-[12%]`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></th>
-                    <th className={`${thBase} text-center w-[5%] cursor-pointer hover:text-white transition-colors select-none`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
-                      {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
-                    </th>
-                    <th className={`${thBase} text-center w-[5%]`}></th>
-                    {user?.isAdmin && <th className={`${thBase} text-center w-[5%]`}></th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedSolved.map((entry, i) => {
-                    return (
-                      <tr
-                        key={i}
-                        onClick={() => handleSolvedRowClick(entry)}
-                        className="border-b border-gray-800/50 text-gray-300 cursor-pointer hover:bg-gray-800/40 transition-colors"
-                      >
-                        <td className={`${td} truncate`}>
-                          <span className="font-bold text-white uppercase">
-                            {entry.clue?.word ?? entry.result.clueId.slice(0, 12)}
+          ) : (<>
+            {/* Sort header */}
+            <div className="hidden sm:grid grid-cols-[1fr_4rem_2rem_2rem] gap-2 px-4 py-1 items-center">
+              <span className={thClass} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
+              <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></span>
+              <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
+                {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
+              </span>
+              <span></span>
+            </div>
+            <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
+              {sortedSolved.map((entry, i) => {
+                const solvedKey = `${entry.result.clueId}-${entry.result.timestamp}`;
+                const isExpanded = expandedSolvedKey === solvedKey;
+                const canView = isOwnProfile || mySolvedClueIds.has(entry.result.clueId) || entry.clue?.userId === user?.id;
+                const cStats = entry.clue ? clueStatsMap[entry.clue.id] : null;
+                return (
+                  <div key={i}>
+                    <div
+                      onClick={() => setExpandedSolvedKey(isExpanded ? null : solvedKey)}
+                      className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
+                    >
+                      <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                        <span className="font-bold text-white uppercase text-sm truncate">
+                          {entry.clue?.word ?? entry.result.clueId.slice(0, 12)}
+                          <span className="ml-1 text-gray-500 font-semibold">{entry.clue?.number ?? entry.result.totalTargets}</span>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-white">
+                            {entry.result.score ?? 0}
+                            <span className="text-gray-500 font-normal ml-0.5 text-xs">({entry.result.correctCount}/{entry.result.totalTargets})</span>
                           </span>
-                          <span className="ml-1 text-gray-500 font-semibold">
-                            {entry.clue?.number ?? entry.result.totalTargets}
-                          </span>
-                        </td>
-                        <td className={`${td} truncate`}>
-                          {entry.clue && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); navigate(`/profile/${entry.clue!.userId}`); }}
-                              className="text-board-blue hover:text-blue-300 transition-colors"
-                            >
-                              {entry.clue.userId}
-                            </button>
-                          )}
-                        </td>
-                        <td className={`${td} text-center`}>
-                          {entry.clue ? (clueStatsMap[entry.clue.id]?.attempts ?? '—') : '—'}
-                        </td>
-                        <td className={`${td} text-center`}>
-                          {entry.clue ? (clueStatsMap[entry.clue.id]?.avgScore?.toFixed(1) ?? '—') : '—'}
-                        </td>
-                        <td className={`${td} text-center font-bold text-white`}>
-                          {entry.result.score ?? 0}
-                          <span className="text-gray-500 font-normal ml-0.5 text-xs">
-                            ({entry.result.correctCount}/{entry.result.totalTargets})
-                          </span>
-                        </td>
-                        <td className={`${td} text-center`}>
-                          {entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
-                        </td>
-                        <td className={`${td} text-center`}>
-                          {(isOwnProfile || mySolvedClueIds.has(entry.result.clueId) || entry.clue?.userId === user?.id) ? (
+                          <span className="text-sm">{entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
+                          {canView ? (
                             <span className="text-board-blue text-sm">✓</span>
                           ) : (
                             <span className="text-gray-500 text-sm">–</span>
                           )}
-                        </td>
-                        {user?.isAdmin && (
-                          <td className={`${td} text-center`}>
-                            {confirmDeleteSolved === `${entry.result.clueId}-${entry.result.timestamp}` ? (
-                              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                <button onClick={(e) => { e.stopPropagation(); handleAdminDeleteResult(entry.result.clueId); }} className="px-1.5 py-0.5 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
-                                <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteSolved(null); }} className="px-1.5 py-0.5 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>
-                              </div>
-                            ) : (
+                          {user?.isAdmin && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setConfirmDeleteSolved(solvedKey); }}
+                              className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
+                              title={t.admin.confirmDeleteResult}
+                            >
+                              &times;
+                            </button>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg p-4">
+                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm mb-3">
+                          {entry.clue && (
+                            <div>
+                              <span className="text-gray-400">{t.leaderboard.author}: </span>
                               <button
-                                onClick={(e) => { e.stopPropagation(); setConfirmDeleteSolved(`${entry.result.clueId}-${entry.result.timestamp}`); }}
-                                className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
-                                title={t.admin.confirmDeleteResult}
+                                onClick={() => navigate(`/profile/${entry.clue!.userId}`)}
+                                className="text-board-blue hover:text-blue-300 transition-colors font-semibold"
                               >
-                                &times;
+                                {entry.clue.userId}
                               </button>
-                            )}
-                          </td>
+                            </div>
+                          )}
+                          <div>
+                            <span className="text-gray-400">{t.profile.solveCount}: </span>
+                            <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">{t.leaderboard.avgScore}: </span>
+                            <span className="text-white font-semibold">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleSolvedRowClick(entry)}
+                          className="px-4 py-1.5 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                        >
+                          {t.profile.viewBoard}
+                        </button>
+                        {user?.isAdmin && confirmDeleteSolved === solvedKey && (
+                          <div className="flex items-center gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-sm text-board-red">{t.admin.confirmDeleteResult}</span>
+                            <button onClick={() => handleAdminDeleteResult(entry.result.clueId)} className="px-2 py-1 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
+                            <button onClick={() => setConfirmDeleteSolved(null)} className="px-2 py-1 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>
+                          </div>
                         )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          )
+          </>)
         )}
       </div>
 

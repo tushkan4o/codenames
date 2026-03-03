@@ -146,10 +146,13 @@ export default function LeaderboardPage() {
   const tabBtnClass = (active: boolean, color: string) =>
     `px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${active ? `${color} text-white` : 'bg-gray-800 text-gray-400 hover:text-white'}`;
 
+  const [expandedClueId, setExpandedClueId] = useState<string | null>(null);
+
   const thClass = 'py-2 text-xs sm:text-sm';
   const tdClass = 'py-2 text-xs sm:text-sm';
 
   const thSortClass = `${thClass} text-center cursor-pointer hover:text-white transition-colors select-none`;
+  const thAccordion = 'py-2 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -232,47 +235,31 @@ export default function LeaderboardPage() {
         {tab === 'clues' && (
           sortedClues.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
-          ) : (
-            <div className="overflow-y-auto flex-1 min-h-0">
-              <table className="w-full table-fixed">
-                <thead className="sticky top-0 bg-board-bg z-10">
-                  <tr className="text-gray-400 border-b border-gray-700/50">
-                    <th className={`${thClass} text-center w-[5%]`}>{t.leaderboard.rank}</th>
-                    <th className={`${thClass} text-left w-[17%]`}>{t.leaderboard.author}</th>
-                    <th className={`${thSortClass} text-left w-[25%]`} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></th>
-                    <th
-                      className={`${thClass} text-center w-[5%] cursor-pointer hover:text-white transition-colors select-none`}
-                      onClick={cycleRankedFilter}
-                      title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}
+          ) : (<>
+            <div className="hidden sm:grid grid-cols-[1fr_2rem_2rem] gap-2 px-4 py-1 items-center">
+              <span className={thAccordion} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></span>
+              <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные'}>
+                {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
+              </span>
+              <span></span>
+            </div>
+            <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
+              {sortedClues.map((c, i) => {
+                const isOwn = c.userId === user?.id;
+                const solved = mySolvedClueIds.has(c.id);
+                const isExpanded = expandedClueId === c.id;
+                return (
+                  <div key={`${c.id}-${i}`}>
+                    <div
+                      onClick={() => setExpandedClueId(isExpanded ? null : c.id)}
+                      className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      {rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}
-                    </th>
-                    <th className={`${thSortClass} w-[18%]`} onClick={() => toggleClueSort('attempts')}>{t.leaderboard.attempts}<SortArrow field="attempts" activeField={clueSort} dir={clueDir} /></th>
-                    <th className={`${thSortClass} w-[18%]`} onClick={() => toggleClueSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></th>
-                    <th className={`${thClass} text-center w-[6%]`}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedClues.map((c, i) => {
-                    const isOwn = c.userId === user?.id;
-                    const solved = mySolvedClueIds.has(c.id);
-                    return (
-                      <tr
-                        key={`${c.id}-${i}`}
-                        onClick={() => user && handleClueRowClick(c.id, solved, isOwn)}
-                        className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 cursor-pointer transition-colors"
-                      >
-                        <td className={`${tdClass} text-center`}>{i + 1}</td>
-                        <td className={`${tdClass} truncate`}>
-                          <button onClick={(e) => { e.stopPropagation(); navigate(`/profile/${c.userId}`); }} className="text-board-blue hover:text-blue-300 transition-colors">{c.userId}</button>
-                        </td>
-                        <td className={`${tdClass} font-bold uppercase truncate`}>
+                      <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                        <span className="font-bold text-white uppercase text-sm truncate">
                           {c.word} <span className="text-gray-500 font-semibold">{c.number}</span>
-                        </td>
-                        <td className={`${tdClass} text-center`}>{c.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</td>
-                        <td className={`${tdClass} text-center`}>{c.attempts}</td>
-                        <td className={`${tdClass} text-center`}>{c.avgScore.toFixed(1)}</td>
-                        <td className={`${tdClass} text-center`}>
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-sm">{c.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                           {user && (
                             (solved || isOwn) ? (
                               <span className="text-board-blue text-sm">✓</span>
@@ -280,14 +267,43 @@ export default function LeaderboardPage() {
                               <span className="text-gray-500 text-sm">–</span>
                             )
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </span>
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg p-4">
+                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm mb-3">
+                          <div>
+                            <span className="text-gray-400">{t.leaderboard.author}: </span>
+                            <button
+                              onClick={() => navigate(`/profile/${c.userId}`)}
+                              className="text-board-blue hover:text-blue-300 transition-colors font-semibold"
+                            >
+                              {c.userId}
+                            </button>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">{t.leaderboard.attempts}: </span>
+                            <span className="text-white font-semibold">{c.attempts}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">{t.leaderboard.avgScore}: </span>
+                            <span className="text-white font-semibold">{c.avgScore.toFixed(1)}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => user && handleClueRowClick(c.id, solved, isOwn)}
+                          className="px-4 py-1.5 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                        >
+                          {t.profile.viewBoard}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          )
+          </>)
         )}
       </div>
 
