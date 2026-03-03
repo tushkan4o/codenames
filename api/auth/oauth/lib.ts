@@ -10,7 +10,7 @@ export function getBaseUrl(): string {
 }
 
 export function getRedirectUri(): string {
-  return `${getBaseUrl()}/api/auth/oauth/callback`;
+  return `${getBaseUrl()}/api/auth/oauth?action=callback`;
 }
 
 // --- Token signing/verification (HMAC, no JWT library needed) ---

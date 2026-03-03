@@ -227,24 +227,24 @@ export const api = {
 
   // OAuth
   async getOAuthUrl(provider: string, linkUserId?: string): Promise<{ url: string }> {
-    const params = new URLSearchParams({ provider });
+    const params = new URLSearchParams({ action: 'url', provider });
     if (linkUserId) params.set('linkUserId', linkUserId);
-    return get(`/api/auth/oauth/url?${params}`);
+    return get(`/api/auth/oauth?${params}`);
   },
 
   async resolveOAuthToken(token: string): Promise<Record<string, unknown>> {
-    return post('/api/auth/oauth/resolve', { token });
+    return post('/api/auth/oauth?action=resolve', { token });
   },
 
   async completeOAuthRegistration(token: string, displayName: string): Promise<Record<string, unknown>> {
-    return post('/api/auth/oauth/complete', { token, displayName });
+    return post('/api/auth/oauth?action=complete', { token, displayName });
   },
 
   async getOAuthAccounts(userId: string): Promise<{ provider: string; providerName: string; email: string | null; linkedAt: number }[]> {
-    return get(`/api/auth/oauth/accounts?userId=${encodeURIComponent(userId)}`);
+    return get(`/api/auth/oauth?action=accounts&userId=${encodeURIComponent(userId)}`);
   },
 
   async unlinkOAuth(userId: string, provider: string): Promise<void> {
-    await post('/api/auth/oauth/unlink', { userId, provider });
+    await post('/api/auth/oauth?action=unlink', { userId, provider });
   },
 };
