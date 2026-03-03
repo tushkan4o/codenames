@@ -16,35 +16,15 @@ const COLOR_CONFIG = [
   { key: 'assassin' as const, bg: 'bg-board-assassin border border-gray-600' },
 ];
 
-const MODE_CONFIG = {
-  'clue-giving': {
-    border: 'border-board-red',
-    titleKey: 'clueing' as const,
-    descKey: 'clueingDesc' as const,
-    accent: 'text-board-red',
-  },
-  guessing: {
-    border: 'border-board-blue',
-    titleKey: 'guessing' as const,
-    descKey: 'guessingDesc' as const,
-    accent: 'text-board-blue',
-  },
-};
+const MODE_OPTIONS = [
+  { value: 'clue-giving' as GameMode, titleKey: 'clueing' as const, descKey: 'clueingDesc' as const, bg: 'bg-board-red' },
+  { value: 'guessing' as GameMode, titleKey: 'guessing' as const, descKey: 'guessingDesc' as const, bg: 'bg-board-blue' },
+];
 
-const RANKED_CONFIG = {
-  true: {
-    border: 'border-amber-500',
-    titleKey: 'ranked' as const,
-    descKey: 'rankedDesc' as const,
-    accent: 'text-amber-400',
-  },
-  false: {
-    border: 'border-gray-500',
-    titleKey: 'casual' as const,
-    descKey: 'casualDesc' as const,
-    accent: 'text-gray-300',
-  },
-};
+const RANKED_OPTIONS = [
+  { value: true, titleKey: 'ranked' as const, descKey: 'rankedDesc' as const, bg: 'bg-amber-600' },
+  { value: false, titleKey: 'casual' as const, descKey: 'casualDesc' as const, bg: 'bg-gray-600' },
+];
 
 export default function SetupPage() {
   const navigate = useNavigate();
@@ -56,8 +36,6 @@ export default function SetupPage() {
   const boardSize: BoardSize = '5x5';
   const [loading, setLoading] = useState(false);
   const [puzzleCount, setPuzzleCount] = useState<{ available: number; total: number } | null>(null);
-  const [modeAnim, setModeAnim] = useState(false);
-  const [rankedAnim, setRankedAnim] = useState(false);
   const [continueGameId, setContinueGameId] = useState<string | null>(null);
 
   const defaults = BOARD_CONFIGS[boardSize];
@@ -127,23 +105,6 @@ export default function SetupPage() {
     assassin: assassinCount,
   };
 
-  function handleModeSwitch() {
-    if (modeAnim) return;
-    setModeAnim(true);
-    setTimeout(() => {
-      setMode((m) => (m === 'clue-giving' ? 'guessing' : 'clue-giving'));
-      setModeAnim(false);
-    }, 300);
-  }
-
-  function handleRankedSwitch() {
-    if (rankedAnim) return;
-    setRankedAnim(true);
-    setTimeout(() => {
-      setRanked((r) => !r);
-      setRankedAnim(false);
-    }, 300);
-  }
 
   async function startGuessing() {
     if (!user) return;
@@ -193,11 +154,6 @@ export default function SetupPage() {
     }
   }
 
-  const currentMode = MODE_CONFIG[mode];
-  const otherMode = MODE_CONFIG[mode === 'clue-giving' ? 'guessing' : 'clue-giving'];
-  const currentRanked = RANKED_CONFIG[String(ranked) as 'true' | 'false'];
-  const otherRanked = RANKED_CONFIG[String(!ranked) as 'true' | 'false'];
-
   const colorLocked = ranked || mode === 'guessing';
   const showQuestionMarks = mode === 'guessing' && !ranked;
 
@@ -207,44 +163,51 @@ export default function SetupPage() {
       <div className="max-w-lg mx-auto px-4 pt-10">
         <h1 className="text-2xl font-extrabold text-white mb-8 text-center">{t.setup.title}</h1>
 
-        {/* Two card selectors side by side */}
-        <div className="flex gap-3 sm:gap-4 mb-6 mx-auto items-stretch" style={{ maxWidth: '400px' }}>
-          {/* Mode selector — stacked cards */}
-          <div className="relative flex-1 min-h-[80px]">
+        {/* Mode toggle */}
+        <div className="flex gap-3 sm:gap-4 mb-6 mx-auto flex-col" style={{ maxWidth: '400px' }}>
+          <div className="relative flex bg-gray-800/80 rounded-xl p-1 border border-gray-700/30">
             <div
-              onClick={handleModeSwitch}
-              className={`absolute inset-0 translate-x-1.5 translate-y-1.5 rounded-xl border-2 ${otherMode.border} bg-gray-900/40 cursor-pointer transition-all duration-300 ${modeAnim ? 'opacity-0 scale-95' : 'opacity-60'}`}
+              className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-lg transition-all duration-300 ease-out ${
+                mode === 'clue-giving' ? 'left-1 bg-board-red' : 'left-[calc(50%+0.25rem)] bg-board-blue'
+              }`}
             />
-            <div
-              onClick={handleModeSwitch}
-              className={`relative h-full rounded-xl border-2 ${currentMode.border} bg-gray-900/80 backdrop-blur-sm p-3 sm:p-4 cursor-pointer transition-all duration-300 ${modeAnim ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}
-            >
-              <h2 className={`text-sm sm:text-base font-extrabold ${currentMode.accent} mb-0.5`}>
-                {t.setup[currentMode.titleKey]}
-              </h2>
-              <p className="text-gray-400 text-[0.65rem] sm:text-xs leading-snug">
-                {t.setup[currentMode.descKey]}
-              </p>
-            </div>
+            {MODE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setMode(opt.value)}
+                className="relative z-10 flex-1 py-2.5 px-3 text-center rounded-lg transition-colors duration-300"
+              >
+                <span className={`text-sm font-bold block ${mode === opt.value ? 'text-white' : 'text-gray-500'}`}>
+                  {t.setup[opt.titleKey]}
+                </span>
+                <span className={`text-[0.6rem] sm:text-xs block mt-0.5 transition-colors duration-300 ${mode === opt.value ? 'text-white/70' : 'text-gray-600'}`}>
+                  {t.setup[opt.descKey]}
+                </span>
+              </button>
+            ))}
           </div>
 
-          {/* Ranked selector — stacked cards */}
-          <div className="relative flex-1 min-h-[80px]">
+          {/* Ranked toggle */}
+          <div className="relative flex bg-gray-800/80 rounded-xl p-1 border border-gray-700/30">
             <div
-              onClick={handleRankedSwitch}
-              className={`absolute inset-0 translate-x-1.5 translate-y-1.5 rounded-xl border-2 ${otherRanked.border} bg-gray-900/40 cursor-pointer transition-all duration-300 ${rankedAnim ? 'opacity-0 scale-95' : 'opacity-60'}`}
+              className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-lg transition-all duration-300 ease-out ${
+                ranked ? 'left-1 bg-amber-600' : 'left-[calc(50%+0.25rem)] bg-gray-600'
+              }`}
             />
-            <div
-              onClick={handleRankedSwitch}
-              className={`relative h-full rounded-xl border-2 ${currentRanked.border} bg-gray-900/80 backdrop-blur-sm p-3 sm:p-4 cursor-pointer transition-all duration-300 ${rankedAnim ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}`}
-            >
-              <h2 className={`text-sm sm:text-base font-extrabold ${currentRanked.accent} mb-0.5`}>
-                {t.setup[currentRanked.titleKey]}
-              </h2>
-              <p className="text-gray-400 text-[0.65rem] sm:text-xs leading-snug">
-                {t.setup[currentRanked.descKey]}
-              </p>
-            </div>
+            {RANKED_OPTIONS.map((opt) => (
+              <button
+                key={String(opt.value)}
+                onClick={() => setRanked(opt.value)}
+                className="relative z-10 flex-1 py-2.5 px-3 text-center rounded-lg transition-colors duration-300"
+              >
+                <span className={`text-sm font-bold block ${ranked === opt.value ? 'text-white' : 'text-gray-500'}`}>
+                  {t.setup[opt.titleKey]}
+                </span>
+                <span className={`text-[0.6rem] sm:text-xs block mt-0.5 transition-colors duration-300 ${ranked === opt.value ? 'text-white/70' : 'text-gray-600'}`}>
+                  {t.setup[opt.descKey]}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
 

@@ -72,9 +72,6 @@ function loadCompletedGuess(clueId: string): CompletedGuessState | null {
   } catch { return null; }
 }
 
-function clearCompletedGuess() {
-  localStorage.removeItem(COMPLETED_GUESS_KEY);
-}
 
 export default function GuessingPage() {
   const { clueId } = useParams<{ clueId: string }>();
@@ -206,14 +203,12 @@ export default function GuessingPage() {
     if (phase === 'picking') {
       setShowHomeConfirm(true);
     } else {
-      clearCompletedGuess();
       navigate('/');
     }
   }
 
   async function handleAnotherClue() {
     if (!user) return;
-    clearCompletedGuess();
     try {
       const newClue = await api.getRandomClue(user.id, clue ? [clue.id] : [], undefined, undefined, clue?.ranked);
       if (newClue) {
@@ -627,7 +622,7 @@ export default function GuessingPage() {
                 {t.rating.cancel}
               </button>
               <button
-                onClick={() => { clearCompletedGuess(); navigate('/'); }}
+                onClick={() => navigate('/')}
                 className="px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-semibold transition-colors"
               >
                 {t.admin.confirm}
