@@ -45,6 +45,11 @@ export default function ClueGivingPage() {
   const [reshuffleCount, setReshuffleCount] = useState(0);
   const [targetError, setTargetError] = useState('');
 
+  // Submit animation state
+  const [submitting, setSubmitting] = useState(false);
+  const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingClueRef = useRef<object | null>(null);
+
   const board = useMemo(() => {
     return generateBoard(currentSeed, config);
   }, [currentSeed, config]);
@@ -61,6 +66,8 @@ export default function ClueGivingPage() {
 
   // Auto-detect clue-0: if any non-red cards are selected as nulls
   const isClueZero = selectedNulls.length > 0;
+
+  const submitDelay = user?.preferences.submitDelay ?? 2000;
 
   function handleReshuffle() {
     const newSeed = generateSeed();
@@ -121,6 +128,7 @@ export default function ClueGivingPage() {
   }
 
   function handleCardClick(index: number) {
+    if (submitting) return;
     const card = board.cards[index];
 
     if (card.color === 'red') {
@@ -144,6 +152,7 @@ export default function ClueGivingPage() {
   displayOrderRef.current = displayOrder;
 
   const onBoardPointerUp = useCallback((e: React.PointerEvent): boolean => {
+    if (submitting) return false;
     const wasDrag = handlePointerUp(e);
     if (!wasDrag) {
       const slotEl = (e.target as HTMLElement).closest('[data-visual-index]') as HTMLElement | null;
@@ -154,9 +163,30 @@ export default function ClueGivingPage() {
       }
     }
     return wasDrag;
-  }, [handlePointerUp]);
+  }, [handlePointerUp, submitting]);
 
-  async function handleSubmitClue(word: string, number: number) {
+  function cancelSubmit() {
+    if (submitTimerRef.current) {
+      clearTimeout(submitTimerRef.current);
+      submitTimerRef.current = null;
+    }
+    pendingClueRef.current = null;
+    setSubmitting(false);
+  }
+
+  async function doSubmit() {
+    if (!pendingClueRef.current) return;
+    try {
+      await api.saveClue(pendingClueRef.current as Clue);
+      setSubmitted(true);
+    } catch (err) {
+      setTargetError(err instanceof Error ? err.message : 'Ошибка сохранения');
+    }
+    pendingClueRef.current = null;
+    setSubmitting(false);
+  }
+
+  function handleSubmitClue(word: string, number: number) {
     if (!user) return;
     if (isClueZero) {
       if (selectedTargets.length === 0) {
@@ -165,7 +195,7 @@ export default function ClueGivingPage() {
       }
     } else {
       if (selectedTargets.length === 0) {
-        setTargetError(t.game.targetsMismatch.replace('{n}', String(number)));
+        setTargetError(t.clue.errorNeedsTargets);
         return;
       }
     }
@@ -186,12 +216,22 @@ export default function ClueGivingPage() {
       ...(config.blueCount !== baseConfig.blueCount ? { blueCount: config.blueCount } : {}),
       ...(config.assassinCount !== baseConfig.assassinCount ? { assassinCount: config.assassinCount } : {}),
     };
-    try {
-      await api.saveClue(clue as Clue);
-      setSubmitted(true);
-    } catch (err) {
-      setTargetError(err instanceof Error ? err.message : 'Ошибка сохранения');
+
+    // If submitDelay is 0, submit immediately
+    if (submitDelay === 0) {
+      pendingClueRef.current = clue;
+      doSubmit();
+      return;
     }
+
+    // Start submit animation
+    pendingClueRef.current = clue;
+    setSubmitting(true);
+    setTargetError('');
+    submitTimerRef.current = setTimeout(() => {
+      submitTimerRef.current = null;
+      doSubmit();
+    }, submitDelay);
   }
 
   function handleGiveAnother() {
@@ -242,44 +282,46 @@ export default function ClueGivingPage() {
       <GameHeader mode="clue-giving" config={config} ranked={isRanked} />
 
       {/* Action buttons */}
-      <div className="flex flex-wrap justify-center gap-2 mb-3">
-        <button
-          onClick={() => setShowHomeConfirm(true)}
-          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors inline-flex items-center"
-          title={t.game.home}
-        >
-          <HomeIcon className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => setShowReshuffleConfirm(true)}
-          className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
-          title={t.game.reshuffle}
-        >
-          <ArrowPathIcon className="w-4 h-4" />
-          {reshuffleCount > 0 && (
-            <span className="text-gray-300 text-xs">({reshuffleCount})</span>
-          )}
-        </button>
-        <button
-          onClick={handleSortByColor}
-          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border inline-flex items-center ${
-            isSorted
-              ? 'bg-board-blue/30 text-board-blue border-board-blue/40'
-              : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border-transparent'
-          }`}
-          title={t.game.sortByColor}
-        >
-          <BarsArrowDownIcon className="w-4 h-4" />
-        </button>
-        <button
-          onClick={handleReset}
-          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center"
-          title={t.game.reset}
-        >
-          <ArrowUturnLeftIcon className="w-4 h-4" />
-        </button>
-        <SettingsPanel mode="clue-giving" />
-      </div>
+      {!submitting && (
+        <div className="flex flex-wrap justify-center gap-2 mb-3">
+          <button
+            onClick={() => setShowHomeConfirm(true)}
+            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors inline-flex items-center"
+            title={t.game.home}
+          >
+            <HomeIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowReshuffleConfirm(true)}
+            className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
+            title={t.game.reshuffle}
+          >
+            <ArrowPathIcon className="w-4 h-4" />
+            {reshuffleCount > 0 && (
+              <span className="text-gray-300 text-xs">({reshuffleCount})</span>
+            )}
+          </button>
+          <button
+            onClick={handleSortByColor}
+            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border inline-flex items-center ${
+              isSorted
+                ? 'bg-board-blue/30 text-board-blue border-board-blue/40'
+                : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border-transparent'
+            }`}
+            title={t.game.sortByColor}
+          >
+            <BarsArrowDownIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleReset}
+            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center"
+            title={t.game.reset}
+          >
+            <ArrowUturnLeftIcon className="w-4 h-4" />
+          </button>
+          <SettingsPanel mode="clue-giving" />
+        </div>
+      )}
 
       {showHomeConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowHomeConfirm(false)}>
@@ -328,14 +370,15 @@ export default function ClueGivingPage() {
       )}
 
       {/* Main hint */}
-      <p className="text-center text-gray-400 text-sm mb-1">
-        {t.game.selectTargetsTeam} <span className="text-board-red font-semibold">{t.game.yourTeam}</span> ({selectedTargets.length} {t.game.selected})
-      </p>
-      <p className="text-center text-gray-500 text-xs mb-1">
-        {t.game.clueZeroHint}
-      </p>
-      {targetError && (
-        <p className="text-center text-board-red text-sm mb-2">{targetError}</p>
+      {!submitting && (
+        <>
+          <p className="text-center text-gray-400 text-sm mb-1">
+            {t.game.selectTargetsTeam} <span className="text-board-red font-semibold">{t.game.yourTeam}</span> ({selectedTargets.length} {t.game.selected})
+          </p>
+          <p className="text-center text-gray-500 text-xs mb-1">
+            {t.game.clueZeroHint}
+          </p>
+        </>
       )}
 
       <Board
@@ -345,18 +388,28 @@ export default function ClueGivingPage() {
         selectedIndices={[]}
         targetIndices={selectedTargets}
         nullIndices={selectedNulls}
-        displayOrder={displayOrder}
-        draggingOrigIdx={draggingOrigIdx}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={onBoardPointerUp}
-        registerCardRef={registerCardRef}
+        highlightTargets={submitting}
+        disabled={submitting}
+        displayOrder={submitting ? undefined : displayOrder}
+        draggingOrigIdx={submitting ? null : draggingOrigIdx}
+        onPointerDown={submitting ? undefined : handlePointerDown}
+        onPointerMove={submitting ? undefined : handlePointerMove}
+        onPointerUp={submitting ? undefined : onBoardPointerUp}
+        registerCardRef={submitting ? undefined : registerCardRef}
         cardFontSize={user?.preferences.cardFontSize}
       />
 
       {/* Clue input */}
       <div className="mt-4">
-        <ClueInput boardCards={board.cards} targetCount={clueNumber} onSubmit={handleSubmitClue} />
+        <ClueInput
+          boardCards={board.cards}
+          targetCount={clueNumber}
+          onSubmit={handleSubmitClue}
+          submitting={submitting}
+          submitDelay={submitDelay}
+          onCancel={cancelSubmit}
+          externalError={targetError}
+        />
       </div>
     </div>
   );

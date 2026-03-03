@@ -239,6 +239,7 @@ export const ru = {
     sortMode: 'Сортировка',
     sortRows: 'Строки',
     sortColumns: 'Столбцы',
+    submitDelay: 'Задержка отправки',
   },
 };
 

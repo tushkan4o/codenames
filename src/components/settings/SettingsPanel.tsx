@@ -11,6 +11,9 @@ interface SettingsPanelProps {
 const REVEAL_STEPS = [500, 1000, 1500, 2000];
 const REVEAL_LABELS: Record<number, string> = { 500: '0.5', 1000: '1', 1500: '1.5', 2000: '2' };
 
+const SUBMIT_STEPS = [0, 1000, 2000, 3000];
+const SUBMIT_LABELS: Record<number, string> = { 0: '0', 1000: '1', 2000: '2', 3000: '3' };
+
 const FONT_OPTIONS: { value: CardFontSize; icon: string }[] = [
   { value: 'sm', icon: 'A' },
   { value: 'md', icon: 'A' },
@@ -107,6 +110,38 @@ export default function SettingsPanel({ mode }: SettingsPanelProps) {
               ))}
             </div>
           </div>
+
+          {/* Submit delay — captain mode only */}
+          {mode === 'clue-giving' && (
+            <div className="mb-3">
+              <label className="text-gray-400 text-xs mb-1.5 block">{t.settings.submitDelay}</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const idx = SUBMIT_STEPS.indexOf(prefs.submitDelay);
+                    if (idx > 0) updatePref('submitDelay', SUBMIT_STEPS[idx - 1]);
+                  }}
+                  disabled={SUBMIT_STEPS.indexOf(prefs.submitDelay) <= 0}
+                  className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white disabled:opacity-30 disabled:hover:bg-gray-700 transition-colors text-sm font-bold flex items-center justify-center"
+                >
+                  ▼
+                </button>
+                <span className="text-white text-sm font-semibold min-w-[3.5rem] text-center">
+                  {SUBMIT_LABELS[prefs.submitDelay] || (prefs.submitDelay / 1000).toFixed(0)} {t.settings.sec}
+                </span>
+                <button
+                  onClick={() => {
+                    const idx = SUBMIT_STEPS.indexOf(prefs.submitDelay);
+                    if (idx < SUBMIT_STEPS.length - 1) updatePref('submitDelay', SUBMIT_STEPS[idx + 1]);
+                  }}
+                  disabled={SUBMIT_STEPS.indexOf(prefs.submitDelay) >= SUBMIT_STEPS.length - 1}
+                  className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white disabled:opacity-30 disabled:hover:bg-gray-700 transition-colors text-sm font-bold flex items-center justify-center"
+                >
+                  ▲
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Sort mode — captain mode only */}
           {mode === 'clue-giving' && (

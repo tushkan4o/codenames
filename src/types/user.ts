@@ -15,6 +15,7 @@ export interface UserPreferences {
   defaultBoardSize: BoardSize;
   animationEnabled: boolean;
   revealDuration: number;
+  submitDelay: number;
   cardFontSize: CardFontSize;
   colorSortMode: ColorSortMode;
 }
@@ -23,6 +24,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   defaultBoardSize: '5x5',
   animationEnabled: true,
   revealDuration: 1000,
+  submitDelay: 2000,
   cardFontSize: 'md',
   colorSortMode: 'rows',
 };
