@@ -180,8 +180,16 @@ export default function LeaderboardPage() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <NavBar showBack />
-      <div className="max-w-2xl mx-auto px-4 pt-4 flex flex-col flex-1 min-h-0 w-full">
+      <NavBar />
+      <div className="max-w-2xl mx-auto px-4 pt-4 flex flex-col flex-1 min-h-0 w-full relative">
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute left-4 top-4 text-gray-400 hover:text-white transition-colors z-10"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
         <h1 className="text-2xl font-extrabold text-white mb-4 text-center">{t.leaderboard.title}</h1>
 
         <div className="flex justify-center gap-2 mb-4">
@@ -259,14 +267,15 @@ export default function LeaderboardPage() {
         {tab === 'clues' && (
           sortedClues.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
-          ) : (<>
-            <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
-              <span className={thAccordion} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></span>
-              <span className={`${thAccordion} text-center`} onClick={() => toggleClueSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></span>
-              <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
-              <span className={`${thAccordion} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
-            </div>
-            <div className="space-y-1 overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+          ) : (
+            <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
+                <span className={thAccordion} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></span>
+                <span className={`${thAccordion} text-center`} onClick={() => toggleClueSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></span>
+                <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
+                <span className={`${thAccordion} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
+              </div>
+              <div className="space-y-1">
               {sortedClues.map((c, i) => {
                 const isOwn = c.userId === user?.id;
                 const solved = mySolvedClueIds.has(c.id);
@@ -322,8 +331,9 @@ export default function LeaderboardPage() {
                   </div>
                 );
               })}
+              </div>
             </div>
-          </>)
+          )
         )}
       </div>
 

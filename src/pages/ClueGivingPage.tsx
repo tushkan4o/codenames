@@ -282,46 +282,44 @@ export default function ClueGivingPage() {
       <GameHeader mode="clue-giving" config={config} ranked={isRanked} />
 
       {/* Action buttons */}
-      {!submitting && (
-        <div className="flex flex-wrap justify-center gap-2 mb-3">
-          <button
-            onClick={() => setShowHomeConfirm(true)}
-            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors inline-flex items-center"
-            title={t.game.home}
-          >
-            <HomeIcon className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setShowReshuffleConfirm(true)}
-            className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
-            title={t.game.reshuffle}
-          >
-            <ArrowPathIcon className="w-4 h-4" />
-            {reshuffleCount > 0 && (
-              <span className="text-gray-300 text-xs">({reshuffleCount})</span>
-            )}
-          </button>
-          <button
-            onClick={handleSortByColor}
-            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border inline-flex items-center ${
-              isSorted
-                ? 'bg-board-blue/30 text-board-blue border-board-blue/40'
-                : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border-transparent'
-            }`}
-            title={t.game.sortByColor}
-          >
-            <BarsArrowDownIcon className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleReset}
-            className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center"
-            title={t.game.reset}
-          >
-            <ArrowUturnLeftIcon className="w-4 h-4" />
-          </button>
-          <SettingsPanel mode="clue-giving" />
-        </div>
-      )}
+      <div className={`flex flex-wrap justify-center gap-2 mb-3 transition-opacity ${submitting ? 'opacity-30 pointer-events-none' : ''}`}>
+        <button
+          onClick={() => setShowHomeConfirm(true)}
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors inline-flex items-center"
+          title={t.game.home}
+        >
+          <HomeIcon className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => setShowReshuffleConfirm(true)}
+          className="px-3 py-1.5 rounded-lg bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold transition-colors inline-flex items-center gap-1"
+          title={t.game.reshuffle}
+        >
+          <ArrowPathIcon className="w-4 h-4" />
+          {reshuffleCount > 0 && (
+            <span className="text-gray-300 text-xs">({reshuffleCount})</span>
+          )}
+        </button>
+        <button
+          onClick={handleSortByColor}
+          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border inline-flex items-center ${
+            isSorted
+              ? 'bg-board-blue/30 text-board-blue border-board-blue/40'
+              : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border-transparent'
+          }`}
+          title={t.game.sortByColor}
+        >
+          <BarsArrowDownIcon className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleReset}
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center"
+          title={t.game.reset}
+        >
+          <ArrowUturnLeftIcon className="w-4 h-4" />
+        </button>
+        <SettingsPanel mode="clue-giving" />
+      </div>
 
       {showHomeConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowHomeConfirm(false)}>
@@ -370,16 +368,14 @@ export default function ClueGivingPage() {
       )}
 
       {/* Main hint */}
-      {!submitting && (
-        <>
-          <p className="text-center text-gray-400 text-sm mb-1">
-            {t.game.selectTargetsTeam} <span className="text-board-red font-semibold">{t.game.yourTeam}</span> ({selectedTargets.length} {t.game.selected})
-          </p>
-          <p className="text-center text-gray-500 text-xs mb-1">
-            {t.game.clueZeroHint}
-          </p>
-        </>
-      )}
+      <div className={`transition-opacity ${submitting ? 'opacity-30' : ''}`}>
+        <p className="text-center text-gray-400 text-sm mb-1">
+          {t.game.selectTargetsTeam} <span className="text-board-red font-semibold">{t.game.yourTeam}</span> ({selectedTargets.length} {t.game.selected})
+        </p>
+        <p className="text-center text-gray-500 text-xs mb-1">
+          {t.game.clueZeroHint}
+        </p>
+      </div>
 
       <Board
         cards={board.cards}

@@ -263,8 +263,16 @@ export default function AdminPage() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <NavBar showBack />
-      <div className="max-w-5xl mx-auto px-4 pt-4 flex flex-col flex-1 min-h-0 w-full">
+      <NavBar />
+      <div className="max-w-5xl mx-auto px-4 pt-4 flex flex-col flex-1 min-h-0 w-full relative">
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute left-4 top-4 text-gray-400 hover:text-white transition-colors z-10"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
 
         <div className="flex items-center justify-center gap-3 mb-4">
           <span className="text-lg font-extrabold text-white">{t.admin.title}</span>
