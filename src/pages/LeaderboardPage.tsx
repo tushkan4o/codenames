@@ -47,7 +47,7 @@ function formatDate(ts: number): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function SortArrow({ field, activeField, dir }: { field: string; activeField: string; dir: SortDir }) {
+function SortArrow({ field, activeField, dir }: { field: string; activeField: string | null; dir: SortDir }) {
   if (field !== activeField) return <span className="ml-0.5 invisible text-[0.5em]">{'\u25BC'}</span>;
   return <span className="ml-0.5 text-gray-400 text-[0.5em]">{dir === 'desc' ? '\u25BC' : '\u25B2'}</span>;
 }
@@ -70,11 +70,11 @@ export default function LeaderboardPage() {
   const [rankedFilter, setRankedFilter] = useState<RankedFilter>('all');
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>('all');
 
-  const [spySort, setSpySort] = useState<'avgScoreOnClues' | 'cluesGiven' | 'avgWordsPerClue'>('avgScoreOnClues');
+  const [spySort, setSpySort] = useState<'avgScoreOnClues' | 'cluesGiven' | 'avgWordsPerClue' | null>('avgScoreOnClues');
   const [spyDir, setSpyDir] = useState<SortDir>('desc');
-  const [guesserSort, setGuesserSort] = useState<'avgScore' | 'cluesSolved' | 'avgWordsPicked'>('avgScore');
+  const [guesserSort, setGuesserSort] = useState<'avgScore' | 'cluesSolved' | 'avgWordsPicked' | null>('avgScore');
   const [guesserDir, setGuesserDir] = useState<SortDir>('desc');
-  const [clueSort, setClueSort] = useState<'number' | 'attempts' | 'avgScore'>('avgScore');
+  const [clueSort, setClueSort] = useState<'number' | 'attempts' | 'avgScore' | null>('avgScore');
   const [clueDir, setClueDir] = useState<SortDir>('desc');
 
   const loadData = useCallback(async (size: SizeFilter) => {
@@ -125,19 +125,23 @@ export default function LeaderboardPage() {
     setSolvedFilter((f) => f === 'all' ? 'solved' : f === 'solved' ? 'unsolved' : 'all');
   }
 
-  const sortedSpymasters = useMemo(() =>
-    [...spymasters].sort((a, b) => {
-      const diff = (b[spySort] as number) - (a[spySort] as number);
+  const sortedSpymasters = useMemo(() => {
+    if (!spySort) return [...spymasters];
+    const key = spySort;
+    return [...spymasters].sort((a, b) => {
+      const diff = (b[key] as number) - (a[key] as number);
       return spyDir === 'desc' ? diff : -diff;
-    }),
-    [spymasters, spySort, spyDir]);
+    });
+  }, [spymasters, spySort, spyDir]);
 
-  const sortedGuessers = useMemo(() =>
-    [...guessers].sort((a, b) => {
-      const diff = (b[guesserSort] as number) - (a[guesserSort] as number);
+  const sortedGuessers = useMemo(() => {
+    if (!guesserSort) return [...guessers];
+    const key = guesserSort;
+    return [...guessers].sort((a, b) => {
+      const diff = (b[key] as number) - (a[key] as number);
       return guesserDir === 'desc' ? diff : -diff;
-    }),
-    [guessers, guesserSort, guesserDir]);
+    });
+  }, [guessers, guesserSort, guesserDir]);
 
   const filteredClues = useMemo(() => {
     let filtered = clueStats;
@@ -148,26 +152,34 @@ export default function LeaderboardPage() {
     return filtered;
   }, [clueStats, rankedFilter, solvedFilter, mySolvedClueIds, user]);
 
-  const sortedClues = useMemo(() =>
-    [...filteredClues].sort((a, b) => {
-      const diff = (b[clueSort] as number) - (a[clueSort] as number);
+  const sortedClues = useMemo(() => {
+    if (!clueSort) return [...filteredClues];
+    const key = clueSort;
+    return [...filteredClues].sort((a, b) => {
+      const diff = (b[key] as number) - (a[key] as number);
       return clueDir === 'desc' ? diff : -diff;
-    }),
-    [filteredClues, clueSort, clueDir]);
+    });
+  }, [filteredClues, clueSort, clueDir]);
 
-  function toggleSpySort(field: typeof spySort) {
-    if (spySort === field) setSpyDir((d) => d === 'desc' ? 'asc' : 'desc');
-    else { setSpySort(field); setSpyDir('desc'); }
+  function toggleSpySort(field: NonNullable<typeof spySort>) {
+    if (spySort === field) {
+      if (spyDir === 'desc') setSpyDir('asc');
+      else { setSpySort(null); setSpyDir('desc'); }
+    } else { setSpySort(field); setSpyDir('desc'); }
   }
 
-  function toggleGuesserSort(field: typeof guesserSort) {
-    if (guesserSort === field) setGuesserDir((d) => d === 'desc' ? 'asc' : 'desc');
-    else { setGuesserSort(field); setGuesserDir('desc'); }
+  function toggleGuesserSort(field: NonNullable<typeof guesserSort>) {
+    if (guesserSort === field) {
+      if (guesserDir === 'desc') setGuesserDir('asc');
+      else { setGuesserSort(null); setGuesserDir('desc'); }
+    } else { setGuesserSort(field); setGuesserDir('desc'); }
   }
 
-  function toggleClueSort(field: typeof clueSort) {
-    if (clueSort === field) setClueDir((d) => d === 'desc' ? 'asc' : 'desc');
-    else { setClueSort(field); setClueDir('desc'); }
+  function toggleClueSort(field: NonNullable<typeof clueSort>) {
+    if (clueSort === field) {
+      if (clueDir === 'desc') setClueDir('asc');
+      else { setClueSort(null); setClueDir('desc'); }
+    } else { setClueSort(field); setClueDir('desc'); }
   }
 
   const tabBtnClass = (active: boolean, color: string) =>

@@ -33,7 +33,7 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
   const [ratingLoaded, setRatingLoaded] = useState(false);
   const [attemptsView, setAttemptsView] = useState<AttemptDetail[] | null>(null);
   const [selectedAttemptIdx, setSelectedAttemptIdx] = useState<number | null>(null);
-  const [attemptSort, setAttemptSort] = useState<'timestamp' | 'score'>('timestamp');
+  const [attemptSort, setAttemptSort] = useState<'timestamp' | 'score' | null>('timestamp');
   const [attemptDir, setAttemptDir] = useState<'asc' | 'desc'>('asc');
 
   const config = useMemo(() => {
@@ -141,14 +141,26 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
                     <th className="text-left py-1 pr-2 font-medium">{t.admin.player}</th>
                     <th
                       className="text-center py-1 px-2 font-medium cursor-pointer select-none hover:text-gray-300 transition-colors"
-                      onClick={() => { if (attemptSort === 'score') { setAttemptDir(d => d === 'desc' ? 'asc' : 'desc'); } else { setAttemptSort('score'); setAttemptDir('desc'); } setSelectedAttemptIdx(null); setViewingAttemptPicks(null); }}
+                      onClick={() => {
+                        if (attemptSort === 'score') {
+                          if (attemptDir === 'desc') setAttemptDir('asc');
+                          else { setAttemptSort(null); setAttemptDir('desc'); }
+                        } else { setAttemptSort('score'); setAttemptDir('desc'); }
+                        setSelectedAttemptIdx(null); setViewingAttemptPicks(null);
+                      }}
                     >
                       {t.results.score}
                       <span className="ml-0.5 text-[0.5em]">{attemptSort === 'score' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
                     </th>
                     <th
                       className="text-center py-1 pl-2 font-medium cursor-pointer select-none hover:text-gray-300 transition-colors"
-                      onClick={() => { if (attemptSort === 'timestamp') { setAttemptDir(d => d === 'desc' ? 'asc' : 'desc'); } else { setAttemptSort('timestamp'); setAttemptDir('asc'); } setSelectedAttemptIdx(null); setViewingAttemptPicks(null); }}
+                      onClick={() => {
+                        if (attemptSort === 'timestamp') {
+                          if (attemptDir === 'asc') setAttemptDir('desc');
+                          else { setAttemptSort(null); setAttemptDir('desc'); }
+                        } else { setAttemptSort('timestamp'); setAttemptDir('asc'); }
+                        setSelectedAttemptIdx(null); setViewingAttemptPicks(null);
+                      }}
                     >
                       {t.admin.clueDate}
                       <span className="ml-0.5 text-[0.5em]">{attemptSort === 'timestamp' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
@@ -156,10 +168,11 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
                   </tr>
                 </thead>
                 <tbody>
-                  {[...attemptsView].sort((a, b) => {
+                  {(attemptSort ? [...attemptsView].sort((a, b) => {
+                    const key = attemptSort;
                     const mul = attemptDir === 'asc' ? 1 : -1;
-                    return mul * (a[attemptSort] - b[attemptSort]);
-                  }).map((detail, idx) => (
+                    return mul * (a[key] - b[key]);
+                  }) : attemptsView).map((detail, idx) => (
                     <tr
                       key={idx}
                       onClick={() => {

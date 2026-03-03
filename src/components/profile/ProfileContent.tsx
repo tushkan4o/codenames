@@ -33,7 +33,7 @@ function formatDate(ts: number): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function SortArrow({ field, activeField, dir }: { field: string; activeField: string; dir: SortDir }) {
+function SortArrow({ field, activeField, dir }: { field: string; activeField: string | null; dir: SortDir }) {
   if (field !== activeField) return <span className="ml-0.5 invisible text-[0.5em]">{'\u25BC'}</span>;
   return <span className="ml-0.5 text-gray-400 text-[0.5em]">{dir === 'desc' ? '\u25BC' : '\u25B2'}</span>;
 }
@@ -63,9 +63,9 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>('all');
   const [confirmDeleteSolved, setConfirmDeleteSolved] = useState<string | null>(null);
 
-  const [givenSort, setGivenSort] = useState<GivenSortField>('number');
+  const [givenSort, setGivenSort] = useState<GivenSortField | null>(null);
   const [givenDir, setGivenDir] = useState<SortDir>('desc');
-  const [solvedSort, setSolvedSort] = useState<SolvedSortField>('number');
+  const [solvedSort, setSolvedSort] = useState<SolvedSortField | null>(null);
   const [solvedDir, setSolvedDir] = useState<SortDir>('desc');
 
   const [expandedGivenId, setExpandedGivenId] = useState<string | null>(null);
@@ -123,13 +123,17 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     if (solvedFilter === 'solved') filtered = filtered.filter((c) => mySolvedClueIds.has(c.id));
     else if (solvedFilter === 'unsolved') filtered = filtered.filter((c) => !mySolvedClueIds.has(c.id));
     const sorted = [...filtered];
-    sorted.sort((a, b) => {
-      let diff = 0;
-      if (givenSort === 'number') diff = b.number - a.number;
-      else if (givenSort === 'attempts') diff = (clueStatsMap[b.id]?.attempts ?? 0) - (clueStatsMap[a.id]?.attempts ?? 0);
-      else if (givenSort === 'avgScore') diff = (clueStatsMap[b.id]?.avgScore ?? 0) - (clueStatsMap[a.id]?.avgScore ?? 0);
-      return givenDir === 'desc' ? diff : -diff;
-    });
+    if (!givenSort) {
+      sorted.sort((a, b) => b.createdAt - a.createdAt);
+    } else {
+      sorted.sort((a, b) => {
+        let diff = 0;
+        if (givenSort === 'number') diff = b.number - a.number;
+        else if (givenSort === 'attempts') diff = (clueStatsMap[b.id]?.attempts ?? 0) - (clueStatsMap[a.id]?.attempts ?? 0);
+        else if (givenSort === 'avgScore') diff = (clueStatsMap[b.id]?.avgScore ?? 0) - (clueStatsMap[a.id]?.avgScore ?? 0);
+        return givenDir === 'desc' ? diff : -diff;
+      });
+    }
     return sorted;
   }, [cluesGiven, givenSort, givenDir, clueStatsMap, rankedFilter, solvedFilter, mySolvedClueIds]);
 
@@ -140,20 +144,24 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     if (solvedFilter === 'solved') filtered = filtered.filter((e) => canViewClue(e.result.clueId, e.clue?.userId));
     else if (solvedFilter === 'unsolved') filtered = filtered.filter((e) => !canViewClue(e.result.clueId, e.clue?.userId));
     const sorted = [...filtered];
-    sorted.sort((a, b) => {
-      let diff = 0;
-      if (solvedSort === 'number') diff = (b.clue?.number ?? 0) - (a.clue?.number ?? 0);
-      else if (solvedSort === 'attempts') {
-        const aAttempts = a.clue ? (clueStatsMap[a.clue.id]?.attempts ?? 0) : 0;
-        const bAttempts = b.clue ? (clueStatsMap[b.clue.id]?.attempts ?? 0) : 0;
-        diff = bAttempts - aAttempts;
-      } else if (solvedSort === 'avgScore') {
-        const aScore = a.clue ? (clueStatsMap[a.clue.id]?.avgScore ?? 0) : 0;
-        const bScore = b.clue ? (clueStatsMap[b.clue.id]?.avgScore ?? 0) : 0;
-        diff = bScore - aScore;
-      } else if (solvedSort === 'myScore') diff = (b.result.score ?? 0) - (a.result.score ?? 0);
-      return solvedDir === 'desc' ? diff : -diff;
-    });
+    if (!solvedSort) {
+      sorted.sort((a, b) => b.result.timestamp - a.result.timestamp);
+    } else {
+      sorted.sort((a, b) => {
+        let diff = 0;
+        if (solvedSort === 'number') diff = (b.clue?.number ?? 0) - (a.clue?.number ?? 0);
+        else if (solvedSort === 'attempts') {
+          const aAttempts = a.clue ? (clueStatsMap[a.clue.id]?.attempts ?? 0) : 0;
+          const bAttempts = b.clue ? (clueStatsMap[b.clue.id]?.attempts ?? 0) : 0;
+          diff = bAttempts - aAttempts;
+        } else if (solvedSort === 'avgScore') {
+          const aScore = a.clue ? (clueStatsMap[a.clue.id]?.avgScore ?? 0) : 0;
+          const bScore = b.clue ? (clueStatsMap[b.clue.id]?.avgScore ?? 0) : 0;
+          diff = bScore - aScore;
+        } else if (solvedSort === 'myScore') diff = (b.result.score ?? 0) - (a.result.score ?? 0);
+        return solvedDir === 'desc' ? diff : -diff;
+      });
+    }
     return sorted;
   }, [solvedEntries, solvedSort, solvedDir, clueStatsMap, rankedFilter, solvedFilter, mySolvedClueIds, isOwnProfile, user]);
 
@@ -227,13 +235,17 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   }
 
   function toggleGivenSort(field: GivenSortField) {
-    if (givenSort === field) setGivenDir((d) => d === 'desc' ? 'asc' : 'desc');
-    else { setGivenSort(field); setGivenDir('desc'); }
+    if (givenSort === field) {
+      if (givenDir === 'desc') setGivenDir('asc');
+      else { setGivenSort(null); setGivenDir('desc'); }
+    } else { setGivenSort(field); setGivenDir('desc'); }
   }
 
   function toggleSolvedSort(field: SolvedSortField) {
-    if (solvedSort === field) setSolvedDir((d) => d === 'desc' ? 'asc' : 'desc');
-    else { setSolvedSort(field); setSolvedDir('desc'); }
+    if (solvedSort === field) {
+      if (solvedDir === 'desc') setSolvedDir('asc');
+      else { setSolvedSort(null); setSolvedDir('desc'); }
+    } else { setSolvedSort(field); setSolvedDir('desc'); }
   }
 
   const thClass = 'py-2 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
