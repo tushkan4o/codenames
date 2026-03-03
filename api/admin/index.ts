@@ -156,6 +156,62 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Unknown action' });
   }
 
+  if (req.method === 'PATCH') {
+    if (action === 'updateClue') {
+      const { clueId } = req.query;
+      if (!clueId || typeof clueId !== 'string') {
+        return res.status(400).json({ error: 'clueId required' });
+      }
+
+      const body = req.body || {};
+      const updates: string[] = [];
+
+      // Validate clue exists
+      const existing = await sql`SELECT * FROM clues WHERE id = ${clueId}`;
+      if (existing.length === 0) {
+        return res.status(404).json({ error: 'Clue not found' });
+      }
+
+      // Update target_indices if provided (must be an array of integers)
+      if ('targetIndices' in body) {
+        const indices = body.targetIndices;
+        if (!Array.isArray(indices) || !indices.every((i: unknown) => Number.isInteger(i) && (i as number) >= 0)) {
+          return res.status(400).json({ error: 'targetIndices must be an array of non-negative integers' });
+        }
+        await sql`UPDATE clues SET target_indices = ${indices}::int[] WHERE id = ${clueId}`;
+        updates.push('target_indices');
+      }
+
+      // Update number (word count) if provided
+      if ('number' in body) {
+        const num = body.number;
+        if (!Number.isInteger(num) || num < 0) {
+          return res.status(400).json({ error: 'number must be a non-negative integer' });
+        }
+        await sql`UPDATE clues SET number = ${num} WHERE id = ${clueId}`;
+        updates.push('number');
+      }
+
+      // Update nullIndices if provided
+      if ('nullIndices' in body) {
+        const indices = body.nullIndices;
+        if (!Array.isArray(indices) || !indices.every((i: unknown) => Number.isInteger(i) && (i as number) >= 0)) {
+          return res.status(400).json({ error: 'nullIndices must be an array of non-negative integers' });
+        }
+        await sql`UPDATE clues SET null_indices = ${indices}::int[] WHERE id = ${clueId}`;
+        updates.push('null_indices');
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ error: 'No valid fields to update. Supported: targetIndices, number, nullIndices' });
+      }
+
+      return res.json({ ok: true, updated: updates });
+    }
+
+    return res.status(400).json({ error: 'Unknown action' });
+  }
+
   if (req.method === 'DELETE') {
     if (action === 'deleteClue') {
       const { clueId } = req.query;

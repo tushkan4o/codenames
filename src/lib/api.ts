@@ -220,4 +220,8 @@ export const api = {
   async adminDeleteResult(adminId: string, clueId: string, userId: string, timestamp: number): Promise<void> {
     await del(`/api/admin?action=deleteResult&adminId=${encodeURIComponent(adminId)}&clueId=${encodeURIComponent(clueId)}&userId=${encodeURIComponent(userId)}&timestamp=${timestamp}`);
   },
+
+  async adminUpdateClue(adminId: string, clueId: string, updates: { targetIndices?: number[]; number?: number; nullIndices?: number[] }): Promise<void> {
+    await patch(`/api/admin?action=updateClue&adminId=${encodeURIComponent(adminId)}&clueId=${encodeURIComponent(clueId)}`, updates);
+  },
 };
