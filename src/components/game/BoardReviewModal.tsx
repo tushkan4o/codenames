@@ -1,4 +1,5 @@
 import { useMemo, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { generateBoard } from '../../lib/boardGenerator';
 import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../../types/game';
 import type { Clue, GuessResult } from '../../types/game';
@@ -7,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
 import Board from '../board/Board';
 import RevealOverlay from './RevealOverlay';
-import ClueStatsPanel from './ClueStatsPanel';
+import ClueStatsPanel, { type AttemptDetail, pluralAttempts } from './ClueStatsPanel';
 import ClueRating from './ClueRating';
 
 interface BoardReviewModalProps {
@@ -16,13 +17,22 @@ interface BoardReviewModalProps {
   onClose: () => void;
 }
 
+function formatDate(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function BoardReviewModal({ clue, result, onClose }: BoardReviewModalProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [pickPercents, setPickPercents] = useState<Record<number, number>>({});
   const [viewingAttemptPicks, setViewingAttemptPicks] = useState<number[] | null>(null);
   const [existingRating, setExistingRating] = useState<number | null>(null);
   const [ratingLoaded, setRatingLoaded] = useState(false);
+  const [attemptsView, setAttemptsView] = useState<AttemptDetail[] | null>(null);
+  const [selectedAttemptIdx, setSelectedAttemptIdx] = useState<number | null>(null);
 
   const config = useMemo(() => {
     const base = clue.boardSize ? BOARD_CONFIGS[clue.boardSize] : BOARD_CONFIG_LEGACY_5x5;
@@ -76,9 +86,17 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl"
+        className="w-full max-w-2xl relative"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* X close button */}
+        <button
+          onClick={onClose}
+          className="absolute -top-1 -right-1 sm:right-0 text-gray-500 hover:text-white text-2xl leading-none transition-colors z-10 p-1"
+        >
+          &times;
+        </button>
+
         <div className="text-center mb-4">
           <span className="text-2xl font-extrabold text-white uppercase">{clue.word}</span>
           <span className="ml-3 text-2xl font-extrabold text-white">{clue.number}</span>
@@ -101,20 +119,78 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
           pickPercents={pickPercents}
         />
 
-        {result && (
+        {attemptsView ? (
+          <div className="bg-gray-800/60 rounded-xl p-5 border border-gray-700/30 max-w-md mx-auto mt-4 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm">
+                {attemptsView.length} {pluralAttempts(attemptsView.length)}
+              </h3>
+              <button
+                onClick={() => { setAttemptsView(null); setSelectedAttemptIdx(null); setViewingAttemptPicks(null); }}
+                className="text-gray-400 hover:text-white text-lg leading-none transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[200px]">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-gray-800">
+                  <tr className="text-gray-500 border-b border-gray-700/50">
+                    <th className="text-left py-1 pr-2 font-medium">{t.admin.player}</th>
+                    <th className="text-center py-1 px-2 font-medium">{t.results.score}</th>
+                    <th className="text-center py-1 pl-2 font-medium">{t.admin.clueDate}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attemptsView.map((detail, idx) => (
+                    <tr
+                      key={idx}
+                      onClick={() => {
+                        if (selectedAttemptIdx === idx) {
+                          setSelectedAttemptIdx(null);
+                          setViewingAttemptPicks(null);
+                        } else {
+                          setSelectedAttemptIdx(idx);
+                          setViewingAttemptPicks(detail.guessedIndices);
+                        }
+                      }}
+                      className={`cursor-pointer transition-colors ${
+                        selectedAttemptIdx === idx
+                          ? 'bg-board-blue/20'
+                          : 'hover:bg-gray-700/50'
+                      }`}
+                    >
+                      <td className="py-1.5 pr-2 text-left">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/profile/${detail.userId}`); }}
+                          className="text-blue-400 hover:text-blue-300 transition-colors truncate max-w-[10rem] block text-left"
+                        >
+                          {detail.userId}
+                        </button>
+                      </td>
+                      <td className="py-1.5 px-2 text-center text-white font-semibold">{detail.score}</td>
+                      <td className="py-1.5 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : result ? (
           <RevealOverlay
             cards={board.cards}
             guessedIndices={guessedIndices}
             targetIndices={clue.targetIndices}
             score={result.score ?? 0}
           />
-        )}
+        ) : null}
 
-        <div className="mt-4">
+        <div className="max-w-md mx-auto mt-4">
           <ClueStatsPanel
             clueId={clue.id}
             spymasterUserId={clue.userId}
             onShowAttemptPicks={(indices) => setViewingAttemptPicks(indices.length > 0 ? indices : null)}
+            onOpenAttempts={(details) => { setAttemptsView(details); setSelectedAttemptIdx(null); setViewingAttemptPicks(null); }}
           />
         </div>
 

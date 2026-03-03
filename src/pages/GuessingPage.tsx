@@ -613,7 +613,8 @@ export default function GuessingPage() {
 
       {showHomeConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowHomeConfirm(false)}>
-          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowHomeConfirm(false)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
             <p className="text-white text-sm mb-4">{t.game.confirmHomeGuessing}</p>
             <div className="flex justify-center gap-3">
               <button
@@ -635,7 +636,8 @@ export default function GuessingPage() {
 
       {showNoClues && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-board-bg/90 animate-fade-in" onClick={() => setShowNoClues(false)}>
-          <div className="bg-gray-800 rounded-xl p-8 border border-gray-700 text-center max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-gray-800 rounded-xl p-8 border border-gray-700 text-center max-w-sm mx-4 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowNoClues(false)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
             <p className="text-white text-lg font-bold mb-2">{t.game.noClues}</p>
             <button
               onClick={() => navigate('/')}

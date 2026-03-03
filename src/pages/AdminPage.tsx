@@ -574,8 +574,9 @@ export default function AdminPage() {
 
       {/* Confirm delete clue modal */}
       {confirmDeleteId && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700/30 rounded-lg p-6 max-w-sm mx-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setConfirmDeleteId(null)}>
+          <div className="bg-gray-800 border border-gray-700/30 rounded-lg p-6 max-w-sm mx-4 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setConfirmDeleteId(null)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
             <p className="text-white font-bold mb-4">
               {t.admin.confirmDeleteClue}
             </p>
@@ -599,8 +600,9 @@ export default function AdminPage() {
 
       {/* Confirm delete user modal */}
       {confirmDeleteUserId && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700/30 rounded-lg p-6 max-w-sm mx-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setConfirmDeleteUserId(null)}>
+          <div className="bg-gray-800 border border-gray-700/30 rounded-lg p-6 max-w-sm mx-4 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setConfirmDeleteUserId(null)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
             <p className="text-white font-bold mb-4">
               {t.admin.confirmDeleteUser.replace('{name}', users.find((u) => u.id === confirmDeleteUserId)?.displayName || confirmDeleteUserId)}
             </p>
@@ -633,8 +635,9 @@ export default function AdminPage() {
 
       {/* Confirm delete result modal */}
       {confirmDeleteResult && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700/30 rounded-lg p-6 max-w-sm mx-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setConfirmDeleteResult(null)}>
+          <div className="bg-gray-800 border border-gray-700/30 rounded-lg p-6 max-w-sm mx-4 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setConfirmDeleteResult(null)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
             <p className="text-white font-bold mb-4">
               {t.admin.confirmDeleteResult}
             </p>

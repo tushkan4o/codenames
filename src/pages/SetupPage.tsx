@@ -285,7 +285,8 @@ export default function SetupPage() {
 
         {continueGameId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setContinueGameId(null)}>
-            <div className="bg-gray-800 rounded-xl p-6 max-w-xs text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-gray-800 rounded-xl p-6 max-w-xs text-center relative" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setContinueGameId(null)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
               <p className="text-white mb-4">{t.setup.unfinishedGame}</p>
               <div className="flex justify-center gap-3">
                 <button

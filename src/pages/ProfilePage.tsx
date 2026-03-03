@@ -438,7 +438,8 @@ export default function ProfilePage() {
 
       {confirmTryClueId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setConfirmTryClueId(null)}>
-          <div className="bg-gray-800 rounded-xl p-6 max-w-xs text-center" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-xs text-center relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setConfirmTryClueId(null)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
             <p className="text-white mb-4">{t.profile.tryIt}?</p>
             <div className="flex justify-center gap-3">
               <button onClick={() => { navigate(`/guess/${confirmTryClueId}`); setConfirmTryClueId(null); }} className="px-4 py-2 text-sm font-bold text-white bg-board-blue hover:bg-blue-600 rounded-lg transition-colors">✓</button>

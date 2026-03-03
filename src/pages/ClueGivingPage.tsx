@@ -283,7 +283,8 @@ export default function ClueGivingPage() {
 
       {showHomeConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowHomeConfirm(false)}>
-          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowHomeConfirm(false)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
             <p className="text-white text-sm mb-4">{t.game.confirmHomeClueGiving}</p>
             <div className="flex justify-center gap-3">
               <button
@@ -305,7 +306,8 @@ export default function ClueGivingPage() {
 
       {showReshuffleConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowReshuffleConfirm(false)}>
-          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowReshuffleConfirm(false)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
             <p className="text-white text-sm mb-4">{t.game.reshuffleWarning}, продолжить?</p>
             <div className="flex justify-center gap-3">
               <button
