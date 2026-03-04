@@ -338,7 +338,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       <div className="flex flex-col flex-1 min-h-0">
         {/* Header: nickname left, stats right */}
         <div className="flex items-start justify-between mb-3">
-          <h1 className="text-xl font-extrabold text-white truncate">{user?.displayName || profileId}</h1>
+          <h1 className="text-xl font-extrabold text-white truncate">{stats?.displayName || profileId}</h1>
           {stats && (
             <div className="text-right shrink-0 ml-4">
               <div className="text-xs font-semibold text-gray-500 uppercase mb-1">{t.profile.statsTitle}</div>

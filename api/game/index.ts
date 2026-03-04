@@ -369,6 +369,9 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
   const { userId } = req.query;
   if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
 
+  const userRows = await sql`SELECT display_name FROM users WHERE id = ${userId}`;
+  const displayName = userRows.length > 0 ? (userRows[0].display_name as string) : userId;
+
   const clues = await sql`SELECT id, number FROM clues WHERE user_id = ${userId}`;
   const cluesGiven = clues.length;
   const avgWordsPerClue = cluesGiven > 0
@@ -391,7 +394,7 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
     ? myResults.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / cluesSolved : 0;
 
   res.json({
-    cluesGiven, avgWordsPerClue: Math.round(avgWordsPerClue * 10) / 10,
+    displayName, cluesGiven, avgWordsPerClue: Math.round(avgWordsPerClue * 10) / 10,
     avgScoreOnClues: Math.round(avgScoreOnClues * 10) / 10, cluesSolved,
     avgWordsPicked: Math.round(avgWordsPicked * 10) / 10, avgScore: Math.round(avgScore * 10) / 10,
   });

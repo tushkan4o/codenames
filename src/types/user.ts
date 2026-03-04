@@ -33,6 +33,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
 };
 
 export interface UserStats {
+  displayName: string;
   cluesGiven: number;
   avgWordsPerClue: number;
   avgScoreOnClues: number;
