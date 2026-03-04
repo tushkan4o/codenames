@@ -17,6 +17,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sql = neon(process.env.DATABASE_URL!);
   const { action, adminId } = req.query;
 
+  // Init must run before admin check (it creates the is_admin column)
+  if (req.method === 'GET' && action === 'init') {
+    return handleInit(req, res);
+  }
+
   if (!adminId || typeof adminId !== 'string') {
     return res.status(400).json({ error: 'adminId required' });
   }
@@ -24,10 +29,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const isAdmin = await checkAdmin(sql, adminId);
   if (!isAdmin) {
     return res.status(403).json({ error: 'Not authorized' });
-  }
-
-  if (req.method === 'GET' && action === 'init') {
-    return handleInit(req, res);
   }
 
   if (req.method === 'GET') {
