@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { neon } from '@neondatabase/serverless';
-import { WORD_LIST_RU } from '../src/data/words-ru';
+import { WORD_LIST_RU } from '../data/words-ru';
 
 // --- Server-side board generation (mirrors src/lib/boardGenerator.ts) ---
 
