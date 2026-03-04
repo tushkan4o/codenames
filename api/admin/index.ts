@@ -18,8 +18,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { action, adminId } = req.query;
 
   // Init must run before admin check (it creates the is_admin column)
-  if (req.method === 'GET' && action === 'init') {
+  if (action === 'init') {
     return handleInit(req, res);
+  }
+
+  // Debug endpoint
+  if (action === 'debug') {
+    return res.json({ action, adminId, method: req.method, query: req.query, url: req.url });
   }
 
   if (!adminId || typeof adminId !== 'string') {
