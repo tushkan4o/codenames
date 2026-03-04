@@ -1,9 +1,11 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import type { User } from '../types/user';
 import { DEFAULT_PREFERENCES } from '../types/user';
 
 const CURRENT_USER_KEY = 'codenames_current_user';
 const CACHED_USER_KEY = 'codenames_cached_user';
+const SESSION_CHANNEL = 'codenames_session';
+const TAB_SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
 interface AuthContextValue {
   user: User | null;
@@ -31,6 +33,8 @@ function dbUserToLocal(dbUser: Record<string, unknown>): User {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const channelRef = useRef<BroadcastChannel | null>(null);
+
   const [user, setUser] = useState<User | null>(() => {
     const userId = localStorage.getItem(CURRENT_USER_KEY);
     if (!userId) return null;
@@ -65,6 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CURRENT_USER_KEY, localUser.id);
     localStorage.setItem(CACHED_USER_KEY, JSON.stringify(localUser));
     setUser(localUser);
+    // Notify other tabs in same browser to log out
+    channelRef.current?.postMessage({ type: 'NEW_SESSION', tabId: TAB_SESSION_ID });
     return localUser;
   }
 
@@ -73,6 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CURRENT_USER_KEY, localUser.id);
     localStorage.setItem(CACHED_USER_KEY, JSON.stringify(localUser));
     setUser(localUser);
+    // Notify other tabs in same browser to log out
+    channelRef.current?.postMessage({ type: 'NEW_SESSION', tabId: TAB_SESSION_ID });
     return localUser;
   }
 
@@ -119,6 +127,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(merged);
     } catch { /* ignore refresh failures */ }
   }
+
+  // BroadcastChannel: instant same-browser tab eviction
+  useEffect(() => {
+    const channel = new BroadcastChannel(SESSION_CHANNEL);
+    channelRef.current = channel;
+    channel.onmessage = (e) => {
+      if (e.data?.type === 'NEW_SESSION' && e.data.tabId !== TAB_SESSION_ID) {
+        // Another tab in this browser just logged in or opened — evict this tab
+        logout();
+        localStorage.setItem('codenames_session_expired', 'true');
+      }
+    };
+    // When this tab mounts with a cached user, claim the session
+    // (evicts any other already-open tabs in this browser)
+    if (user) {
+      channel.postMessage({ type: 'NEW_SESSION', tabId: TAB_SESSION_ID });
+    }
+    return () => {
+      channel.close();
+      channelRef.current = null;
+    };
+  }, []);
 
   // Check session validity on tab/window focus + periodic polling
   const checkSession = useCallback(async () => {
