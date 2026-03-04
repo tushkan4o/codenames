@@ -515,9 +515,14 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
 async function handleSessionCheck(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
   const { userId } = req.query;
   if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
-  const rows = await sql`SELECT session_version FROM users WHERE id = ${userId}`;
-  if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
-  res.json({ sessionVersion: Number(rows[0].session_version) || 0 });
+  try {
+    const rows = await sql`SELECT session_version FROM users WHERE id = ${userId}`;
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ sessionVersion: Number(rows[0].session_version) || 0 });
+  } catch {
+    // column may not exist yet
+    res.json({ sessionVersion: 0 });
+  }
 }
 
 // ==================== DB INIT ====================

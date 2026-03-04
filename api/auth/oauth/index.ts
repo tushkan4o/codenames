@@ -217,7 +217,7 @@ async function handleResolve(req: VercelRequest, res: VercelResponse) {
   const payload = verifyToken(token);
   if (!payload || payload.type !== 'success') return res.status(401).json({ error: 'Invalid or expired token' });
   const sql = neon(process.env.DATABASE_URL!);
-  await sql`UPDATE users SET session_version = COALESCE(session_version, 0) + 1 WHERE id = ${payload.userId as string}`;
+  try { await sql`UPDATE users SET session_version = COALESCE(session_version, 0) + 1 WHERE id = ${payload.userId as string}`; } catch { /* column may not exist yet */ }
   const rows = await sql`SELECT * FROM users WHERE id = ${payload.userId as string}`;
   if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
   const enriched = await enrichUser(sql, { ...rows[0], is_admin: rows[0].is_admin || false });
@@ -320,7 +320,7 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
       await sql`UPDATE users SET preferences = ${JSON.stringify(preferences)} WHERE id = ${id}`;
     }
     if (!preferencesOnly) {
-      await sql`UPDATE users SET session_version = COALESCE(session_version, 0) + 1 WHERE id = ${id}`;
+      try { await sql`UPDATE users SET session_version = COALESCE(session_version, 0) + 1 WHERE id = ${id}`; } catch { /* column may not exist yet */ }
       const refreshed = (await sql`SELECT * FROM users WHERE id = ${id}`)[0];
       const enriched = await enrichUser(sql, { ...refreshed, is_admin: refreshed.is_admin || false });
       return res.json(enriched);
