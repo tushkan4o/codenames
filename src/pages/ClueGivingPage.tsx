@@ -201,7 +201,7 @@ export default function ClueGivingPage() {
       }
     }
     const clue = {
-      id: `${currentSeed}-${Date.now()}`,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
       word,
       number: isClueZero ? 0 : number,
       boardSeed: currentSeed,
