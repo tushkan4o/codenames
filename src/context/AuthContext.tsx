@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const dbUser = await res.json();
       const fresh = dbUserToLocal(dbUser);
       // Check session_version mismatch — another device logged in
-      if (user.sessionVersion > 0 && fresh.sessionVersion > user.sessionVersion) {
+      if (fresh.sessionVersion > (user.sessionVersion || 0)) {
         logout();
         localStorage.setItem('codenames_session_expired', 'true');
         return;
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await fetch(`/api/game?route=session&userId=${encodeURIComponent(user.id)}`);
       if (!res.ok) return;
       const data = await res.json();
-      if (user.sessionVersion > 0 && data.sessionVersion > user.sessionVersion) {
+      if (data.sessionVersion > (user.sessionVersion || 0)) {
         logout();
         localStorage.setItem('codenames_session_expired', 'true');
       }
