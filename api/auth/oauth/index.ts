@@ -166,11 +166,16 @@ async function handleCallback(req: VercelRequest, res: VercelResponse) {
   const sql = neon(process.env.DATABASE_URL!);
 
   if (mode === 'link' && linkUserId) {
-    const existing = await sql`SELECT user_id FROM oauth_accounts WHERE provider = ${provider} AND provider_id = ${providerUser.id}`;
-    if (existing.length > 0) return res.redirect(`${base}/profile?oauth=already_linked`);
-    await sql`INSERT INTO oauth_accounts (provider, provider_id, user_id, email, provider_name, linked_at)
-      VALUES (${provider}, ${providerUser.id}, ${linkUserId}, ${providerUser.email}, ${providerUser.name}, ${Date.now()})`;
-    return res.redirect(`${base}/profile?oauth=linked`);
+    try {
+      const existing = await sql`SELECT user_id FROM oauth_accounts WHERE provider = ${provider} AND provider_id = ${providerUser.id}`;
+      if (existing.length > 0) return res.redirect(`${base}/profile?oauth=already_linked`);
+      await sql`INSERT INTO oauth_accounts (provider, provider_id, user_id, email, provider_name, linked_at)
+        VALUES (${provider}, ${providerUser.id}, ${linkUserId}, ${providerUser.email}, ${providerUser.name}, ${Date.now()})`;
+      return res.redirect(`${base}/profile?oauth=linked`);
+    } catch (err) {
+      console.error('OAuth link error:', err);
+      return res.redirect(`${base}/profile?oauth=error`);
+    }
   }
 
   const linked = await sql`SELECT user_id FROM oauth_accounts WHERE provider = ${provider} AND provider_id = ${providerUser.id}`;
@@ -214,10 +219,17 @@ async function handleComplete(req: VercelRequest, res: VercelResponse) {
   const sql = neon(process.env.DATABASE_URL!);
   const existing = await sql`SELECT id FROM users WHERE id = ${id}`;
   if (existing.length > 0) return res.status(409).json({ error: 'name_taken' });
-  await sql`INSERT INTO users (id, display_name, created_at, preferences) VALUES (${id}, ${trimmed}, ${now}, ${JSON.stringify({})})`;
-  await sql`INSERT INTO oauth_accounts (provider, provider_id, user_id, email, provider_name, linked_at)
-    VALUES (${payload.provider as string}, ${payload.providerId as string}, ${id}, ${payload.email as string | null}, ${payload.providerName as string}, ${now})`;
-  res.json({ id, display_name: trimmed, created_at: now, preferences: {}, is_admin: false });
+  try {
+    await sql`INSERT INTO users (id, display_name, created_at, preferences) VALUES (${id}, ${trimmed}, ${now}, ${JSON.stringify({})})`;
+    await sql`INSERT INTO oauth_accounts (provider, provider_id, user_id, email, provider_name, linked_at)
+      VALUES (${payload.provider as string}, ${payload.providerId as string}, ${id}, ${payload.email as string | null}, ${payload.providerName as string}, ${now})`;
+    res.json({ id, display_name: trimmed, created_at: now, preferences: {}, is_admin: false });
+  } catch (err) {
+    console.error('OAuth complete error:', err);
+    // Clean up user if oauth insert failed
+    await sql`DELETE FROM users WHERE id = ${id}`.catch(() => {});
+    res.status(500).json({ error: 'Registration failed' });
+  }
 }
 
 // --- GET ?action=accounts ---

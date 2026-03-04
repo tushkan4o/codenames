@@ -47,12 +47,16 @@ function OAuthHandler() {
       const name = searchParams.get('name') || '';
       setSearchParams({}, { replace: true });
       navigate(`/oauth/register?token=${encodeURIComponent(token)}&name=${encodeURIComponent(name)}`, { replace: true });
-    } else if (oauthType === 'linked') {
+    } else if (oauthType === 'linked' || oauthType === 'already_linked') {
       // Profile link success
       setSearchParams({}, { replace: true });
       navigate('/profile', { replace: true });
+    } else if (oauthType === 'error') {
+      console.error('OAuth error');
+      setSearchParams({}, { replace: true });
+      navigate('/login', { replace: true });
     } else {
-      // Error or unknown
+      // Unknown
       setSearchParams({}, { replace: true });
     }
   }, []);
