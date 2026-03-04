@@ -118,7 +118,7 @@ export const api = {
     if (wordPack) params.set('wordPack', wordPack);
     if (boardSize) params.set('boardSize', boardSize);
     if (ranked !== undefined) params.set('ranked', String(ranked));
-    return get(`/api/clues/random?${params}`);
+    return get(`/api/clues?action=random&${params}`);
   },
 
   async getClueById(id: string, reveal = false): Promise<Clue | null> {
@@ -168,7 +168,7 @@ export const api = {
     if (wordPack) params.set('wordPack', wordPack);
     if (boardSize) params.set('boardSize', boardSize);
     if (ranked !== undefined) params.set('ranked', String(ranked));
-    return get(`/api/clues/random?${params}`);
+    return get(`/api/clues?action=random&${params}`);
   },
 
   async getLeaderboard(boardSize?: BoardSize): Promise<{
