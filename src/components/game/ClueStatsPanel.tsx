@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { useTranslation } from '../../i18n/useTranslation';
-import { useProfileModal } from '../../context/ProfileModalContext';
 
 export interface AttemptDetail {
   userId: string;
@@ -38,7 +37,6 @@ type AttemptSortDir = 'asc' | 'desc';
 
 export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptPicks, onDeleteAttempt, onOpenAttempts }: ClueStatsPanelProps) {
   const { t } = useTranslation();
-  const { openProfile } = useProfileModal();
   const [stats, setStats] = useState<{
     attempts: number;
     avgScore: number;
@@ -84,12 +82,7 @@ export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptP
       {/* Spymaster */}
       <div className="mb-2">
         <span className="text-gray-400">{t.results.clueBy} </span>
-        <button
-          onClick={() => openProfile(spymasterUserId)}
-          className="text-blue-400 font-semibold hover:text-blue-300 transition-colors"
-        >
-          {spymasterUserId}
-        </button>
+        <span className="text-white font-semibold">{spymasterUserId}</span>
       </div>
 
       {/* Creation date */}

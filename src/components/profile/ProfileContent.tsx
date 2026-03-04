@@ -106,6 +106,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [nameError, setNameError] = useState('');
   const [nameSaving, setNameSaving] = useState(false);
 
+  // Load profile data only when profileId changes (not on user/settings updates)
   useEffect(() => {
     if (!profileId) return;
     setStats(null);
@@ -144,17 +145,21 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
         }
       });
     });
+    if (profileId === user?.id) {
+      api.getOAuthAccounts(profileId).then(setLinkedAccounts).catch((err) => {
+        console.error('Failed to fetch OAuth accounts:', err);
+      });
+    }
+  }, [profileId]);
+
+  // Load current user's solved clue IDs separately (for "solve" button state on other profiles)
+  useEffect(() => {
     if (user) {
       api.getResultsByUser(user.id).then((results) => {
         setMySolvedClueIds(new Set(results.map((r) => r.clueId)));
       });
     }
-    if (isOwnProfile) {
-      api.getOAuthAccounts(profileId).then(setLinkedAccounts).catch((err) => {
-        console.error('Failed to fetch OAuth accounts:', err);
-      });
-    }
-  }, [profileId, user]);
+  }, [user?.id]);
 
   const sortedGiven = useMemo(() => {
     let filtered = cluesGiven;
