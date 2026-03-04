@@ -77,6 +77,11 @@ export interface AdminUser {
   cluesSolved: number;
   avgScore: number;
   lastActivity: number;
+  oauthProviders: string[];
+  rankedCluesGiven: number;
+  casualCluesGiven: number;
+  rankedCluesSolved: number;
+  casualCluesSolved: number;
 }
 
 export interface Report {

@@ -581,7 +581,7 @@ export default function AdminPage() {
                     </div>
                   </div>
                   {isExpanded && (
-                    <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
+                    <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3 space-y-3">
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
                         <span><span className="text-gray-400">{t.admin.registered}:</span> <span className="text-white">{formatDateTime(u.createdAt)}</span></span>
                         <span><span className="text-gray-400">{t.admin.lastActive}:</span> <span className="text-white">{formatDateTime(u.lastActivity)}</span></span>
@@ -592,8 +592,41 @@ export default function AdminPage() {
                           {t.admin.viewProfile}
                         </button>
                       </div>
+
+                      {/* OAuth providers */}
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-gray-400">OAuth:</span>
+                        {u.oauthProviders.length > 0 ? (
+                          u.oauthProviders.map((p) => (
+                            <span key={p} className="px-2 py-0.5 rounded bg-gray-700 text-white text-xs font-semibold">
+                              {p === 'google' ? 'Google' : p === 'discord' ? 'Discord' : p}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-600">—</span>
+                        )}
+                      </div>
+
+                      {/* Ranked/casual stats */}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="bg-gray-900/50 rounded-lg p-2.5">
+                          <p className="text-gray-400 text-xs font-semibold mb-1.5">Обычные</p>
+                          <div className="flex gap-4">
+                            <span><span className="text-gray-500">{t.admin.given}:</span> <span className="text-white font-semibold">{u.casualCluesGiven}</span></span>
+                            <span><span className="text-gray-500">{t.admin.solved}:</span> <span className="text-white font-semibold">{u.casualCluesSolved}</span></span>
+                          </div>
+                        </div>
+                        <div className="bg-gray-900/50 rounded-lg p-2.5">
+                          <p className="text-amber-500/70 text-xs font-semibold mb-1.5">★ Рейтинговые</p>
+                          <div className="flex gap-4">
+                            <span><span className="text-gray-500">{t.admin.given}:</span> <span className="text-white font-semibold">{u.rankedCluesGiven}</span></span>
+                            <span><span className="text-gray-500">{t.admin.solved}:</span> <span className="text-white font-semibold">{u.rankedCluesSolved}</span></span>
+                          </div>
+                        </div>
+                      </div>
+
                       {confirmDeleteUserId === u.id && (
-                        <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-700/30">
+                        <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-700/30">
                           <span className="text-sm text-board-red">{t.admin.confirmDeleteUser.replace('{name}', u.displayName)}</span>
                           <button onClick={() => handleDeleteUser(u.id)} className="px-2 py-1 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
                           <button onClick={() => setConfirmDeleteUserId(null)} className="px-2 py-1 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>

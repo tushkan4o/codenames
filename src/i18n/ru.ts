@@ -14,7 +14,7 @@ export const ru = {
     errorLong: 'Имя должно быть не более 20 символов',
     errorPassword: 'Неверный пароль',
     errorChars: 'Допустимы буквы, цифры, пробелы, дефисы и скобки',
-    oauthRequired: 'Этот аккаунт привязан к Google/Discord. Войдите через соц. сеть.',
+    oauthRequired: 'Этот аккаунт привязан к Google/Discord. Войдите через авторизацию ниже.',
   },
   nav: {
     home: 'Главная',

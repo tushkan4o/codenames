@@ -33,6 +33,9 @@ export function pluralAttempts(n: number): string {
   return 'попыток';
 }
 
+type AttemptSort = 'timestamp' | 'score';
+type AttemptSortDir = 'asc' | 'desc';
+
 export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptPicks, onDeleteAttempt, onOpenAttempts }: ClueStatsPanelProps) {
   const { t } = useTranslation();
   const { openProfile } = useProfileModal();
@@ -44,6 +47,8 @@ export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptP
   } | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [selectedAttemptIdx, setSelectedAttemptIdx] = useState<number | null>(null);
+  const [attemptSort, setAttemptSort] = useState<AttemptSort>('timestamp');
+  const [attemptSortDir, setAttemptSortDir] = useState<AttemptSortDir>('asc');
 
   useEffect(() => {
     api.getClueStats(clueId).then(setStats);
@@ -51,14 +56,26 @@ export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptP
 
   if (!stats) return null;
 
-  function handleAttemptClick(idx: number) {
-    if (selectedAttemptIdx === idx) {
+  function toggleAttemptSort(field: AttemptSort) {
+    if (attemptSort === field) setAttemptSortDir((d) => d === 'desc' ? 'asc' : 'desc');
+    else { setAttemptSort(field); setAttemptSortDir('desc'); }
+  }
+
+  const sortedDetails = stats?.details ? [...stats.details].sort((a, b) => {
+    const diff = attemptSort === 'score' ? b.score - a.score : a.timestamp - b.timestamp;
+    return attemptSortDir === 'desc' ? -diff : diff;
+  }) : [];
+
+  function handleAttemptClick(detail: AttemptDetail) {
+    const key = `${detail.userId}-${detail.timestamp}`;
+    if (selectedAttemptIdx !== null && sortedDetails[selectedAttemptIdx] &&
+        `${sortedDetails[selectedAttemptIdx].userId}-${sortedDetails[selectedAttemptIdx].timestamp}` === key) {
       setSelectedAttemptIdx(null);
-      onShowAttemptPicks?.([]); // clear
+      onShowAttemptPicks?.([]);
     } else {
+      const idx = sortedDetails.findIndex((d) => `${d.userId}-${d.timestamp}` === key);
       setSelectedAttemptIdx(idx);
-      const detail = stats!.details?.[idx];
-      if (detail) onShowAttemptPicks?.(detail.guessedIndices);
+      onShowAttemptPicks?.(detail.guessedIndices);
     }
   }
 
@@ -109,36 +126,43 @@ export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptP
           </div>
 
           {/* Expanded per-attempt details */}
-          {expanded && stats.details && stats.details.length > 0 && (
+          {expanded && sortedDetails.length > 0 && (
             <div className="mt-3 border-t border-gray-700/50 pt-3">
               <div className="max-h-[200px] overflow-y-auto">
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-gray-800">
                     <tr className="text-gray-500 border-b border-gray-700/50">
                       <th className="text-left py-1 pr-2 font-medium">{t.admin.player}</th>
-                      <th className="text-center py-1 px-2 font-medium">{t.results.score}</th>
-                      <th className="text-center py-1 pl-2 font-medium">{t.admin.clueDate}</th>
+                      <th
+                        className="text-center py-1 px-2 font-medium cursor-pointer hover:text-white transition-colors select-none"
+                        onClick={() => toggleAttemptSort('score')}
+                      >
+                        {t.results.score}
+                        <span className="ml-0.5 text-[0.5em]">{attemptSort === 'score' ? (attemptSortDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
+                      </th>
+                      <th
+                        className="text-center py-1 pl-2 font-medium cursor-pointer hover:text-white transition-colors select-none"
+                        onClick={() => toggleAttemptSort('timestamp')}
+                      >
+                        {t.admin.clueDate}
+                        <span className="ml-0.5 text-[0.5em]">{attemptSort === 'timestamp' ? (attemptSortDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
+                      </th>
                       {onDeleteAttempt && <th className="w-5"></th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.details.map((detail, idx) => (
+                    {sortedDetails.map((detail, idx) => (
                       <tr
-                        key={idx}
-                        onClick={() => handleAttemptClick(idx)}
+                        key={`${detail.userId}-${detail.timestamp}`}
+                        onClick={() => handleAttemptClick(detail)}
                         className={`cursor-pointer transition-colors ${
                           selectedAttemptIdx === idx
                             ? 'bg-board-blue/20'
                             : 'hover:bg-gray-700/50'
                         }`}
                       >
-                        <td className="py-1.5 pr-2 text-left">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); openProfile(detail.userId); }}
-                            className="text-blue-400 hover:text-blue-300 transition-colors truncate max-w-[10rem] block text-left"
-                          >
-                            {detail.userId}
-                          </button>
+                        <td className="py-1.5 pr-2 text-left text-gray-300 truncate max-w-[10rem]">
+                          {detail.userId}
                         </td>
                         <td className="py-1.5 px-2 text-center text-white font-semibold">{detail.score}</td>
                         <td className="py-1.5 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>

@@ -101,6 +101,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const lastSolveRows = await sql`SELECT user_id, MAX(timestamp) as last_at FROM results GROUP BY user_id`;
       const avgScoreRows = await sql`SELECT user_id, ROUND(AVG(score)::numeric, 1) as avg FROM results GROUP BY user_id`;
 
+      // Linked OAuth accounts per user
+      const oauthRows = await sql`SELECT user_id, provider FROM oauth_accounts`;
+      const oauthMap: Record<string, string[]> = {};
+      for (const r of oauthRows) {
+        const uid = r.user_id as string;
+        if (!oauthMap[uid]) oauthMap[uid] = [];
+        oauthMap[uid].push(r.provider as string);
+      }
+
+      // Ranked/casual split stats
+      const rankedClueRows = await sql`SELECT user_id, COUNT(*)::int as cnt FROM clues WHERE ranked = true GROUP BY user_id`;
+      const casualClueRows = await sql`SELECT user_id, COUNT(*)::int as cnt FROM clues WHERE ranked = false GROUP BY user_id`;
+      const rankedSolveRows = await sql`SELECT r.user_id, COUNT(*)::int as cnt FROM results r JOIN clues c ON r.clue_id = c.id WHERE c.ranked = true GROUP BY r.user_id`;
+      const casualSolveRows = await sql`SELECT r.user_id, COUNT(*)::int as cnt FROM results r JOIN clues c ON r.clue_id = c.id WHERE c.ranked = false GROUP BY r.user_id`;
+
+      const rankedClueMap = Object.fromEntries(rankedClueRows.map((r: Record<string, unknown>) => [r.user_id, Number(r.cnt)]));
+      const casualClueMap = Object.fromEntries(casualClueRows.map((r: Record<string, unknown>) => [r.user_id, Number(r.cnt)]));
+      const rankedSolveMap = Object.fromEntries(rankedSolveRows.map((r: Record<string, unknown>) => [r.user_id, Number(r.cnt)]));
+      const casualSolveMap = Object.fromEntries(casualSolveRows.map((r: Record<string, unknown>) => [r.user_id, Number(r.cnt)]));
+
       const clueCountMap = Object.fromEntries(clueCountRows.map((r: Record<string, unknown>) => [r.user_id, Number(r.cnt)]));
       const solveCountMap = Object.fromEntries(solveCountRows.map((r: Record<string, unknown>) => [r.user_id, Number(r.cnt)]));
       const lastClueMap = Object.fromEntries(lastClueRows.map((r: Record<string, unknown>) => [r.user_id, Number(r.last_at)]));
@@ -120,6 +140,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           cluesSolved: solveCountMap[id] || 0,
           avgScore: avgScoreMap[id] || 0,
           lastActivity: Math.max(lastClue, lastSolve, Number(u.created_at)),
+          oauthProviders: oauthMap[id] || [],
+          rankedCluesGiven: rankedClueMap[id] || 0,
+          casualCluesGiven: casualClueMap[id] || 0,
+          rankedCluesSolved: rankedSolveMap[id] || 0,
+          casualCluesSolved: casualSolveMap[id] || 0,
         };
       }));
     }

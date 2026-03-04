@@ -55,6 +55,7 @@ export default function SetupPage() {
   // Force casual if user can't play ranked
   const canRanked = !!user?.hasOAuth && (user.casualCluesSolved >= 5) && (user.casualCluesGiven >= 1);
   const [rankedLockMsg, setRankedLockMsg] = useState('');
+  const [rankedBounce, setRankedBounce] = useState(false);
   useEffect(() => {
     if (ranked && !canRanked) setRanked(false);
   }, [canRanked]);
@@ -187,16 +188,18 @@ export default function SetupPage() {
         {/* Mode toggle */}
         <div className="flex gap-3 sm:gap-4 mb-6 mx-auto flex-col" style={{ maxWidth: '400px' }}>
           <p className="text-xs font-semibold text-gray-500 uppercase text-center">{t.setup.mode}</p>
-          <div className="relative flex bg-gray-800/80 rounded-xl p-1 border border-gray-700/30">
+          <button
+            onClick={() => setMode(mode === 'clue-giving' ? 'guessing' : 'clue-giving')}
+            className="relative flex bg-gray-800/80 rounded-xl p-1 border border-gray-700/30 w-full cursor-pointer"
+          >
             <div
               className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-lg transition-all duration-300 ease-out ${
                 mode === 'clue-giving' ? 'left-1 bg-board-red' : 'left-[calc(50%+0.25rem)] bg-board-blue'
               }`}
             />
             {MODE_OPTIONS.map((opt) => (
-              <button
+              <div
                 key={opt.value}
-                onClick={() => setMode(opt.value)}
                 className="relative z-10 flex-1 py-2.5 px-3 text-center rounded-lg transition-colors duration-300"
               >
                 <span className={`text-sm font-bold block ${mode === opt.value ? 'text-white' : 'text-gray-500'}`}>
@@ -205,43 +208,50 @@ export default function SetupPage() {
                 <span className={`text-[0.6rem] sm:text-xs block mt-0.5 transition-colors duration-300 ${mode === opt.value ? 'text-white/70' : 'text-gray-600'}`}>
                   {t.setup[opt.descKey]}
                 </span>
-              </button>
+              </div>
             ))}
-          </div>
+          </button>
 
           {/* Ranked toggle — casual left, ranked right */}
-          <div className="relative flex bg-gray-800/80 rounded-xl p-1 border border-gray-700/30">
+          <button
+            onClick={() => {
+              if (ranked) {
+                setRanked(false);
+                setRankedLockMsg('');
+              } else if (canRanked) {
+                setRanked(true);
+                setRankedLockMsg('');
+              } else {
+                setRankedBounce(true);
+                setRankedLockMsg(t.setup.rankedLocked);
+                setTimeout(() => setRankedBounce(false), 400);
+              }
+            }}
+            className="relative flex bg-gray-800/80 rounded-xl p-1 border border-gray-700/30 w-full cursor-pointer"
+          >
             <div
-              className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-lg transition-all duration-300 ease-out ${
-                ranked && canRanked ? 'left-[calc(50%+0.25rem)] bg-amber-600' : 'left-1 bg-gray-600'
+              className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] rounded-lg transition-all ease-out ${
+                rankedBounce ? 'left-[calc(25%+0.125rem)] bg-amber-600 duration-200' :
+                ranked && canRanked ? 'left-[calc(50%+0.25rem)] bg-amber-600 duration-300' : 'left-1 bg-gray-600 duration-300'
               }`}
             />
-            <button
-              onClick={() => { setRanked(false); setRankedLockMsg(''); }}
-              className="relative z-10 flex-1 py-2.5 px-3 text-center rounded-lg transition-colors duration-300"
-            >
+            <div className="relative z-10 flex-1 py-2.5 px-3 text-center rounded-lg transition-colors duration-300">
               <span className={`text-sm font-bold block ${!ranked || !canRanked ? 'text-white' : 'text-gray-500'}`}>
                 {t.setup.casual}
               </span>
               <span className={`text-[0.6rem] sm:text-xs block mt-0.5 transition-colors duration-300 ${!ranked || !canRanked ? 'text-white/70' : 'text-gray-600'}`}>
                 {t.setup.casualDesc}
               </span>
-            </button>
-            <button
-              onClick={() => {
-                if (canRanked) { setRanked(true); setRankedLockMsg(''); }
-                else setRankedLockMsg(t.setup.rankedLocked);
-              }}
-              className={`relative z-10 flex-1 py-2.5 px-3 text-center rounded-lg transition-colors duration-300 ${!canRanked ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
+            </div>
+            <div className={`relative z-10 flex-1 py-2.5 px-3 text-center rounded-lg transition-colors duration-300 ${!canRanked ? 'opacity-50' : ''}`}>
               <span className={`text-sm font-bold block ${ranked && canRanked ? 'text-white' : 'text-gray-500'}`}>
                 ★ {t.setup.ranked} ★
               </span>
               <span className={`text-[0.6rem] sm:text-xs block mt-0.5 transition-colors duration-300 ${ranked && canRanked ? 'text-white/70' : 'text-gray-600'}`}>
                 {t.setup.rankedDesc}
               </span>
-            </button>
-          </div>
+            </div>
+          </button>
           {rankedLockMsg && (
             <p className="text-xs text-amber-500/70 text-center mt-1">{rankedLockMsg}</p>
           )}
