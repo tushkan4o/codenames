@@ -91,6 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'stats': return handleUserStats(req, res, sql);
     case 'session': return handleSessionCheck(req, res, sql);
     case 'init': return handleInit(res, sql);
+    case 'migrate-ids': return handleMigrateIds(res, sql);
     case 'debug': return res.json({ route, method: req.method, query: req.query, url: req.url });
     default: return res.status(400).json({ error: 'Unknown route' });
   }
@@ -522,6 +523,45 @@ async function handleSessionCheck(req: VercelRequest, res: VercelResponse, sql: 
   } catch {
     // column may not exist yet
     res.json({ sessionVersion: 0 });
+  }
+}
+
+// ==================== MIGRATE CLUE IDS ====================
+
+async function handleMigrateIds(res: VercelResponse, sql: ReturnType<typeof neon>) {
+  try {
+    // Drop FK constraints so we can update clue IDs
+    await sql`ALTER TABLE results DROP CONSTRAINT IF EXISTS results_clue_id_fkey`;
+    await sql`ALTER TABLE ratings DROP CONSTRAINT IF EXISTS ratings_clue_id_fkey`;
+    await sql`ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_clue_id_fkey`;
+
+    // Get all clues
+    const clues = await sql`SELECT id, created_at FROM clues`;
+    let updated = 0;
+
+    for (const clue of clues) {
+      const oldId = clue.id as string;
+      // Generate new ID: {timestamp}-{random8}
+      const rand = Math.random().toString(36).slice(2, 10);
+      const newId = `${clue.created_at}-${rand}`;
+
+      // Update child tables first, then parent
+      await sql`UPDATE results SET clue_id = ${newId} WHERE clue_id = ${oldId}`;
+      await sql`UPDATE ratings SET clue_id = ${newId} WHERE clue_id = ${oldId}`;
+      await sql`UPDATE reports SET clue_id = ${newId} WHERE clue_id = ${oldId}`;
+      await sql`UPDATE clues SET id = ${newId} WHERE id = ${oldId}`;
+      updated++;
+    }
+
+    // Re-add FK constraints
+    await sql`ALTER TABLE results ADD CONSTRAINT results_clue_id_fkey FOREIGN KEY (clue_id) REFERENCES clues(id)`;
+    await sql`ALTER TABLE ratings ADD CONSTRAINT ratings_clue_id_fkey FOREIGN KEY (clue_id) REFERENCES clues(id)`;
+    await sql`ALTER TABLE reports ADD CONSTRAINT reports_clue_id_fkey FOREIGN KEY (clue_id) REFERENCES clues(id)`;
+
+    res.json({ ok: true, updated });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
   }
 }
 
