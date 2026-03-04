@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import type { User } from '../types/user';
 import { DEFAULT_PREFERENCES } from '../types/user';
 
@@ -9,6 +9,7 @@ const TAB_SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}
 
 interface AuthContextValue {
   user: User | null;
+  evicted: boolean;
   login: (displayName: string, password?: string) => Promise<User>;
   loginWithOAuth: (dbUser: Record<string, unknown>) => User;
   logout: () => void;
@@ -32,8 +33,32 @@ function dbUserToLocal(dbUser: Record<string, unknown>): User {
   };
 }
 
+/** Claim the active session on the server */
+async function claimOnServer(userId: string) {
+  try {
+    await fetch('/api/game?route=claim-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, sessionId: TAB_SESSION_ID }),
+    });
+  } catch { /* ignore */ }
+}
+
+/** Check if our session is still active on the server */
+async function checkOnServer(userId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/game?route=check-session&userId=${encodeURIComponent(userId)}&sessionId=${encodeURIComponent(TAB_SESSION_ID)}`);
+    if (!res.ok) return true;
+    const data = await res.json();
+    return data.active !== false;
+  } catch {
+    return true; // assume active on network error
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const channelRef = useRef<BroadcastChannel | null>(null);
+  const [evicted, setEvicted] = useState(false);
 
   const [user, setUser] = useState<User | null>(() => {
     const userId = localStorage.getItem(CURRENT_USER_KEY);
@@ -48,6 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return null;
   });
+
+  /** Claim session: broadcast to same-browser tabs + tell server */
+  const claimSession = useCallback((userId: string) => {
+    setEvicted(false);
+    channelRef.current?.postMessage({ type: 'CLAIM', tabId: TAB_SESSION_ID });
+    claimOnServer(userId);
+  }, []);
 
   async function login(displayName: string, password?: string): Promise<User> {
     const preferences = { ...DEFAULT_PREFERENCES };
@@ -69,8 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CURRENT_USER_KEY, localUser.id);
     localStorage.setItem(CACHED_USER_KEY, JSON.stringify(localUser));
     setUser(localUser);
-    // Notify other tabs in same browser to log out
-    channelRef.current?.postMessage({ type: 'NEW_SESSION', tabId: TAB_SESSION_ID });
+    claimSession(localUser.id);
     return localUser;
   }
 
@@ -79,8 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CURRENT_USER_KEY, localUser.id);
     localStorage.setItem(CACHED_USER_KEY, JSON.stringify(localUser));
     setUser(localUser);
-    // Notify other tabs in same browser to log out
-    channelRef.current?.postMessage({ type: 'NEW_SESSION', tabId: TAB_SESSION_ID });
+    claimSession(localUser.id);
     return localUser;
   }
 
@@ -88,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(CURRENT_USER_KEY);
     localStorage.removeItem(CACHED_USER_KEY);
     setUser(null);
+    setEvicted(false);
   }
 
   function updateUser(updates: Partial<User>) {
@@ -115,74 +146,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!res.ok) return;
       const dbUser = await res.json();
       const fresh = dbUserToLocal(dbUser);
-      // Check session_version mismatch — another device logged in
-      if (fresh.sessionVersion > (user.sessionVersion || 0)) {
-        logout();
-        localStorage.setItem('codenames_session_expired', 'true');
-        return;
-      }
-      // Preserve current preferences (local may differ from DB)
       const merged = { ...fresh, preferences: user.preferences };
       localStorage.setItem(CACHED_USER_KEY, JSON.stringify(merged));
       setUser(merged);
     } catch { /* ignore refresh failures */ }
   }
 
-  // BroadcastChannel: instant same-browser tab eviction
+  // BroadcastChannel: instant same-browser eviction
   useEffect(() => {
     const channel = new BroadcastChannel(SESSION_CHANNEL);
     channelRef.current = channel;
     channel.onmessage = (e) => {
-      if (e.data?.type === 'NEW_SESSION' && e.data.tabId !== TAB_SESSION_ID) {
-        // Another tab in this browser just logged in or opened — evict this tab
-        logout();
-        localStorage.setItem('codenames_session_expired', 'true');
+      if (e.data?.type === 'CLAIM' && e.data.tabId !== TAB_SESSION_ID) {
+        // Another tab claimed the session — we're evicted
+        setEvicted(true);
       }
     };
-    // When this tab mounts with a cached user, claim the session
-    // (evicts any other already-open tabs in this browser)
-    if (user) {
-      channel.postMessage({ type: 'NEW_SESSION', tabId: TAB_SESSION_ID });
-    }
     return () => {
       channel.close();
       channelRef.current = null;
     };
   }, []);
 
-  // Check session validity on tab/window focus + periodic polling
-  const checkSession = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await fetch(`/api/game?route=session&userId=${encodeURIComponent(user.id)}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.sessionVersion > (user.sessionVersion || 0)) {
-        logout();
-        localStorage.setItem('codenames_session_expired', 'true');
-      }
-    } catch { /* ignore */ }
-  }, [user?.id, user?.sessionVersion]);
+  // On mount with cached user: claim session
+  useEffect(() => {
+    if (user) {
+      claimSession(user.id);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Poll server for cross-device eviction detection + reclaim on focus
   useEffect(() => {
     if (!user) return;
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') checkSession();
+
+    const pollServer = async () => {
+      const active = await checkOnServer(user.id);
+      if (!active) setEvicted(true);
     };
-    const handleFocus = () => checkSession();
-    document.addEventListener('visibilitychange', handleVisibility);
+
+    // On focus: reclaim (last-active-wins on F5 or tab switch)
+    const handleFocus = () => {
+      claimSession(user.id);
+    };
+
     window.addEventListener('focus', handleFocus);
-    // Periodic check every 30s
-    const interval = setInterval(checkSession, 30000);
+    const interval = setInterval(pollServer, 5000);
+
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('focus', handleFocus);
       clearInterval(interval);
     };
-  }, [checkSession, user]);
+  }, [user?.id, claimSession]);
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithOAuth, logout, updateUser, refreshUser }}>
+    <AuthContext.Provider value={{ user, evicted, login, loginWithOAuth, logout, updateUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

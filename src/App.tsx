@@ -15,6 +15,25 @@ import ProfilePage from './pages/ProfilePage';
 import AdminPage from './pages/AdminPage';
 import OAuthRegisterPage from './pages/OAuthRegisterPage';
 
+function EvictionBanner() {
+  const { evicted, user } = useAuth();
+  if (!evicted || !user) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center">
+      <div className="bg-gray-800 rounded-xl p-8 max-w-sm text-center">
+        <p className="text-amber-400 text-lg font-bold mb-2">Сессия активна в другом месте</p>
+        <p className="text-gray-300 text-sm mb-6">Другая вкладка или устройство перехватили вашу сессию.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-3 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold transition-colors"
+        >
+          Переподключиться
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
@@ -63,6 +82,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <GameProvider>
+        <EvictionBanner />
         <ProfileModal />
         <OAuthHandler />
         <Routes>
