@@ -42,11 +42,6 @@ function OAuthHandler() {
         setSearchParams({}, { replace: true });
         navigate('/login?oauth=error', { replace: true });
       });
-    } else if (oauthType === 'register' && token) {
-      // New user — redirect to name entry page
-      const name = searchParams.get('name') || '';
-      setSearchParams({}, { replace: true });
-      navigate(`/oauth/register?token=${encodeURIComponent(token)}&name=${encodeURIComponent(name)}`, { replace: true });
     } else if (oauthType === 'linked' || oauthType === 'already_linked') {
       // Profile link success
       setSearchParams({}, { replace: true });

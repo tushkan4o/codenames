@@ -48,9 +48,7 @@ export const ru = {
     unfinishedGame: 'У вас есть незавершённая игра. Продолжить?',
     continueGame: 'Продолжить',
     newGame: 'Новая игра',
-    rankedLocked: 'Привяжите Google или Discord',
-    rankedProgress: 'Решите ещё {solves} и дайте ещё {clues} подсказок',
-    rankedReady: 'Рейтинговый режим разблокирован!',
+    rankedLocked: 'Для игры в рейтинговом режиме необходима привязка профиля к Google или Discord, а также не менее 5 решённых и 1 отправленной подсказки в обычном режиме',
   },
   game: {
     spymasterMode: 'Режим капитана',

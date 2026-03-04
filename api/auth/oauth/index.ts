@@ -199,13 +199,13 @@ async function handleCallback(req: VercelRequest, res: VercelResponse) {
   const linked = await sql`SELECT user_id FROM oauth_accounts WHERE provider = ${provider} AND provider_id = ${providerUser.id}`;
   if (linked.length > 0) {
     const token = signToken({ type: 'success', userId: linked[0].user_id as string });
-    return res.redirect(`${base}/?oauth=success&token=${encodeURIComponent(token)}`);
+    return res.redirect(`${base}/login?oauth=success&token=${encodeURIComponent(token)}`);
   }
   const token = signToken({
     type: 'register', provider, providerId: providerUser.id,
     providerName: providerUser.name, email: providerUser.email,
   });
-  return res.redirect(`${base}/?oauth=register&token=${encodeURIComponent(token)}`);
+  return res.redirect(`${base}/oauth/register?token=${encodeURIComponent(token)}`);
 }
 
 // --- POST ?action=resolve ---

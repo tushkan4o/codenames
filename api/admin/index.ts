@@ -258,6 +258,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await sql`DELETE FROM ratings WHERE user_id = ${userId}`;
       await sql`DELETE FROM results WHERE user_id = ${userId}`;
 
+      // Delete OAuth linked accounts
+      await sql`DELETE FROM oauth_accounts WHERE user_id = ${userId}`;
+
       // Delete user
       await sql`DELETE FROM users WHERE id = ${userId}`;
 
