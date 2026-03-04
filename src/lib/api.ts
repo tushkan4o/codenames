@@ -103,7 +103,7 @@ export interface AdminResult {
 
 export const api = {
   async saveClue(clue: Clue): Promise<void> {
-    await post('/api/clues', clue);
+    await post('/api?route=clues', clue);
   },
 
   async getRandomClue(
@@ -113,29 +113,30 @@ export const api = {
     boardSize?: BoardSize,
     ranked?: boolean,
   ): Promise<Clue | null> {
-    const params = new URLSearchParams({ userId });
+    const params = new URLSearchParams({ route: 'clues', action: 'random', userId });
     if (excludeIds.length > 0) params.set('exclude', excludeIds.join(','));
     if (wordPack) params.set('wordPack', wordPack);
     if (boardSize) params.set('boardSize', boardSize);
     if (ranked !== undefined) params.set('ranked', String(ranked));
-    return get(`/api/clues?action=random&${params}`);
+    return get(`/api?${params}`);
   },
 
   async getClueById(id: string, reveal = false): Promise<Clue | null> {
-    const params = reveal ? '?reveal=true' : '';
-    return get(`/api/clues/${encodeURIComponent(id)}${params}`);
+    const params = new URLSearchParams({ route: 'clue', id });
+    if (reveal) params.set('reveal', 'true');
+    return get(`/api?${params}`);
   },
 
   async getCluesByUser(userId: string): Promise<Clue[]> {
-    return get(`/api/clues?userId=${encodeURIComponent(userId)}`);
+    return get(`/api?route=clues&userId=${encodeURIComponent(userId)}`);
   },
 
   async saveGuessResult(result: Omit<GuessResult, 'correctCount' | 'totalTargets'>): Promise<{ targetIndices: number[]; nullIndices: number[] }> {
-    return post('/api/results', result);
+    return post('/api?route=results', result);
   },
 
   async getResultsByUser(userId: string): Promise<GuessResult[]> {
-    return get(`/api/results?userId=${encodeURIComponent(userId)}`);
+    return get(`/api?route=results&userId=${encodeURIComponent(userId)}`);
   },
 
   async getClueStats(clueId: string): Promise<{
@@ -148,44 +149,45 @@ export const api = {
     ratingsCount?: number;
     avgRating?: number;
   }> {
-    return get(`/api/clues/${encodeURIComponent(clueId)}?stats=true`);
+    return get(`/api?route=clue&id=${encodeURIComponent(clueId)}&stats=true`);
   },
 
   async saveRating(clueId: string, userId: string, rating: number): Promise<void> {
-    await post('/api/ratings', { clueId, userId, rating });
+    await post('/api?route=ratings', { clueId, userId, rating });
   },
 
   async getUserRating(clueId: string, userId: string): Promise<{ rating: number | null }> {
-    return get(`/api/ratings?clueId=${encodeURIComponent(clueId)}&userId=${encodeURIComponent(userId)}`);
+    return get(`/api?route=ratings&clueId=${encodeURIComponent(clueId)}&userId=${encodeURIComponent(userId)}`);
   },
 
   async getUserStats(userId: string): Promise<UserStats> {
-    return get(`/api/users/${encodeURIComponent(userId)}/stats`);
+    return get(`/api?route=stats&userId=${encodeURIComponent(userId)}`);
   },
 
   async getClueCount(userId: string, wordPack?: string, boardSize?: BoardSize, ranked?: boolean): Promise<{ available: number; total: number }> {
-    const params = new URLSearchParams({ userId, countOnly: 'true' });
+    const params = new URLSearchParams({ route: 'clues', action: 'random', userId, countOnly: 'true' });
     if (wordPack) params.set('wordPack', wordPack);
     if (boardSize) params.set('boardSize', boardSize);
     if (ranked !== undefined) params.set('ranked', String(ranked));
-    return get(`/api/clues?action=random&${params}`);
+    return get(`/api?${params}`);
   },
 
   async getLeaderboard(boardSize?: BoardSize): Promise<{
     spymasters: { userId: string; cluesGiven: number; avgWordsPerClue: number; avgScoreOnClues: number }[];
     guessers: { userId: string; cluesSolved: number; avgWordsPicked: number; avgScore: number }[];
   }> {
-    const params = boardSize ? `?boardSize=${boardSize}` : '';
-    return get(`/api/leaderboard${params}`);
+    const params = new URLSearchParams({ route: 'leaderboard' });
+    if (boardSize) params.set('boardSize', boardSize);
+    return get(`/api?${params}`);
   },
 
   async toggleClueDisabled(clueId: string, userId: string, disabled: boolean): Promise<void> {
-    await patch(`/api/clues/${encodeURIComponent(clueId)}`, { userId, disabled });
+    await patch(`/api?route=clue&id=${encodeURIComponent(clueId)}`, { userId, disabled });
   },
 
   // Reports
   async submitReport(clueId: string, userId: string, reason: string): Promise<void> {
-    await post('/api/ratings', { clueId, userId, reason });
+    await post('/api?route=ratings', { clueId, userId, reason });
   },
 
   // Admin operations
