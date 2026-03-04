@@ -249,4 +249,8 @@ export const api = {
   async unlinkOAuth(userId: string, provider: string): Promise<void> {
     await post('/api/auth/oauth?action=unlink', { userId, provider });
   },
+
+  async renameUser(userId: string, newDisplayName: string): Promise<{ ok: boolean; displayName: string }> {
+    return post('/api/auth/oauth?action=rename', { userId, newDisplayName });
+  },
 };

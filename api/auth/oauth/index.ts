@@ -121,6 +121,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'complete': return handleComplete(req, res);
     case 'accounts': return handleAccounts(req, res);
     case 'unlink': return handleUnlink(req, res);
+    case 'rename': return handleRename(req, res);
     default: return res.status(400).json({ error: 'Invalid action' });
   }
 }
@@ -250,6 +251,22 @@ async function handleUnlink(req: VercelRequest, res: VercelResponse) {
   const sql = neon(process.env.DATABASE_URL!);
   await sql`DELETE FROM oauth_accounts WHERE user_id = ${userId} AND provider = ${provider}`;
   res.json({ ok: true });
+}
+
+// --- POST ?action=rename ---
+async function handleRename(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { userId, newDisplayName } = req.body;
+  if (!userId || !newDisplayName) return res.status(400).json({ error: 'userId and newDisplayName required' });
+  const trimmed = newDisplayName.trim();
+  if (trimmed.length < 2) return res.status(400).json({ error: 'name_too_short' });
+  if (trimmed.length > 20) return res.status(400).json({ error: 'name_too_long' });
+  if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(trimmed)) return res.status(400).json({ error: 'invalid_chars' });
+  const sql = neon(process.env.DATABASE_URL!);
+  const existing = await sql`SELECT id FROM users WHERE id = ${userId}`;
+  if (existing.length === 0) return res.status(404).json({ error: 'User not found' });
+  await sql`UPDATE users SET display_name = ${trimmed} WHERE id = ${userId}`;
+  res.json({ ok: true, displayName: trimmed });
 }
 
 // --- POST ?action=login (merged from auth/login.ts) ---

@@ -5,8 +5,8 @@ import { useProfileModal } from '../../context/ProfileModalContext';
 import { useTranslation } from '../../i18n/useTranslation';
 import { api } from '../../lib/api';
 import BoardReviewModal from '../game/BoardReviewModal';
-import type { Clue, GuessResult } from '../../types/game';
-import type { UserStats } from '../../types/user';
+import type { Clue, GuessResult, BoardSize } from '../../types/game';
+import type { UserStats, CardFontSize, ColorSortMode } from '../../types/user';
 
 function GoogleIcon({ size = 16 }: { size?: number }) {
   return (
@@ -63,7 +63,7 @@ interface ProfileContentProps {
 
 export default function ProfileContent({ profileId }: ProfileContentProps) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { openProfile, closeProfile } = useProfileModal();
   const { t } = useTranslation();
 
@@ -94,6 +94,12 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [linkedAccounts, setLinkedAccounts] = useState<{ provider: string; providerName: string; email: string | null; linkedAt: number }[]>([]);
   const [unlinkConfirm, setUnlinkConfirm] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+
+  // Nickname editing
+  const [editingName, setEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
 
   useEffect(() => {
     if (!profileId) return;
@@ -276,6 +282,31 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     setUnlinkConfirm(null);
   }
 
+  async function handleRename() {
+    if (!user) return;
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed.length < 2) { setNameError(t.login.errorShort); return; }
+    if (trimmed.length > 20) { setNameError(t.login.errorLong); return; }
+    if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(trimmed)) { setNameError(t.login.errorChars); return; }
+    setNameSaving(true);
+    try {
+      await api.renameUser(user.id, trimmed);
+      updateUser({ displayName: trimmed });
+      setEditingName(false);
+      setNameError('');
+    } catch (err) {
+      setNameError(err instanceof Error ? err.message : 'Error');
+    } finally {
+      setNameSaving(false);
+    }
+  }
+
+  function handlePrefChange<K extends keyof NonNullable<typeof user>['preferences']>(key: K, value: NonNullable<typeof user>['preferences'][K]) {
+    if (!user) return;
+    const newPrefs = { ...user.preferences, [key]: value };
+    updateUser({ preferences: newPrefs });
+  }
+
   function toggleGivenSort(field: GivenSortField) {
     if (givenSort === field) {
       if (givenDir === 'desc') setGivenDir('asc');
@@ -300,25 +331,53 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   return (
     <>
       <div className="flex flex-col flex-1 min-h-0">
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <h1 className="text-2xl font-extrabold text-white">{t.profile.title}</h1>
-          {isOwnProfile && (
-            <button
-              onClick={() => setShowSettings(true)}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
-              title={t.oauth.settings}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-              </svg>
-            </button>
+        {/* Compact header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 min-w-0">
+            {isOwnProfile && editingName ? (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => { setNewName(e.target.value); setNameError(''); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') { setEditingName(false); setNameError(''); } }}
+                  autoFocus
+                  className="px-2 py-1 rounded bg-gray-800 border border-gray-600 text-white text-lg font-bold focus:outline-none focus:border-board-blue w-40"
+                />
+                <button onClick={handleRename} disabled={nameSaving} className="text-board-blue hover:text-blue-300 transition-colors">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                </button>
+                <button onClick={() => { setEditingName(false); setNameError(''); }} className="text-gray-400 hover:text-white transition-colors">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 min-w-0">
+                <h1 className="text-xl font-extrabold text-white truncate">{user?.displayName || profileId}</h1>
+                {isOwnProfile && (
+                  <button
+                    onClick={() => { setEditingName(true); setNewName(user?.displayName || profileId); }}
+                    className="text-gray-500 hover:text-gray-300 transition-colors shrink-0"
+                    title={t.settings.changeName}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          {stats && (
+            <div className="flex items-center gap-3 text-sm shrink-0">
+              <span className="text-gray-400"><span className="text-white font-bold">{stats.cluesGiven}</span> {t.profile.cluesGivenShort}</span>
+              <span className="text-gray-400"><span className="text-white font-bold">{stats.cluesSolved}</span> {t.profile.cluesSolvedShort}</span>
+              <span className="text-gray-400"><span className="text-white font-bold">{stats.avgScore}</span> {t.profile.avgShort}</span>
+            </div>
           )}
         </div>
-        <p className="text-center text-gray-400 mb-4">{profileId}</p>
+        {nameError && <p className="text-board-red text-xs mb-2">{nameError}</p>}
 
         {user?.isAdmin && !isOwnProfile && (
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-3">
             {confirmDeleteUser ? (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-red-400">{t.admin.confirmDeleteUser.replace('{name}', profileId)}</span>
@@ -331,20 +390,129 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           </div>
         )}
 
-        {stats && (
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-gray-800/60 rounded-lg p-4 text-center border border-gray-700/30">
-              <p className="text-2xl font-bold text-white">{stats.cluesGiven}</p>
-              <p className="text-xs text-gray-400">{t.profile.cluesGiven}</p>
-            </div>
-            <div className="bg-gray-800/60 rounded-lg p-4 text-center border border-gray-700/30">
-              <p className="text-2xl font-bold text-white">{stats.cluesSolved}</p>
-              <p className="text-xs text-gray-400">{t.profile.cluesSolved}</p>
-            </div>
-            <div className="bg-gray-800/60 rounded-lg p-4 text-center border border-gray-700/30">
-              <p className="text-2xl font-bold text-white">{stats.avgScore}</p>
-              <p className="text-xs text-gray-400">{t.leaderboard.avgScore}</p>
-            </div>
+        {/* Settings accordion (own profile only) */}
+        {isOwnProfile && (
+          <div className="mb-3">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span className="font-semibold">{t.settings.title}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={`transition-transform ${showSettings ? 'rotate-180' : ''}`}>
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </button>
+
+            {showSettings && (
+              <div className="mt-2 space-y-3 bg-gray-800/40 border border-gray-700/30 rounded-lg p-4">
+                {/* Game settings */}
+                <div>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">{t.settings.game}</h3>
+                  <div className="space-y-2">
+                    {/* Board size */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-300">{t.settings.boardSize}</span>
+                      <div className="flex gap-1">
+                        {(['4x4', '5x5'] as BoardSize[]).map((size) => (
+                          <button
+                            key={size}
+                            onClick={() => handlePrefChange('defaultBoardSize', size)}
+                            className={`px-2.5 py-1 text-xs font-bold rounded transition-colors ${user?.preferences.defaultBoardSize === size ? 'bg-board-blue text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                          >
+                            {size}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Card font size */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-300">{t.settings.fontSize}</span>
+                      <div className="flex gap-1">
+                        {(['sm', 'md', 'lg'] as CardFontSize[]).map((sz) => (
+                          <button
+                            key={sz}
+                            onClick={() => handlePrefChange('cardFontSize', sz)}
+                            className={`px-2.5 py-1 text-xs font-bold rounded transition-colors ${user?.preferences.cardFontSize === sz ? 'bg-board-blue text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                          >
+                            {sz === 'sm' ? 'A' : sz === 'md' ? 'A+' : 'A++'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Color sort mode */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-300">{t.settings.colorSort}</span>
+                      <div className="flex gap-1">
+                        {(['rows', 'columns'] as ColorSortMode[]).map((mode) => (
+                          <button
+                            key={mode}
+                            onClick={() => handlePrefChange('colorSortMode', mode)}
+                            className={`px-2.5 py-1 text-xs font-bold rounded transition-colors ${user?.preferences.colorSortMode === mode ? 'bg-board-blue text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                          >
+                            {mode === 'rows' ? t.settings.rows : t.settings.columns}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Animations */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-300">{t.settings.animations}</span>
+                      <button
+                        onClick={() => handlePrefChange('animationEnabled', !user?.preferences.animationEnabled)}
+                        className={`px-2.5 py-1 text-xs font-bold rounded transition-colors ${user?.preferences.animationEnabled ? 'bg-board-blue text-white' : 'bg-gray-700 text-gray-400'}`}
+                      >
+                        {user?.preferences.animationEnabled ? t.settings.on : t.settings.off}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Linked accounts */}
+                <div>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">{t.oauth.linkedAccounts}</h3>
+                  <div className="space-y-1.5">
+                    {(['google', 'discord'] as const).map((provider) => {
+                      const account = linkedAccounts.find((a) => a.provider === provider);
+                      const Icon = provider === 'google' ? GoogleIcon : DiscordIcon;
+                      return (
+                        <div key={provider} className="flex items-center justify-between bg-gray-800/60 border border-gray-700/30 rounded-lg px-3 py-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Icon size={18} />
+                            <div className="min-w-0">
+                              <span className="font-semibold text-sm text-white">{provider === 'google' ? 'Google' : 'Discord'}</span>
+                              {account && <span className="text-xs text-gray-500 ml-1.5">{account.providerName || account.email || t.oauth.linked}</span>}
+                            </div>
+                          </div>
+                          {account ? (
+                            unlinkConfirm === provider ? (
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => handleUnlinkOAuth(provider)} className="px-2 py-1 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
+                                <button onClick={() => setUnlinkConfirm(null)} className="px-2 py-1 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setUnlinkConfirm(provider)} className="px-2.5 py-1 text-xs font-bold text-gray-400 hover:text-white bg-gray-700 hover:bg-gray-600 rounded transition-colors">
+                                {t.oauth.unlink}
+                              </button>
+                            )
+                          ) : (
+                            <button
+                              onClick={() => handleLinkOAuth(provider)}
+                              className="px-2.5 py-1 text-xs font-bold text-white bg-board-blue hover:brightness-110 rounded transition-colors"
+                            >
+                              {t.oauth.link}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -559,63 +727,6 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           )
         )}
       </div>
-
-      {/* Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => { setShowSettings(false); setUnlinkConfirm(null); }}>
-          <div className="absolute inset-0 bg-black/60" />
-          <div className="relative bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white">{t.oauth.settings}</h2>
-              <button onClick={() => { setShowSettings(false); setUnlinkConfirm(null); }} className="text-gray-400 hover:text-white transition-colors">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-              </button>
-            </div>
-
-            <h3 className="text-sm font-bold text-gray-400 uppercase mb-3">{t.oauth.linkedAccounts}</h3>
-            <div className="space-y-2">
-              {(['google', 'discord'] as const).map((provider) => {
-                const account = linkedAccounts.find((a) => a.provider === provider);
-                const Icon = provider === 'google' ? GoogleIcon : DiscordIcon;
-                return (
-                  <div key={provider} className="flex items-center justify-between bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Icon size={20} />
-                      <div className="min-w-0">
-                        <span className="font-semibold text-sm text-white">{provider === 'google' ? 'Google' : 'Discord'}</span>
-                        {account && (
-                          <p className="text-xs text-gray-500 truncate">
-                            {account.providerName || account.email || t.oauth.linked}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {account ? (
-                      unlinkConfirm === provider ? (
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => handleUnlinkOAuth(provider)} className="px-2 py-1 text-xs font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
-                          <button onClick={() => setUnlinkConfirm(null)} className="px-2 py-1 text-xs font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>
-                        </div>
-                      ) : (
-                        <button onClick={() => setUnlinkConfirm(provider)} className="px-3 py-1.5 text-xs font-bold text-gray-400 hover:text-white bg-gray-700 hover:bg-gray-600 rounded transition-colors">
-                          {t.oauth.unlink}
-                        </button>
-                      )
-                    ) : (
-                      <button
-                        onClick={() => handleLinkOAuth(provider)}
-                        className="px-3 py-1.5 text-xs font-bold text-white bg-board-blue hover:brightness-110 rounded transition-colors whitespace-nowrap"
-                      >
-                        {t.oauth.link}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {modalClue && (
         <BoardReviewModal clue={modalClue} result={modalResult} onClose={() => { setModalClue(null); setModalResult(undefined); }} />
