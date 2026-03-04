@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore refresh failures */ }
   }
 
-  // Check session validity on tab focus
+  // Check session validity on tab/window focus + periodic polling
   const checkSession = useCallback(async () => {
     if (!user) return;
     try {
@@ -135,12 +135,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user?.id, user?.sessionVersion]);
 
   useEffect(() => {
+    if (!user) return;
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') checkSession();
     };
+    const handleFocus = () => checkSession();
     document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [checkSession]);
+    window.addEventListener('focus', handleFocus);
+    // Periodic check every 30s
+    const interval = setInterval(checkSession, 30000);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
+  }, [checkSession, user]);
 
   return (
     <AuthContext.Provider value={{ user, login, loginWithOAuth, logout, updateUser, refreshUser }}>
