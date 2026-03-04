@@ -49,6 +49,9 @@ export interface Clue {
   nullIndices: number[];
   createdAt: number;
   userId: string;
+  userDisplayName?: string;
+  words?: string[];
+  colors?: string[];
   wordPack: string;
   boardSize: BoardSize;
   reshuffleCount: number;

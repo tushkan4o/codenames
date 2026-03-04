@@ -9,6 +9,7 @@ export interface User {
   hasOAuth: boolean;
   casualCluesGiven: number;
   casualCluesSolved: number;
+  sessionVersion: number;
 }
 
 export type CardFontSize = 'sm' | 'md' | 'lg';

@@ -13,6 +13,11 @@ export default function LoginPage() {
   const [needsPassword, setNeedsPassword] = useState(false);
   const [error, setError] = useState('');
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+  const [sessionExpired] = useState(() => {
+    const flag = localStorage.getItem('codenames_session_expired');
+    if (flag) localStorage.removeItem('codenames_session_expired');
+    return !!flag;
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -69,6 +74,10 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <h1 className="text-5xl font-extrabold text-white mb-2 tracking-tight">CODENAMES</h1>
       <p className="text-gray-400 mb-8">{t.login.prompt}</p>
+
+      {sessionExpired && (
+        <p className="text-amber-400 text-sm text-center mb-4">Вы вошли с другого устройства</p>
+      )}
 
       <form onSubmit={handleSubmit} className="w-full max-w-xs">
         <input

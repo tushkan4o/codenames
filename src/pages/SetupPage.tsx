@@ -24,7 +24,7 @@ const MODE_OPTIONS = [
 
 export default function SetupPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { t } = useTranslation();
 
   const [mode, setMode] = useState<GameMode>(() => {
@@ -47,6 +47,9 @@ export default function SetupPage() {
 
   const totalCards = defaults.totalCards;
   const neutralCount = totalCards - redCount - blueCount - assassinCount;
+
+  // Refresh casual stats on mount
+  useEffect(() => { refreshUser(); }, []);
 
   // Persist setup preferences
   useEffect(() => { localStorage.setItem('codenames_setup_mode', mode); }, [mode]);

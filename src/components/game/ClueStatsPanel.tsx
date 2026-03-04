@@ -4,6 +4,7 @@ import { useTranslation } from '../../i18n/useTranslation';
 
 export interface AttemptDetail {
   userId: string;
+  displayName?: string;
   score: number;
   timestamp: number;
   guessedIndices: number[];
@@ -155,7 +156,7 @@ export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptP
                         }`}
                       >
                         <td className="py-1.5 pr-2 text-left text-gray-300 truncate max-w-[10rem]">
-                          {detail.userId}
+                          {detail.displayName || detail.userId}
                         </td>
                         <td className="py-1.5 px-2 text-center text-white font-semibold">{detail.score}</td>
                         <td className="py-1.5 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>

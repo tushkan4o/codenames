@@ -342,7 +342,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     <>
       <div className="flex flex-col flex-1 min-h-0">
         {/* Header: nickname left, stats right */}
-        <div className="flex items-start justify-between mb-3">
+        <div className="flex items-start justify-between mb-3 pr-6">
           <h1 className="text-xl font-extrabold text-white truncate">{stats?.displayName || profileId}</h1>
           {stats && (
             <div className="text-right shrink-0 ml-4">
@@ -629,7 +629,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           {!clue.createdAt && <span />}
                           <span>
                             <span className="text-gray-400">{t.leaderboard.author}: </span>
-                            <button onClick={() => openProfile(clue.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{clue.userId}</button>
+                            <button onClick={() => openProfile(clue.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{clue.userDisplayName || clue.userId}</button>
                           </span>
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>
                           <span><span className="text-gray-400">{t.results.avgScoreLabel}:</span> <span className="text-white font-semibold">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span></span>
@@ -725,7 +725,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           {entry.clue ? (
                             <span>
                               <span className="text-gray-400">{t.leaderboard.author}: </span>
-                              <button onClick={() => openProfile(entry.clue!.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{entry.clue.userId}</button>
+                              <button onClick={() => openProfile(entry.clue!.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{entry.clue!.userDisplayName || entry.clue.userId}</button>
                             </span>
                           ) : <span />}
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>

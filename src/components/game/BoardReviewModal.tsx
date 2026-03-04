@@ -9,7 +9,6 @@ import Board from '../board/Board';
 import RevealOverlay from './RevealOverlay';
 import ClueStatsPanel, { type AttemptDetail, pluralAttempts } from './ClueStatsPanel';
 import ClueRating from './ClueRating';
-import { useProfileModal } from '../../context/ProfileModalContext';
 
 interface BoardReviewModalProps {
   clue: Clue;
@@ -26,7 +25,7 @@ function formatDate(ts: number): string {
 export default function BoardReviewModal({ clue, result, onClose }: BoardReviewModalProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { openProfile } = useProfileModal();
+
   const [pickPercents, setPickPercents] = useState<Record<number, number>>({});
   const [viewingAttemptPicks, setViewingAttemptPicks] = useState<number[] | null>(null);
   const [existingRating, setExistingRating] = useState<number | null>(null);
@@ -190,13 +189,8 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
                           : 'hover:bg-gray-700/50'
                       }`}
                     >
-                      <td className="py-1.5 pr-2 text-left">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); openProfile(detail.userId); }}
-                          className="text-blue-400 hover:text-blue-300 transition-colors truncate max-w-[10rem] block text-left"
-                        >
-                          {detail.userId}
-                        </button>
+                      <td className="py-1.5 pr-2 text-left text-gray-300 truncate max-w-[10rem]">
+                        {detail.displayName || detail.userId}
                       </td>
                       <td className="py-1.5 px-2 text-center text-white font-semibold">{detail.score}</td>
                       <td className="py-1.5 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>
@@ -218,7 +212,7 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
         <div className="max-w-md mx-auto mt-4">
           <ClueStatsPanel
             clueId={clue.id}
-            spymasterUserId={clue.userId}
+            spymasterUserId={clue.userDisplayName || clue.userId}
             onShowAttemptPicks={(indices) => setViewingAttemptPicks(indices.length > 0 ? indices : null)}
             onOpenAttempts={(details) => { setAttemptsView(details); setSelectedAttemptIdx(null); setViewingAttemptPicks(null); }}
           />

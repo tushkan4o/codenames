@@ -123,6 +123,7 @@ async function enrichUser(sql: SqlFunction, user: Record<string, unknown>) {
     has_oauth: hasOAuth,
     casual_clues_given: Number(givenRows[0].c),
     casual_clues_solved: Number(solvedRows[0].c),
+    session_version: Number(user.session_version) || 0,
   };
 }
 
@@ -216,6 +217,7 @@ async function handleResolve(req: VercelRequest, res: VercelResponse) {
   const payload = verifyToken(token);
   if (!payload || payload.type !== 'success') return res.status(401).json({ error: 'Invalid or expired token' });
   const sql = neon(process.env.DATABASE_URL!);
+  await sql`UPDATE users SET session_version = COALESCE(session_version, 0) + 1 WHERE id = ${payload.userId as string}`;
   const rows = await sql`SELECT * FROM users WHERE id = ${payload.userId as string}`;
   if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
   const enriched = await enrichUser(sql, { ...rows[0], is_admin: rows[0].is_admin || false });
@@ -317,12 +319,18 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     if (preferences) {
       await sql`UPDATE users SET preferences = ${JSON.stringify(preferences)} WHERE id = ${id}`;
     }
+    if (!preferencesOnly) {
+      await sql`UPDATE users SET session_version = COALESCE(session_version, 0) + 1 WHERE id = ${id}`;
+      const refreshed = (await sql`SELECT * FROM users WHERE id = ${id}`)[0];
+      const enriched = await enrichUser(sql, { ...refreshed, is_admin: refreshed.is_admin || false });
+      return res.json(enriched);
+    }
     const enriched = await enrichUser(sql, { ...user, is_admin: user.is_admin || false });
     return res.json(enriched);
   }
   await sql`INSERT INTO users (id, display_name, created_at, preferences)
     VALUES (${id}, ${displayName}, ${now}, ${JSON.stringify(preferences || {})})`;
-  const newUser = { id, display_name: displayName, created_at: now, preferences: preferences || {}, is_admin: false };
+  const newUser = { id, display_name: displayName, created_at: now, preferences: preferences || {}, is_admin: false, session_version: 1 };
   const enriched = await enrichUser(sql, newUser);
   res.json(enriched);
 }

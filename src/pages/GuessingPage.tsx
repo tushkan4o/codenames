@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { generateBoard } from '../lib/boardGenerator';
 import { computeGuessScore } from '../lib/scoring';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -15,8 +14,6 @@ import RevealOverlay from '../components/game/RevealOverlay';
 import ClueRating from '../components/game/ClueRating';
 import ClueStatsPanel, { type AttemptDetail, pluralAttempts } from '../components/game/ClueStatsPanel';
 import SettingsPanel from '../components/settings/SettingsPanel';
-import { useProfileModal } from '../context/ProfileModalContext';
-
 type GamePhase = 'picking' | 'revealing' | 'done';
 
 function formatDate(ts: number): string {
@@ -79,8 +76,6 @@ export default function GuessingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation();
-  const { openProfile } = useProfileModal();
-
   const [clue, setClue] = useState<Clue | null>(null);
   const [pickedIndices, setPickedIndices] = useState<number[]>([]);
   const [phase, setPhase] = useState<GamePhase>('picking');
@@ -175,8 +170,14 @@ export default function GuessingPage() {
   }, [clue]);
 
   const board = useMemo(() => {
-    if (!clue) return null;
-    return generateBoard(clue.boardSeed, config, clue.wordPack || 'ru');
+    if (!clue || !clue.words || !clue.colors) return null;
+    const cards: CardState[] = clue.words.map((word, i) => ({
+      word,
+      color: clue.colors![i] as CardState['color'],
+      revealed: false,
+      position: i,
+    }));
+    return { seed: '', cards, startingTeam: 'red' as const, config };
   }, [clue, config]);
 
   const animationEnabled = user?.preferences.animationEnabled ?? true;
@@ -612,13 +613,8 @@ export default function GuessingPage() {
                             : 'hover:bg-gray-700/50'
                         }`}
                       >
-                        <td className="py-1.5 pr-2 text-left">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); openProfile(detail.userId); }}
-                            className="text-blue-400 hover:text-blue-300 transition-colors truncate max-w-[10rem] block text-left"
-                          >
-                            {detail.userId}
-                          </button>
+                        <td className="py-1.5 pr-2 text-left text-gray-300 truncate max-w-[10rem]">
+                          {detail.displayName || detail.userId}
                         </td>
                         <td className="py-1.5 px-2 text-center text-white font-semibold">{detail.score}</td>
                         <td className="py-1.5 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>
@@ -639,7 +635,7 @@ export default function GuessingPage() {
           <div className="max-w-md mx-auto mt-4">
             <ClueStatsPanel
               clueId={clue.id}
-              spymasterUserId={clue.userId}
+              spymasterUserId={clue.userDisplayName || clue.userId}
               onShowAttemptPicks={(indices) => setViewingAttemptPicks(indices.length > 0 ? indices : null)}
               onOpenAttempts={(details) => { setAttemptsView(details); setSelectedAttemptIdx(null); setViewingAttemptPicks(null); }}
             />

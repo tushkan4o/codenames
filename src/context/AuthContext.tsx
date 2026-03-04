@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { User } from '../types/user';
 import { DEFAULT_PREFERENCES } from '../types/user';
 
@@ -11,6 +11,7 @@ interface AuthContextValue {
   loginWithOAuth: (dbUser: Record<string, unknown>) => User;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -25,6 +26,7 @@ function dbUserToLocal(dbUser: Record<string, unknown>): User {
     hasOAuth: (dbUser.has_oauth as boolean) || false,
     casualCluesGiven: Number(dbUser.casual_clues_given) || 0,
     casualCluesSolved: Number(dbUser.casual_clues_solved) || 0,
+    sessionVersion: Number(dbUser.session_version) || 0,
   };
 }
 
@@ -94,8 +96,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function refreshUser() {
+    if (!user) return;
+    try {
+      const res = await fetch('/api/auth/oauth?action=login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName: user.id, preferencesOnly: true }),
+      });
+      if (!res.ok) return;
+      const dbUser = await res.json();
+      const fresh = dbUserToLocal(dbUser);
+      // Check session_version mismatch — another device logged in
+      if (user.sessionVersion > 0 && fresh.sessionVersion > user.sessionVersion) {
+        logout();
+        localStorage.setItem('codenames_session_expired', 'true');
+        return;
+      }
+      // Preserve current preferences (local may differ from DB)
+      const merged = { ...fresh, preferences: user.preferences };
+      localStorage.setItem(CACHED_USER_KEY, JSON.stringify(merged));
+      setUser(merged);
+    } catch { /* ignore refresh failures */ }
+  }
+
+  // Check session validity on tab focus
+  const checkSession = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/game?route=session&userId=${encodeURIComponent(user.id)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (user.sessionVersion > 0 && data.sessionVersion > user.sessionVersion) {
+        logout();
+        localStorage.setItem('codenames_session_expired', 'true');
+      }
+    } catch { /* ignore */ }
+  }, [user?.id, user?.sessionVersion]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') checkSession();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [checkSession]);
+
   return (
-    <AuthContext.Provider value={{ user, login, loginWithOAuth, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, login, loginWithOAuth, logout, updateUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

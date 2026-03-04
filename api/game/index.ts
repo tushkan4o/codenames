@@ -1,5 +1,82 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { neon } from '@neondatabase/serverless';
+import { WORD_LIST_RU } from '../src/data/words-ru';
+
+// --- Server-side board generation (mirrors src/lib/boardGenerator.ts) ---
+
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  }
+  return hash;
+}
+
+function createSeededRandom(seed: number): () => number {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+interface BoardColorConfig {
+  totalCards: number;
+  redCount: number;
+  blueCount: number;
+  assassinCount: number;
+}
+
+const BOARD_CONFIGS: Record<string, BoardColorConfig> = {
+  '4x4': { totalCards: 16, redCount: 6, blueCount: 5, assassinCount: 1 },
+  '5x5': { totalCards: 25, redCount: 10, blueCount: 9, assassinCount: 1 },
+};
+
+function generateBoardData(
+  seed: string,
+  boardSize: string,
+  redCount?: number | null,
+  blueCount?: number | null,
+  assassinCount?: number | null,
+): { words: string[]; colors: string[] } {
+  const config = BOARD_CONFIGS[boardSize] || BOARD_CONFIGS['5x5'];
+  const rCount = redCount ?? config.redCount;
+  const bCount = blueCount ?? config.blueCount;
+  const aCount = assassinCount ?? config.assassinCount;
+  const totalCards = config.totalCards;
+  const neutralCount = totalCards - rCount - bCount - aCount;
+
+  const numericSeed = hashString(seed);
+  const random = createSeededRandom(numericSeed);
+
+  const startingTeam: 'red' | 'blue' = random() < 0.5 ? 'red' : 'blue';
+
+  const words = [...WORD_LIST_RU];
+  for (let i = words.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [words[i], words[j]] = [words[j], words[i]];
+  }
+  const selectedWords = words.slice(0, totalCards);
+
+  const startCount = startingTeam === 'red' ? rCount : bCount;
+  const otherCount = startingTeam === 'red' ? bCount : rCount;
+  const otherTeam = startingTeam === 'red' ? 'blue' : 'red';
+
+  const colors: string[] = [
+    ...Array(startCount).fill(startingTeam),
+    ...Array(otherCount).fill(otherTeam),
+    ...Array(neutralCount).fill('neutral'),
+    ...Array(aCount).fill('assassin'),
+  ];
+  for (let i = colors.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [colors[i], colors[j]] = [colors[j], colors[i]];
+  }
+
+  return { words: selectedWords, colors };
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const route = req.query.route as string;
@@ -12,6 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'ratings': return handleRatings(req, res, sql);
     case 'leaderboard': return handleLeaderboard(req, res, sql);
     case 'stats': return handleUserStats(req, res, sql);
+    case 'session': return handleSessionCheck(req, res, sql);
     case 'init': return handleInit(res, sql);
     case 'debug': return res.json({ route, method: req.method, query: req.query, url: req.url });
     default: return res.status(400).json({ error: 'Unknown route' });
@@ -31,11 +109,11 @@ async function handleClues(req: VercelRequest, res: VercelResponse, sql: ReturnT
   if (req.method === 'GET') {
     const { userId } = req.query;
     if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
-    const rows = await sql`SELECT * FROM clues WHERE user_id = ${userId} ORDER BY created_at DESC`;
+    const rows = await sql`SELECT c.*, u.display_name FROM clues c LEFT JOIN users u ON c.user_id = u.id WHERE c.user_id = ${userId} ORDER BY c.created_at DESC`;
     return res.json(rows.map((row: Record<string, unknown>) => ({
       id: row.id, word: row.word, number: row.number, boardSeed: row.board_seed,
       targetIndices: row.target_indices, nullIndices: row.null_indices || [],
-      createdAt: Number(row.created_at), userId: row.user_id, wordPack: row.word_pack,
+      createdAt: Number(row.created_at), userId: row.user_id, userDisplayName: (row.display_name as string) || (row.user_id as string), wordPack: row.word_pack,
       boardSize: row.board_size, reshuffleCount: row.reshuffle_count,
       disabled: row.disabled || false, ranked: row.ranked ?? true,
       ...(row.red_count != null ? { redCount: row.red_count } : {}),
@@ -110,9 +188,16 @@ async function handleRandom(req: VercelRequest, res: VercelResponse, sql: Return
     const candidates = rows.filter((r: Record<string, unknown>) => !excludeSet.has(r.id as string));
     if (candidates.length === 0) return res.json(null);
     const row = candidates[0];
+    const authorRows = await sql`SELECT display_name FROM users WHERE id = ${row.user_id as string}`;
+    const userDisplayName = authorRows.length > 0 ? (authorRows[0].display_name as string) : (row.user_id as string);
+    const boardData = generateBoardData(
+      row.board_seed as string, row.board_size as string,
+      row.red_count as number | null, row.blue_count as number | null, row.assassin_count as number | null,
+    );
     res.json({
-      id: row.id, word: row.word, number: row.number, boardSeed: row.board_seed,
-      createdAt: Number(row.created_at), userId: row.user_id, wordPack: row.word_pack,
+      id: row.id, word: row.word, number: row.number,
+      words: boardData.words, colors: boardData.colors,
+      createdAt: Number(row.created_at), userId: row.user_id, userDisplayName, wordPack: row.word_pack,
       boardSize: row.board_size, reshuffleCount: row.reshuffle_count,
       ranked: row.ranked ?? true,
       ...(row.red_count != null ? { redCount: row.red_count } : {}),
@@ -155,8 +240,12 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
       const indices = r.guessed_indices as number[] | null;
       if (indices) { for (const idx of indices) { pickCounts[idx] = (pickCounts[idx] || 0) + 1; } }
     }
+    const userIds = [...new Set(rows.map((r: Record<string, unknown>) => r.user_id as string))];
+    const userNameRows = userIds.length > 0 ? await sql`SELECT id, display_name FROM users WHERE id = ANY(${userIds})` : [];
+    const nameMap = new Map(userNameRows.map((r: Record<string, unknown>) => [r.id as string, r.display_name as string]));
     const details = rows.map((r: Record<string, unknown>) => ({
-      userId: r.user_id as string, score: Number(r.score) || 0,
+      userId: r.user_id as string, displayName: nameMap.get(r.user_id as string) || (r.user_id as string),
+      score: Number(r.score) || 0,
       timestamp: Number(r.timestamp), guessedIndices: r.guessed_indices as number[],
     }));
     const clueRows = await sql`SELECT created_at FROM clues WHERE id = ${id}`;
@@ -173,17 +262,38 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
   const rows = await sql`SELECT * FROM clues WHERE id = ${id}`;
   if (rows.length === 0) return res.json(null);
   const row = rows[0];
+  const authorRows = await sql`SELECT display_name FROM users WHERE id = ${row.user_id as string}`;
+  const userDisplayName = authorRows.length > 0 ? (authorRows[0].display_name as string) : (row.user_id as string);
   const includeTargets = reveal === 'true';
-  res.json({
-    id: row.id, word: row.word, number: row.number, boardSeed: row.board_seed,
-    createdAt: Number(row.created_at), userId: row.user_id, wordPack: row.word_pack,
-    boardSize: row.board_size, reshuffleCount: row.reshuffle_count,
-    disabled: row.disabled || false, ranked: row.ranked ?? true,
-    ...(row.red_count != null ? { redCount: row.red_count } : {}),
-    ...(row.blue_count != null ? { blueCount: row.blue_count } : {}),
-    ...(row.assassin_count != null ? { assassinCount: row.assassin_count } : {}),
-    ...(includeTargets ? { targetIndices: row.target_indices, nullIndices: row.null_indices || [] } : {}),
-  });
+  if (includeTargets) {
+    // Reveal mode (profile/admin) — include boardSeed + targets
+    res.json({
+      id: row.id, word: row.word, number: row.number, boardSeed: row.board_seed,
+      createdAt: Number(row.created_at), userId: row.user_id, userDisplayName, wordPack: row.word_pack,
+      boardSize: row.board_size, reshuffleCount: row.reshuffle_count,
+      disabled: row.disabled || false, ranked: row.ranked ?? true,
+      ...(row.red_count != null ? { redCount: row.red_count } : {}),
+      ...(row.blue_count != null ? { blueCount: row.blue_count } : {}),
+      ...(row.assassin_count != null ? { assassinCount: row.assassin_count } : {}),
+      targetIndices: row.target_indices, nullIndices: row.null_indices || [],
+    });
+  } else {
+    // Guessing mode — return words+colors, NO boardSeed
+    const boardData = generateBoardData(
+      row.board_seed as string, row.board_size as string,
+      row.red_count as number | null, row.blue_count as number | null, row.assassin_count as number | null,
+    );
+    res.json({
+      id: row.id, word: row.word, number: row.number,
+      words: boardData.words, colors: boardData.colors,
+      createdAt: Number(row.created_at), userId: row.user_id, userDisplayName, wordPack: row.word_pack,
+      boardSize: row.board_size, reshuffleCount: row.reshuffle_count,
+      disabled: row.disabled || false, ranked: row.ranked ?? true,
+      ...(row.red_count != null ? { redCount: row.red_count } : {}),
+      ...(row.blue_count != null ? { blueCount: row.blue_count } : {}),
+      ...(row.assassin_count != null ? { assassinCount: row.assassin_count } : {}),
+    });
+  }
 }
 
 // ==================== RESULTS ====================
@@ -400,6 +510,16 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
   });
 }
 
+// ==================== SESSION CHECK ====================
+
+async function handleSessionCheck(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+  const { userId } = req.query;
+  if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
+  const rows = await sql`SELECT session_version FROM users WHERE id = ${userId}`;
+  if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+  res.json({ sessionVersion: Number(rows[0].session_version) || 0 });
+}
+
 // ==================== DB INIT ====================
 
 async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
@@ -419,6 +539,7 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS assassin_count INT`;
     await sql`CREATE TABLE IF NOT EXISTS oauth_accounts (provider TEXT NOT NULL, provider_id TEXT NOT NULL, user_id TEXT NOT NULL REFERENCES users(id), email TEXT, provider_name TEXT, linked_at BIGINT NOT NULL, PRIMARY KEY (provider, provider_id))`;
     await sql`CREATE INDEX IF NOT EXISTS idx_oauth_user ON oauth_accounts(user_id)`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INT DEFAULT 0`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {
