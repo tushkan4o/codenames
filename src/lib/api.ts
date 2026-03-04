@@ -103,7 +103,7 @@ export interface AdminResult {
 
 export const api = {
   async saveClue(clue: Clue): Promise<void> {
-    await post('/api?route=clues', clue);
+    await post('/api/g?route=clues', clue);
   },
 
   async getRandomClue(
@@ -118,25 +118,25 @@ export const api = {
     if (wordPack) params.set('wordPack', wordPack);
     if (boardSize) params.set('boardSize', boardSize);
     if (ranked !== undefined) params.set('ranked', String(ranked));
-    return get(`/api?${params}`);
+    return get(`/api/g?${params}`);
   },
 
   async getClueById(id: string, reveal = false): Promise<Clue | null> {
     const params = new URLSearchParams({ route: 'clue', id });
     if (reveal) params.set('reveal', 'true');
-    return get(`/api?${params}`);
+    return get(`/api/g?${params}`);
   },
 
   async getCluesByUser(userId: string): Promise<Clue[]> {
-    return get(`/api?route=clues&userId=${encodeURIComponent(userId)}`);
+    return get(`/api/g?route=clues&userId=${encodeURIComponent(userId)}`);
   },
 
   async saveGuessResult(result: Omit<GuessResult, 'correctCount' | 'totalTargets'>): Promise<{ targetIndices: number[]; nullIndices: number[] }> {
-    return post('/api?route=results', result);
+    return post('/api/g?route=results', result);
   },
 
   async getResultsByUser(userId: string): Promise<GuessResult[]> {
-    return get(`/api?route=results&userId=${encodeURIComponent(userId)}`);
+    return get(`/api/g?route=results&userId=${encodeURIComponent(userId)}`);
   },
 
   async getClueStats(clueId: string): Promise<{
@@ -149,19 +149,19 @@ export const api = {
     ratingsCount?: number;
     avgRating?: number;
   }> {
-    return get(`/api?route=clue&id=${encodeURIComponent(clueId)}&stats=true`);
+    return get(`/api/g?route=clue&id=${encodeURIComponent(clueId)}&stats=true`);
   },
 
   async saveRating(clueId: string, userId: string, rating: number): Promise<void> {
-    await post('/api?route=ratings', { clueId, userId, rating });
+    await post('/api/g?route=ratings', { clueId, userId, rating });
   },
 
   async getUserRating(clueId: string, userId: string): Promise<{ rating: number | null }> {
-    return get(`/api?route=ratings&clueId=${encodeURIComponent(clueId)}&userId=${encodeURIComponent(userId)}`);
+    return get(`/api/g?route=ratings&clueId=${encodeURIComponent(clueId)}&userId=${encodeURIComponent(userId)}`);
   },
 
   async getUserStats(userId: string): Promise<UserStats> {
-    return get(`/api?route=stats&userId=${encodeURIComponent(userId)}`);
+    return get(`/api/g?route=stats&userId=${encodeURIComponent(userId)}`);
   },
 
   async getClueCount(userId: string, wordPack?: string, boardSize?: BoardSize, ranked?: boolean): Promise<{ available: number; total: number }> {
@@ -169,7 +169,7 @@ export const api = {
     if (wordPack) params.set('wordPack', wordPack);
     if (boardSize) params.set('boardSize', boardSize);
     if (ranked !== undefined) params.set('ranked', String(ranked));
-    return get(`/api?${params}`);
+    return get(`/api/g?${params}`);
   },
 
   async getLeaderboard(boardSize?: BoardSize): Promise<{
@@ -178,16 +178,16 @@ export const api = {
   }> {
     const params = new URLSearchParams({ route: 'leaderboard' });
     if (boardSize) params.set('boardSize', boardSize);
-    return get(`/api?${params}`);
+    return get(`/api/g?${params}`);
   },
 
   async toggleClueDisabled(clueId: string, userId: string, disabled: boolean): Promise<void> {
-    await patch(`/api?route=clue&id=${encodeURIComponent(clueId)}`, { userId, disabled });
+    await patch(`/api/g?route=clue&id=${encodeURIComponent(clueId)}`, { userId, disabled });
   },
 
   // Reports
   async submitReport(clueId: string, userId: string, reason: string): Promise<void> {
-    await post('/api?route=ratings', { clueId, userId, reason });
+    await post('/api/g?route=ratings', { clueId, userId, reason });
   },
 
   // Admin operations
