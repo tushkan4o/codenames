@@ -12,6 +12,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'ratings': return handleRatings(req, res, sql);
     case 'leaderboard': return handleLeaderboard(req, res, sql);
     case 'stats': return handleUserStats(req, res, sql);
+    case 'init': return handleInit(res, sql);
+    case 'debug': return res.json({ route, method: req.method, query: req.query, url: req.url });
     default: return res.status(400).json({ error: 'Unknown route' });
   }
 }
@@ -393,4 +395,31 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
     avgScoreOnClues: Math.round(avgScoreOnClues * 10) / 10, cluesSolved,
     avgWordsPicked: Math.round(avgWordsPicked * 10) / 10, avgScore: Math.round(avgScore * 10) / 10,
   });
+}
+
+// ==================== DB INIT ====================
+
+async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
+  try {
+    await sql`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, created_at BIGINT NOT NULL, preferences JSONB DEFAULT '{}')`;
+    await sql`CREATE TABLE IF NOT EXISTS clues (id TEXT PRIMARY KEY, word TEXT NOT NULL, number INT NOT NULL, board_seed TEXT NOT NULL, target_indices INT[] NOT NULL, created_at BIGINT NOT NULL, user_id TEXT NOT NULL REFERENCES users(id), word_pack TEXT NOT NULL, board_size TEXT NOT NULL, reshuffle_count INT DEFAULT 0)`;
+    await sql`CREATE TABLE IF NOT EXISTS results (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), guessed_indices INT[] NOT NULL, correct_count INT NOT NULL, total_targets INT NOT NULL, score INT NOT NULL, timestamp BIGINT NOT NULL, board_size TEXT, UNIQUE(clue_id, user_id))`;
+    await sql`CREATE TABLE IF NOT EXISTS ratings (clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), rating INT NOT NULL, PRIMARY KEY (clue_id, user_id))`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS null_indices INT[] DEFAULT '{}'`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false`;
+    await sql`CREATE TABLE IF NOT EXISTS reports (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), reason TEXT NOT NULL, created_at BIGINT NOT NULL)`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS disabled BOOLEAN DEFAULT false`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS ranked BOOLEAN DEFAULT true`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS red_count INT`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS blue_count INT`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS assassin_count INT`;
+    await sql`CREATE TABLE IF NOT EXISTS oauth_accounts (provider TEXT NOT NULL, provider_id TEXT NOT NULL, user_id TEXT NOT NULL REFERENCES users(id), email TEXT, provider_name TEXT, linked_at BIGINT NOT NULL, PRIMARY KEY (provider, provider_id))`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_oauth_user ON oauth_accounts(user_id)`;
+    await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
+    res.json({ ok: true, message: 'Tables created/updated successfully' });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
+  }
 }
