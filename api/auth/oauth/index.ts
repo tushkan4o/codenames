@@ -328,8 +328,8 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     const enriched = await enrichUser(sql, { ...user, is_admin: user.is_admin || false });
     return res.json(enriched);
   }
-  await sql`INSERT INTO users (id, display_name, created_at, preferences)
-    VALUES (${id}, ${displayName}, ${now}, ${JSON.stringify(preferences || {})})`;
+  await sql`INSERT INTO users (id, display_name, created_at, preferences, session_version)
+    VALUES (${id}, ${displayName}, ${now}, ${JSON.stringify(preferences || {})}, 1)`;
   const newUser = { id, display_name: displayName, created_at: now, preferences: preferences || {}, is_admin: false, session_version: 1 };
   const enriched = await enrichUser(sql, newUser);
   res.json(enriched);
