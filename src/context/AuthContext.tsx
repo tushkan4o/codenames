@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function login(displayName: string, password?: string): Promise<User> {
     const preferences = { ...DEFAULT_PREFERENCES };
 
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch('/api/auth/oauth?action=login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ displayName: displayName.trim(), preferences, password }),
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CACHED_USER_KEY, JSON.stringify(updated));
     setUser(updated);
     if (updates.preferences) {
-      fetch('/api/auth/login', {
+      fetch('/api/auth/oauth?action=login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ displayName: user.displayName, preferences: updates.preferences }),

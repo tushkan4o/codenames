@@ -114,6 +114,7 @@ async function fetchProviderUser(provider: OAuthProvider, accessToken: string): 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = req.query.action as string;
   switch (action) {
+    case 'login': return handleLogin(req, res);
     case 'url': return handleUrl(req, res);
     case 'callback': return handleCallback(req, res);
     case 'resolve': return handleResolve(req, res);
@@ -237,4 +238,32 @@ async function handleUnlink(req: VercelRequest, res: VercelResponse) {
   const sql = neon(process.env.DATABASE_URL!);
   await sql`DELETE FROM oauth_accounts WHERE user_id = ${userId} AND provider = ${provider}`;
   res.json({ ok: true });
+}
+
+// --- POST ?action=login (merged from auth/login.ts) ---
+async function handleLogin(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { displayName, preferences, password } = req.body;
+  if (!displayName) return res.status(400).json({ error: 'displayName required' });
+  if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(displayName.trim())) {
+    return res.status(400).json({ error: 'invalid_chars' });
+  }
+  const sql = neon(process.env.DATABASE_URL!);
+  const id = displayName.toLowerCase();
+  const now = Date.now();
+  const existing = await sql`SELECT * FROM users WHERE id = ${id}`;
+  if (existing.length > 0) {
+    const user = existing[0];
+    if (user.password) {
+      if (!password) return res.status(401).json({ error: 'password_required' });
+      if (password !== user.password) return res.status(401).json({ error: 'wrong_password' });
+    }
+    if (preferences) {
+      await sql`UPDATE users SET preferences = ${JSON.stringify(preferences)} WHERE id = ${id}`;
+    }
+    return res.json({ ...user, is_admin: user.is_admin || false });
+  }
+  await sql`INSERT INTO users (id, display_name, created_at, preferences)
+    VALUES (${id}, ${displayName}, ${now}, ${JSON.stringify(preferences || {})})`;
+  res.json({ id, display_name: displayName, created_at: now, preferences: preferences || {}, is_admin: false });
 }
