@@ -5,8 +5,13 @@ import { useProfileModal } from '../../context/ProfileModalContext';
 import { useTranslation } from '../../i18n/useTranslation';
 import { api } from '../../lib/api';
 import BoardReviewModal from '../game/BoardReviewModal';
-import type { Clue, GuessResult, BoardSize } from '../../types/game';
+import type { Clue, GuessResult } from '../../types/game';
 import type { UserStats, CardFontSize, ColorSortMode } from '../../types/user';
+
+const REVEAL_STEPS = [500, 1000, 1500, 2000];
+const REVEAL_LABELS: Record<number, string> = { 500: '0.5', 1000: '1', 1500: '1.5', 2000: '2' };
+const SUBMIT_STEPS = [0, 1000, 2000, 3000];
+const SUBMIT_LABELS: Record<number, string> = { 0: '0', 1000: '1', 2000: '2', 3000: '3' };
 
 function GoogleIcon({ size = 16 }: { size?: number }) {
   return (
@@ -331,50 +336,20 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   return (
     <>
       <div className="flex flex-col flex-1 min-h-0">
-        {/* Compact header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 min-w-0">
-            {isOwnProfile && editingName ? (
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => { setNewName(e.target.value); setNameError(''); }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') { setEditingName(false); setNameError(''); } }}
-                  autoFocus
-                  className="px-2 py-1 rounded bg-gray-800 border border-gray-600 text-white text-lg font-bold focus:outline-none focus:border-board-blue w-40"
-                />
-                <button onClick={handleRename} disabled={nameSaving} className="text-board-blue hover:text-blue-300 transition-colors">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
-                </button>
-                <button onClick={() => { setEditingName(false); setNameError(''); }} className="text-gray-400 hover:text-white transition-colors">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 min-w-0">
-                <h1 className="text-xl font-extrabold text-white truncate">{user?.displayName || profileId}</h1>
-                {isOwnProfile && (
-                  <button
-                    onClick={() => { setEditingName(true); setNewName(user?.displayName || profileId); }}
-                    className="text-gray-500 hover:text-gray-300 transition-colors shrink-0"
-                    title={t.settings.changeName}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+        {/* Header: nickname left, stats right */}
+        <div className="flex items-start justify-between mb-3">
+          <h1 className="text-xl font-extrabold text-white truncate">{user?.displayName || profileId}</h1>
           {stats && (
-            <div className="flex items-center gap-3 text-sm shrink-0">
-              <span className="text-gray-400"><span className="text-white font-bold">{stats.cluesGiven}</span> {t.profile.cluesGivenShort}</span>
-              <span className="text-gray-400"><span className="text-white font-bold">{stats.cluesSolved}</span> {t.profile.cluesSolvedShort}</span>
-              <span className="text-gray-400"><span className="text-white font-bold">{stats.avgScore}</span> {t.profile.avgShort}</span>
+            <div className="text-right shrink-0 ml-4">
+              <div className="text-xs font-semibold text-gray-500 uppercase mb-1">{t.profile.statsTitle}</div>
+              <div className="flex items-center gap-3 text-sm">
+                <span className="text-gray-400"><span className="text-white font-bold">{stats.cluesGiven}</span> {t.profile.cluesGivenShort}</span>
+                <span className="text-gray-400"><span className="text-white font-bold">{stats.cluesSolved}</span> {t.profile.cluesSolvedShort}</span>
+                <span className="text-gray-400"><span className="text-white font-bold">{stats.avgScore}</span> {t.profile.avgShort}</span>
+              </div>
             </div>
           )}
         </div>
-        {nameError && <p className="text-board-red text-xs mb-2">{nameError}</p>}
 
         {user?.isAdmin && !isOwnProfile && (
           <div className="flex justify-center mb-3">
@@ -408,26 +383,51 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             </button>
 
             {showSettings && (
-              <div className="mt-2 space-y-3 bg-gray-800/40 border border-gray-700/30 rounded-lg p-4">
-                {/* Game settings */}
+              <div className="mt-2 space-y-4 bg-gray-800/40 border border-gray-700/30 rounded-lg p-4">
+                {/* === Общие (General) === */}
                 <div>
-                  <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">{t.settings.game}</h3>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">{t.settings.general}</h3>
                   <div className="space-y-2">
-                    {/* Board size */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-300">{t.settings.boardSize}</span>
-                      <div className="flex gap-1">
-                        {(['4x4', '5x5'] as BoardSize[]).map((size) => (
-                          <button
-                            key={size}
-                            onClick={() => handlePrefChange('defaultBoardSize', size)}
-                            className={`px-2.5 py-1 text-xs font-bold rounded transition-colors ${user?.preferences.defaultBoardSize === size ? 'bg-board-blue text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
-                          >
-                            {size}
-                          </button>
-                        ))}
+                    {/* Nickname — only OAuth users can rename */}
+                    {user?.hasOAuth ? (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-300">{t.settings.nickname}</span>
+                          {editingName ? (
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="text"
+                                value={newName}
+                                onChange={(e) => { setNewName(e.target.value); setNameError(''); }}
+                                onKeyDown={(e) => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') { setEditingName(false); setNameError(''); } }}
+                                autoFocus
+                                className="px-2 py-1 rounded bg-gray-800 border border-gray-600 text-white text-sm font-bold focus:outline-none focus:border-board-blue w-36"
+                              />
+                              <button onClick={handleRename} disabled={nameSaving} className="text-board-blue hover:text-blue-300 transition-colors">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                              </button>
+                              <button onClick={() => { setEditingName(false); setNameError(''); }} className="text-gray-400 hover:text-white transition-colors">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setEditingName(true); setNewName(user?.displayName || profileId); }}
+                              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-gray-400 hover:text-white bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+                            >
+                              {user?.displayName || profileId}
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                            </button>
+                          )}
+                        </div>
+                        {nameError && <p className="text-board-red text-xs">{nameError}</p>}
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-300">{t.settings.nickname}</span>
+                        <span className="text-xs text-gray-500">{user?.displayName || profileId}</span>
                       </div>
-                    </div>
+                    )}
                     {/* Card font size */}
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-300">{t.settings.fontSize}</span>
@@ -439,6 +439,43 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                             className={`px-2.5 py-1 text-xs font-bold rounded transition-colors ${user?.preferences.cardFontSize === sz ? 'bg-board-blue text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
                           >
                             {sz === 'sm' ? 'A' : sz === 'md' ? 'A+' : 'A++'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* === Игровые режимы (Game modes) === */}
+                <div>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">{t.settings.gameModes}</h3>
+                  <div className="space-y-2">
+                    {/* Reveal duration */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-300">{t.settings.revealDuration}</span>
+                      <div className="flex items-center gap-1">
+                        {REVEAL_STEPS.map((val) => (
+                          <button
+                            key={val}
+                            onClick={() => handlePrefChange('revealDuration', val)}
+                            className={`px-2 py-1 text-xs font-bold rounded transition-colors ${user?.preferences.revealDuration === val ? 'bg-board-blue text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                          >
+                            {REVEAL_LABELS[val]}{t.settings.sec}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Submit delay */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-300">{t.settings.submitDelay}</span>
+                      <div className="flex items-center gap-1">
+                        {SUBMIT_STEPS.map((val) => (
+                          <button
+                            key={val}
+                            onClick={() => handlePrefChange('submitDelay', val)}
+                            className={`px-2 py-1 text-xs font-bold rounded transition-colors ${user?.preferences.submitDelay === val ? 'bg-board-blue text-white' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                          >
+                            {SUBMIT_LABELS[val]}{t.settings.sec}
                           </button>
                         ))}
                       </div>
@@ -471,7 +508,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   </div>
                 </div>
 
-                {/* Linked accounts */}
+                {/* === Привязанные аккаунты (Linked accounts) === */}
                 <div>
                   <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">{t.oauth.linkedAccounts}</h3>
                   <div className="space-y-1.5">

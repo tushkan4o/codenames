@@ -14,6 +14,7 @@ export const ru = {
     errorLong: 'Имя должно быть не более 20 символов',
     errorPassword: 'Неверный пароль',
     errorChars: 'Допустимы буквы, цифры, пробелы, дефисы и скобки',
+    oauthRequired: 'Этот аккаунт привязан к Google/Discord. Войдите через соц. сеть.',
   },
   nav: {
     home: 'Главная',
@@ -47,6 +48,9 @@ export const ru = {
     unfinishedGame: 'У вас есть незавершённая игра. Продолжить?',
     continueGame: 'Продолжить',
     newGame: 'Новая игра',
+    rankedLocked: 'Привяжите Google или Discord',
+    rankedProgress: 'Решите ещё {solves} и дайте ещё {clues} подсказок',
+    rankedReady: 'Рейтинговый режим разблокирован!',
   },
   game: {
     spymasterMode: 'Режим капитана',
@@ -173,6 +177,7 @@ export const ru = {
     cluesGivenShort: 'дано',
     cluesSolvedShort: 'решено',
     avgShort: 'ср.',
+    statsTitle: 'Статистика подсказок',
   },
   rating: {
     rateClue: 'Оцените подсказку:',
@@ -251,6 +256,8 @@ export const ru = {
     sortRows: 'Строки',
     sortColumns: 'Столбцы',
     submitDelay: 'Задержка отправки',
+    general: 'Общие',
+    gameModes: 'Игровые режимы',
     game: 'Игра',
     boardSize: 'Размер поля',
     fontSize: 'Размер шрифта',
@@ -261,6 +268,7 @@ export const ru = {
     on: 'Вкл',
     off: 'Выкл',
     changeName: 'Изменить имя',
+    nickname: 'Никнейм',
   },
   oauth: {
     loginGoogle: 'Войти через Google',

@@ -22,6 +22,9 @@ function dbUserToLocal(dbUser: Record<string, unknown>): User {
     createdAt: Number(dbUser.created_at),
     preferences: { ...DEFAULT_PREFERENCES, ...((dbUser.preferences as Record<string, unknown>) || {}) },
     isAdmin: (dbUser.is_admin as boolean) || false,
+    hasOAuth: (dbUser.has_oauth as boolean) || false,
+    casualCluesGiven: Number(dbUser.casual_clues_given) || 0,
+    casualCluesSolved: Number(dbUser.casual_clues_solved) || 0,
   };
 }
 
@@ -86,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fetch('/api/auth/oauth?action=login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName: user.displayName, preferences: updates.preferences }),
+        body: JSON.stringify({ displayName: user.displayName, preferences: updates.preferences, preferencesOnly: true }),
       });
     }
   }

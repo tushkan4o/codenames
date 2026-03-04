@@ -109,6 +109,23 @@ async function fetchProviderUser(provider: OAuthProvider, accessToken: string): 
   return null;
 }
 
+// --- Enrich user with OAuth status + casual stats ---
+
+type SqlFunction = ReturnType<typeof neon>;
+
+async function enrichUser(sql: SqlFunction, user: Record<string, unknown>) {
+  const oauthRows = await sql`SELECT provider FROM oauth_accounts WHERE user_id = ${user.id as string}`;
+  const hasOAuth = oauthRows.length > 0;
+  const givenRows = await sql`SELECT COUNT(*) as c FROM clues WHERE user_id = ${user.id as string} AND ranked = false`;
+  const solvedRows = await sql`SELECT COUNT(*) as c FROM results r JOIN clues cl ON r.clue_id = cl.id WHERE r.user_id = ${user.id as string} AND cl.ranked = false`;
+  return {
+    ...user,
+    has_oauth: hasOAuth,
+    casual_clues_given: Number(givenRows[0].c),
+    casual_clues_solved: Number(solvedRows[0].c),
+  };
+}
+
 // === Main handler ===
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -201,7 +218,8 @@ async function handleResolve(req: VercelRequest, res: VercelResponse) {
   const sql = neon(process.env.DATABASE_URL!);
   const rows = await sql`SELECT * FROM users WHERE id = ${payload.userId as string}`;
   if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
-  res.json({ ...rows[0], is_admin: rows[0].is_admin || false });
+  const enriched = await enrichUser(sql, { ...rows[0], is_admin: rows[0].is_admin || false });
+  res.json(enriched);
 }
 
 // --- POST ?action=complete ---
@@ -224,7 +242,9 @@ async function handleComplete(req: VercelRequest, res: VercelResponse) {
     await sql`INSERT INTO users (id, display_name, created_at, preferences) VALUES (${id}, ${trimmed}, ${now}, ${JSON.stringify({})})`;
     await sql`INSERT INTO oauth_accounts (provider, provider_id, user_id, email, provider_name, linked_at)
       VALUES (${payload.provider as string}, ${payload.providerId as string}, ${id}, ${payload.email as string | null}, ${payload.providerName as string}, ${now})`;
-    res.json({ id, display_name: trimmed, created_at: now, preferences: {}, is_admin: false });
+    const newUser = { id, display_name: trimmed, created_at: now, preferences: {}, is_admin: false };
+    const enriched = await enrichUser(sql, newUser);
+    res.json(enriched);
   } catch (err) {
     console.error('OAuth complete error:', err);
     // Clean up user if oauth insert failed
@@ -265,6 +285,8 @@ async function handleRename(req: VercelRequest, res: VercelResponse) {
   const sql = neon(process.env.DATABASE_URL!);
   const existing = await sql`SELECT id FROM users WHERE id = ${userId}`;
   if (existing.length === 0) return res.status(404).json({ error: 'User not found' });
+  const oauthCheck = await sql`SELECT provider FROM oauth_accounts WHERE user_id = ${userId}`;
+  if (oauthCheck.length === 0) return res.status(403).json({ error: 'oauth_required' });
   await sql`UPDATE users SET display_name = ${trimmed} WHERE id = ${userId}`;
   res.json({ ok: true, displayName: trimmed });
 }
@@ -272,7 +294,7 @@ async function handleRename(req: VercelRequest, res: VercelResponse) {
 // --- POST ?action=login (merged from auth/login.ts) ---
 async function handleLogin(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { displayName, preferences, password } = req.body;
+  const { displayName, preferences, password, preferencesOnly } = req.body;
   if (!displayName) return res.status(400).json({ error: 'displayName required' });
   if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(displayName.trim())) {
     return res.status(400).json({ error: 'invalid_chars' });
@@ -283,6 +305,11 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
   const existing = await sql`SELECT * FROM users WHERE id = ${id}`;
   if (existing.length > 0) {
     const user = existing[0];
+    // Check if account has OAuth linked — block nickname-only login (but allow preference updates)
+    const oauthCheck = await sql`SELECT provider FROM oauth_accounts WHERE user_id = ${id}`;
+    if (oauthCheck.length > 0 && !password && !preferencesOnly) {
+      return res.status(401).json({ error: 'oauth_required' });
+    }
     if (user.password) {
       if (!password) return res.status(401).json({ error: 'password_required' });
       if (password !== user.password) return res.status(401).json({ error: 'wrong_password' });
@@ -290,9 +317,12 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
     if (preferences) {
       await sql`UPDATE users SET preferences = ${JSON.stringify(preferences)} WHERE id = ${id}`;
     }
-    return res.json({ ...user, is_admin: user.is_admin || false });
+    const enriched = await enrichUser(sql, { ...user, is_admin: user.is_admin || false });
+    return res.json(enriched);
   }
   await sql`INSERT INTO users (id, display_name, created_at, preferences)
     VALUES (${id}, ${displayName}, ${now}, ${JSON.stringify(preferences || {})})`;
-  res.json({ id, display_name: displayName, created_at: now, preferences: preferences || {}, is_admin: false });
+  const newUser = { id, display_name: displayName, created_at: now, preferences: preferences || {}, is_admin: false };
+  const enriched = await enrichUser(sql, newUser);
+  res.json(enriched);
 }

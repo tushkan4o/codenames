@@ -39,7 +39,9 @@ export default function LoginPage() {
       navigate('/');
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      if (msg === 'password_required') {
+      if (msg === 'oauth_required') {
+        setError(t.login.oauthRequired);
+      } else if (msg === 'password_required') {
         setNeedsPassword(true);
         setError('');
       } else if (msg === 'wrong_password') {

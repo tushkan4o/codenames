@@ -6,6 +6,9 @@ export interface User {
   createdAt: number;
   preferences: UserPreferences;
   isAdmin: boolean;
+  hasOAuth: boolean;
+  casualCluesGiven: number;
+  casualCluesSolved: number;
 }
 
 export type CardFontSize = 'sm' | 'md' | 'lg';
