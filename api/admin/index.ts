@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { neon } from '@neondatabase/serverless';
 
 async function checkAdmin(sql: ReturnType<typeof neon>, adminId: string): Promise<boolean> {
-  const rows = await sql`SELECT is_admin FROM users WHERE id = ${adminId}`;
+  const rows = await sql`SELECT is_admin FROM users WHERE id = ${adminId}` as Record<string, unknown>[];
   return rows.length > 0 && rows[0].is_admin === true;
 }
 
@@ -167,7 +167,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const updates: string[] = [];
 
       // Validate clue exists
-      const existing = await sql`SELECT * FROM clues WHERE id = ${clueId}`;
+      const existing = await sql`SELECT * FROM clues WHERE id = ${clueId}` as Record<string, unknown>[];
       if (existing.length === 0) {
         return res.status(404).json({ error: 'Clue not found' });
       }
