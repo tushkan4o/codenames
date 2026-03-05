@@ -175,28 +175,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Poll server for cross-device eviction detection + reclaim on focus
+  // Poll server for cross-device eviction detection
   useEffect(() => {
     if (!user) return;
 
     const pollServer = async () => {
+      if (evicted) return; // don't poll if already evicted
       const active = await checkOnServer(user.id);
       if (!active) setEvicted(true);
     };
 
-    // On focus: reclaim (last-active-wins on F5 or tab switch)
-    const handleFocus = () => {
-      claimSession(user.id);
-    };
-
-    window.addEventListener('focus', handleFocus);
     const interval = setInterval(pollServer, 5000);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      clearInterval(interval);
-    };
-  }, [user?.id, claimSession]);
+    return () => clearInterval(interval);
+  }, [user?.id, evicted]);
 
   return (
     <AuthContext.Provider value={{ user, evicted, login, loginWithOAuth, logout, updateUser, refreshUser }}>

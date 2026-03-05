@@ -38,7 +38,26 @@ export default function ClueGivingPage() {
     return baseConfig;
   }, [searchParams, baseConfig]);
 
-  const [currentSeed, setCurrentSeed] = useState(rawSeed ? decodeURIComponent(rawSeed) : generateSeed());
+  // Persist seed in sessionStorage so refresh keeps the same board
+  // and manual URL changes are ignored
+  const seedStorageKey = `codenames_seed_${boardSize}_${isRanked ? 'r' : 'c'}`;
+  const [currentSeed, setCurrentSeed] = useState(() => {
+    const stored = sessionStorage.getItem(seedStorageKey);
+    if (stored) return stored;
+    const seed = generateSeed();
+    sessionStorage.setItem(seedStorageKey, seed);
+    return seed;
+  });
+  // Sync URL to actual seed (in case sessionStorage overrode URL param)
+  const decodedRawSeed = rawSeed ? decodeURIComponent(rawSeed) : null;
+  if (decodedRawSeed !== currentSeed) {
+    window.history.replaceState(
+      null,
+      '',
+      `/give-clue/${encodeURIComponent(currentSeed)}?${searchParams}`,
+    );
+  }
+
   const [selectedTargets, setSelectedTargets] = useState<number[]>([]);
   const [selectedNulls, setSelectedNulls] = useState<number[]>([]);
   const [submitted, setSubmitted] = useState(false);
@@ -72,6 +91,7 @@ export default function ClueGivingPage() {
 
   function handleReshuffle() {
     const newSeed = generateSeed();
+    sessionStorage.setItem(seedStorageKey, newSeed);
     setCurrentSeed(newSeed);
     setSelectedTargets([]);
     setSelectedNulls([]);
@@ -179,6 +199,7 @@ export default function ClueGivingPage() {
     if (!pendingClueRef.current) return;
     try {
       await api.saveClue(pendingClueRef.current as Clue);
+      sessionStorage.removeItem(seedStorageKey);
       setSubmitted(true);
     } catch (err) {
       setTargetError(err instanceof Error ? err.message : 'Ошибка сохранения');
@@ -237,6 +258,7 @@ export default function ClueGivingPage() {
 
   function handleGiveAnother() {
     const newSeed = generateSeed();
+    sessionStorage.setItem(seedStorageKey, newSeed);
     setCurrentSeed(newSeed);
     setSelectedTargets([]);
     setSelectedNulls([]);
