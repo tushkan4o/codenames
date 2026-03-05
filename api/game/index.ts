@@ -590,24 +590,32 @@ async function handleCaptainGame(req: VercelRequest, res: VercelResponse, sql: R
 
   const col = ranked ? 'captain_ranked' : 'captain_casual';
   try {
-    // Ensure columns exist
-    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_ranked JSONB`;
-    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_casual JSONB`;
-
-    const rows = await sql`SELECT captain_ranked, captain_casual FROM users WHERE id = ${userId}`;
+    let rows;
+    try {
+      rows = await sql`SELECT captain_ranked, captain_casual FROM users WHERE id = ${userId}`;
+    } catch {
+      // Columns might not exist yet — create them and retry
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_ranked JSONB`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_casual JSONB`;
+      rows = await sql`SELECT captain_ranked, captain_casual FROM users WHERE id = ${userId}`;
+    }
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
-    const existing = rows[0][col] as { seed: string; params: string; reshuffleCount: number } | null;
-    if (existing) {
+    const raw = rows[0][col];
+    // Handle JSONB: neon driver may return parsed object or string
+    const existing: { seed: string; params: string; reshuffleCount: number } | null =
+      typeof raw === 'string' ? JSON.parse(raw) : (raw as { seed: string; params: string; reshuffleCount: number } | null);
+    if (existing?.seed) {
       return res.json(existing);
     }
 
     // Create new captain game with server-generated seed
     const game = { seed: generateServerSeed(), params: params || '', reshuffleCount: 0 };
+    const gameJson = JSON.stringify(game);
     if (ranked) {
-      await sql`UPDATE users SET captain_ranked = ${JSON.stringify(game)} WHERE id = ${userId}`;
+      await sql`UPDATE users SET captain_ranked = ${gameJson}::jsonb WHERE id = ${userId}`;
     } else {
-      await sql`UPDATE users SET captain_casual = ${JSON.stringify(game)} WHERE id = ${userId}`;
+      await sql`UPDATE users SET captain_casual = ${gameJson}::jsonb WHERE id = ${userId}`;
     }
     return res.json(game);
   } catch (err: unknown) {
@@ -626,15 +634,18 @@ async function handleCaptainReshuffle(req: VercelRequest, res: VercelResponse, s
     const rows = await sql`SELECT captain_ranked, captain_casual FROM users WHERE id = ${userId}`;
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
-    const existing = rows[0][col] as { seed: string; params: string; reshuffleCount: number } | null;
+    const raw = rows[0][col];
+    const existing: { seed: string; params: string; reshuffleCount: number } | null =
+      typeof raw === 'string' ? JSON.parse(raw) : (raw as { seed: string; params: string; reshuffleCount: number } | null);
     const newSeed = generateServerSeed();
     const newCount = (existing?.reshuffleCount || 0) + 1;
     const game = { seed: newSeed, params: existing?.params || '', reshuffleCount: newCount };
 
+    const gameJson = JSON.stringify(game);
     if (ranked) {
-      await sql`UPDATE users SET captain_ranked = ${JSON.stringify(game)} WHERE id = ${userId}`;
+      await sql`UPDATE users SET captain_ranked = ${gameJson}::jsonb WHERE id = ${userId}`;
     } else {
-      await sql`UPDATE users SET captain_casual = ${JSON.stringify(game)} WHERE id = ${userId}`;
+      await sql`UPDATE users SET captain_casual = ${gameJson}::jsonb WHERE id = ${userId}`;
     }
     return res.json(game);
   } catch (err: unknown) {

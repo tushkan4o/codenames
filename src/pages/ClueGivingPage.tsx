@@ -43,6 +43,8 @@ export default function ClueGivingPage() {
     return baseConfig;
   }, [lockedParams, baseConfig]);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   // Fetch locked seed from server on mount
   const fetchedRef = useRef(false);
   useEffect(() => {
@@ -50,15 +52,20 @@ export default function ClueGivingPage() {
     fetchedRef.current = true;
 
     const ranked = searchParams.get('ranked') !== '0';
-    api.getCaptainGame(user.id, ranked, searchParams.toString()).then((game) => {
+    api.getCaptainGame(user.id, ranked, searchParams.toString()).then((raw) => {
+      // Handle potential double-serialized JSONB (string instead of object)
+      const game = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!game?.seed) {
+        setLoadError(`Сервер не вернул seed: ${JSON.stringify(game)}`);
+        return;
+      }
       setCurrentSeed(game.seed);
-      setLockedParams(new URLSearchParams(game.params));
-      setReshuffleCount(game.reshuffleCount);
+      setLockedParams(new URLSearchParams(game.params || searchParams.toString()));
+      setReshuffleCount(game.reshuffleCount || 0);
       setLoading(false);
-      window.history.replaceState(null, '', `/give-clue?${game.params}`);
-    }).catch(() => {
-      // Server error (e.g. missing columns) — go home
-      navigate('/');
+      window.history.replaceState(null, '', `/give-clue?${game.params || searchParams.toString()}`);
+    }).catch((err) => {
+      setLoadError(err instanceof Error ? err.message : String(err));
     });
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -306,8 +313,20 @@ export default function ClueGivingPage() {
   // Loading state while fetching server seed
   if (loading || !board || !currentSeed) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-400 text-lg animate-pulse">Загрузка...</div>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        {loadError ? (
+          <>
+            <div className="text-red-400 text-sm max-w-sm text-center">{loadError}</div>
+            <button
+              onClick={() => navigate('/')}
+              className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm"
+            >
+              На главную
+            </button>
+          </>
+        ) : (
+          <div className="text-gray-400 text-lg animate-pulse">Загрузка...</div>
+        )}
       </div>
     );
   }
