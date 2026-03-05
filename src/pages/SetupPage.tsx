@@ -171,8 +171,9 @@ export default function SetupPage() {
           params.set('a', String(assassinCount));
         }
       }
-      // Seed is server-managed — ClueGivingPage will fetch the locked seed
-      navigate(`/give-clue?${params}`);
+      // Start captain game on server (sets active mode + creates game if needed)
+      await api.startCaptainGame(user.id, ranked, params.toString());
+      navigate('/give-clue');
     } else {
       // Check for unfinished game
       const saved = localStorage.getItem('codenames_active_guess');

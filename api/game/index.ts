@@ -588,36 +588,48 @@ async function handleCaptainGame(req: VercelRequest, res: VercelResponse, sql: R
   const { userId, ranked, params } = req.body;
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
-  const col = ranked ? 'captain_ranked' : 'captain_casual';
   try {
     let rows;
     try {
-      rows = await sql`SELECT captain_ranked, captain_casual FROM users WHERE id = ${userId}`;
+      rows = await sql`SELECT captain_ranked, captain_casual, captain_active FROM users WHERE id = ${userId}`;
     } catch {
       // Columns might not exist yet — create them and retry
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_ranked JSONB`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_casual JSONB`;
-      rows = await sql`SELECT captain_ranked, captain_casual FROM users WHERE id = ${userId}`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_active TEXT`;
+      rows = await sql`SELECT captain_ranked, captain_casual, captain_active FROM users WHERE id = ${userId}`;
     }
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
+    // Determine mode: explicit ranked param (from SetupPage) or stored active mode (from ClueGivingPage)
+    let isRanked: boolean;
+    if (ranked !== undefined && ranked !== null) {
+      isRanked = !!ranked;
+      // Set active mode
+      await sql`UPDATE users SET captain_active = ${isRanked ? 'ranked' : 'casual'} WHERE id = ${userId}`;
+    } else {
+      // Use stored active mode, default to ranked
+      isRanked = (rows[0].captain_active || 'ranked') === 'ranked';
+    }
+
+    const col = isRanked ? 'captain_ranked' : 'captain_casual';
     const raw = rows[0][col];
     // Handle JSONB: neon driver may return parsed object or string
     const existing: { seed: string; params: string; reshuffleCount: number } | null =
       typeof raw === 'string' ? JSON.parse(raw) : (raw as { seed: string; params: string; reshuffleCount: number } | null);
     if (existing?.seed) {
-      return res.json(existing);
+      return res.json({ ...existing, ranked: isRanked });
     }
 
     // Create new captain game with server-generated seed
     const game = { seed: generateServerSeed(), params: params || '', reshuffleCount: 0 };
     const gameJson = JSON.stringify(game);
-    if (ranked) {
+    if (isRanked) {
       await sql`UPDATE users SET captain_ranked = ${gameJson}::jsonb WHERE id = ${userId}`;
     } else {
       await sql`UPDATE users SET captain_casual = ${gameJson}::jsonb WHERE id = ${userId}`;
     }
-    return res.json(game);
+    return res.json({ ...game, ranked: isRanked });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return res.status(500).json({ error: message });
@@ -626,13 +638,15 @@ async function handleCaptainGame(req: VercelRequest, res: VercelResponse, sql: R
 
 async function handleCaptainReshuffle(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { userId, ranked } = req.body;
+  const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: 'userId required' });
 
-  const col = ranked ? 'captain_ranked' : 'captain_casual';
   try {
-    const rows = await sql`SELECT captain_ranked, captain_casual FROM users WHERE id = ${userId}`;
+    const rows = await sql`SELECT captain_ranked, captain_casual, captain_active FROM users WHERE id = ${userId}`;
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    const isRanked = (rows[0].captain_active || 'ranked') === 'ranked';
+    const col = isRanked ? 'captain_ranked' : 'captain_casual';
 
     const raw = rows[0][col];
     const existing: { seed: string; params: string; reshuffleCount: number } | null =
@@ -642,12 +656,12 @@ async function handleCaptainReshuffle(req: VercelRequest, res: VercelResponse, s
     const game = { seed: newSeed, params: existing?.params || '', reshuffleCount: newCount };
 
     const gameJson = JSON.stringify(game);
-    if (ranked) {
+    if (isRanked) {
       await sql`UPDATE users SET captain_ranked = ${gameJson}::jsonb WHERE id = ${userId}`;
     } else {
       await sql`UPDATE users SET captain_casual = ${gameJson}::jsonb WHERE id = ${userId}`;
     }
-    return res.json(game);
+    return res.json({ ...game, ranked: isRanked });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return res.status(500).json({ error: message });
@@ -718,6 +732,7 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS session_state JSONB`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_ranked JSONB`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_casual JSONB`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_active TEXT`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

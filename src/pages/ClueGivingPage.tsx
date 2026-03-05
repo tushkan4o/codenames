@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { generateBoard } from '../lib/boardGenerator';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -15,24 +15,23 @@ import ClueInput from '../components/clue/ClueInput';
 import SettingsPanel from '../components/settings/SettingsPanel';
 
 export default function ClueGivingPage() {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, saveSessionState, roamingState, clearRoamingState } = useAuth();
   const { t } = useTranslation();
 
-  // Server-locked captain game state
+  // All state comes from server — no URL params
   const [currentSeed, setCurrentSeed] = useState<string | null>(null);
-  const [lockedParams, setLockedParams] = useState<URLSearchParams>(searchParams);
+  const [gameParams, setGameParams] = useState<URLSearchParams>(new URLSearchParams());
+  const [isRanked, setIsRanked] = useState(true);
   const [reshuffleCount, setReshuffleCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const boardSize = (lockedParams.get('size') as BoardSize) || '5x5';
-  const isRanked = lockedParams.get('ranked') !== '0';
+  const boardSize = (gameParams.get('size') as BoardSize) || '5x5';
   const baseConfig = BOARD_CONFIGS[boardSize];
   const config = useMemo(() => {
-    const r = lockedParams.get('r');
-    const b = lockedParams.get('b');
-    const a = lockedParams.get('a');
+    const r = gameParams.get('r');
+    const b = gameParams.get('b');
+    const a = gameParams.get('a');
     if (r || b || a) {
       const redCount = r ? Number(r) : baseConfig.redCount;
       const blueCount = b ? Number(b) : baseConfig.blueCount;
@@ -41,29 +40,27 @@ export default function ClueGivingPage() {
       return { ...baseConfig, redCount, blueCount, assassinCount, neutralCount };
     }
     return baseConfig;
-  }, [lockedParams, baseConfig]);
+  }, [gameParams, baseConfig]);
 
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Fetch locked seed from server on mount
+  // Fetch active captain game from server on mount (no URL params needed)
   const fetchedRef = useRef(false);
   useEffect(() => {
     if (!user || fetchedRef.current) return;
     fetchedRef.current = true;
 
-    const ranked = searchParams.get('ranked') !== '0';
-    api.getCaptainGame(user.id, ranked, searchParams.toString()).then((raw) => {
-      // Handle potential double-serialized JSONB (string instead of object)
+    api.getActiveCaptainGame(user.id).then((raw) => {
       const game = typeof raw === 'string' ? JSON.parse(raw) : raw;
       if (!game?.seed) {
         setLoadError(`Сервер не вернул seed: ${JSON.stringify(game)}`);
         return;
       }
       setCurrentSeed(game.seed);
-      setLockedParams(new URLSearchParams(game.params || searchParams.toString()));
+      setGameParams(new URLSearchParams(game.params || ''));
+      setIsRanked(game.ranked !== false);
       setReshuffleCount(game.reshuffleCount || 0);
       setLoading(false);
-      window.history.replaceState(null, '', `/give-clue?${game.params || searchParams.toString()}`);
     }).catch((err) => {
       setLoadError(err instanceof Error ? err.message : String(err));
     });
@@ -113,8 +110,7 @@ export default function ClueGivingPage() {
   // Save state to server on meaningful changes (debounced via saveSessionState)
   useEffect(() => {
     if (!user || !currentSeed || submitted || loading || roamingState) return;
-    const url = `/give-clue?${lockedParams}`;
-    saveSessionState(url, { selectedTargets, selectedNulls, reshuffleCount });
+    saveSessionState('/give-clue', { selectedTargets, selectedNulls, reshuffleCount });
   }, [selectedTargets, selectedNulls, reshuffleCount, currentSeed, submitted, loading, roamingState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-detect clue-0: if any non-red cards are selected as nulls
@@ -125,7 +121,7 @@ export default function ClueGivingPage() {
   async function handleReshuffle() {
     if (!user) return;
     try {
-      const game = await api.captainReshuffle(user.id, isRanked);
+      const game = await api.captainReshuffle(user.id);
       setCurrentSeed(game.seed);
       setReshuffleCount(game.reshuffleCount);
       setSelectedTargets([]);
@@ -133,11 +129,6 @@ export default function ClueGivingPage() {
       setTargetError('');
       setIsSorted(false);
       resetOrder();
-      window.history.replaceState(
-        null,
-        '',
-        `/give-clue?${lockedParams}`,
-      );
     } catch {
       setTargetError('Ошибка при смене слов');
     }
@@ -291,21 +282,16 @@ export default function ClueGivingPage() {
   async function handleGiveAnother() {
     if (!user) return;
     try {
-      const game = await api.getCaptainGame(user.id, isRanked, lockedParams.toString());
+      const game = await api.getActiveCaptainGame(user.id);
       setCurrentSeed(game.seed);
+      setIsRanked(game.ranked !== false);
       setReshuffleCount(game.reshuffleCount);
       setSelectedTargets([]);
       setSelectedNulls([]);
       setTargetError('');
       setSubmitted(false);
       setIsSorted(false);
-      window.history.replaceState(
-        null,
-        '',
-        `/give-clue?${lockedParams}`,
-      );
     } catch {
-      // fallback: just go home
       navigate('/');
     }
   }

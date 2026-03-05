@@ -111,12 +111,16 @@ export const api = {
     await post('/api/game?route=clues', clue);
   },
 
-  async getCaptainGame(userId: string, ranked: boolean, params: string): Promise<{ seed: string; params: string; reshuffleCount: number }> {
+  async startCaptainGame(userId: string, ranked: boolean, params: string): Promise<{ seed: string; params: string; reshuffleCount: number; ranked: boolean }> {
     return post('/api/game?route=captain-game', { userId, ranked, params });
   },
 
-  async captainReshuffle(userId: string, ranked: boolean): Promise<{ seed: string; params: string; reshuffleCount: number }> {
-    return post('/api/game?route=captain-reshuffle', { userId, ranked });
+  async getActiveCaptainGame(userId: string): Promise<{ seed: string; params: string; reshuffleCount: number; ranked: boolean }> {
+    return post('/api/game?route=captain-game', { userId });
+  },
+
+  async captainReshuffle(userId: string): Promise<{ seed: string; params: string; reshuffleCount: number; ranked: boolean }> {
+    return post('/api/game?route=captain-reshuffle', { userId });
   },
 
   async getRandomClue(
