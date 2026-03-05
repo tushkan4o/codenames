@@ -52,7 +52,7 @@ export default function ClueRating({ clueId, onRate, onReport, initialRating }: 
   }
 
   return (
-    <div className="flex flex-col items-center gap-2 mt-3">
+    <div className="flex flex-col items-center gap-1.5 mt-2">
       {justRated ? (
         <p className="text-blue-400 text-sm">{t.rating.thanks}</p>
       ) : (
@@ -105,7 +105,7 @@ export default function ClueRating({ clueId, onRate, onReport, initialRating }: 
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-4 mt-1">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => setShowReportInput(true)}
             className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors"
