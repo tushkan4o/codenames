@@ -340,7 +340,7 @@ export default function ClueGivingPage() {
         <p className="text-gray-400">{t.game.othersCanGuess}</p>
         <div className="flex gap-3">
           <button
-            onClick={() => { clearCaptainGame(); navigate('/'); }}
+            onClick={() => { clearCaptainGame(); saveSessionState('/', null); navigate('/'); }}
             className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors inline-flex items-center gap-1.5"
           >
             <HomeIcon className="w-5 h-5" />
@@ -434,7 +434,7 @@ export default function ClueGivingPage() {
                 {t.rating.cancel}
               </button>
               <button
-                onClick={() => { clearCaptainGame(); navigate('/'); }}
+                onClick={() => { clearCaptainGame(); saveSessionState('/', null); navigate('/'); }}
                 className="px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-semibold transition-colors"
               >
                 {t.admin.confirm}

@@ -8,15 +8,16 @@ import type { UserStats } from '../types/user';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, saveSessionState } = useAuth();
   const { t } = useTranslation();
   const [stats, setStats] = useState<UserStats | null>(null);
 
   useEffect(() => {
     if (user) {
       api.getUserStats(user.id).then(setStats);
+      saveSessionState('/', null);
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-screen">
