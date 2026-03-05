@@ -138,9 +138,15 @@ export default function GuessingPage() {
       // Check for active guess on a different clue (conflict)
       const saved = loadActiveGuess();
       if (saved && saved.clueId !== clueId && saved.pickedIndices.length > 0) {
-        setConflictingGuess(saved);
-        setLoading(false);
-        return;
+        // Verify the conflicting clue still exists
+        const conflictClue = await api.getClueById(saved.clueId);
+        if (conflictClue) {
+          setConflictingGuess(saved);
+          setLoading(false);
+          return;
+        }
+        // Clue was deleted — clear stale localStorage
+        clearActiveGuess();
       }
 
       // Restore completed game from localStorage (e.g. after back-navigation)

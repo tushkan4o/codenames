@@ -280,6 +280,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Delete user's own activity on other clues
+      await sql`DELETE FROM comments WHERE user_id = ${userId}`;
       await sql`DELETE FROM reports WHERE user_id = ${userId}`;
       await sql`DELETE FROM ratings WHERE user_id = ${userId}`;
       await sql`DELETE FROM results WHERE user_id = ${userId}`;
