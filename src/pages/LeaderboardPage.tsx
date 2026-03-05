@@ -330,7 +330,7 @@ export default function LeaderboardPage() {
                           {c.word} <span className="text-amber-400 font-semibold">{c.number}</span>
                         </span>
                         <span className="text-xs text-gray-500 text-center hidden sm:block">{c.createdAt > 0 ? formatDate(c.createdAt) : '—'}</span>
-                        <span className="text-sm text-gray-400 text-center">{c.avgScore.toFixed(1)}</span>
+                        <span className="text-sm text-gray-400 text-center">{c.attempts > 0 ? c.avgScore.toFixed(1) : '—'}</span>
                         <span className="text-sm text-center">{c.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
                           {user && (
