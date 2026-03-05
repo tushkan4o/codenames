@@ -7,14 +7,22 @@ const CACHED_USER_KEY = 'codenames_cached_user';
 const SESSION_CHANNEL = 'codenames_session';
 const TAB_SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
+interface PendingRestore {
+  url: string;
+  state: Record<string, unknown> | null;
+}
+
 interface AuthContextValue {
   user: User | null;
   evicted: boolean;
+  pendingRestore: PendingRestore | null;
   login: (displayName: string, password?: string) => Promise<User>;
   loginWithOAuth: (dbUser: Record<string, unknown>) => User;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   refreshUser: () => Promise<void>;
+  saveSessionState: (url: string, state: Record<string, unknown> | null) => void;
+  clearPendingRestore: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -33,15 +41,25 @@ function dbUserToLocal(dbUser: Record<string, unknown>): User {
   };
 }
 
-/** Claim the active session on the server */
-async function claimOnServer(userId: string) {
+interface ClaimResult {
+  ok: boolean;
+  savedUrl: string | null;
+  savedState: Record<string, unknown> | null;
+}
+
+/** Claim the active session on the server, returns saved roaming state */
+async function claimOnServer(userId: string): Promise<ClaimResult> {
   try {
-    await fetch('/api/game?route=claim-session', {
+    const res = await fetch('/api/game?route=claim-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, sessionId: TAB_SESSION_ID }),
     });
-  } catch { /* ignore */ }
+    if (!res.ok) return { ok: false, savedUrl: null, savedState: null };
+    return res.json();
+  } catch {
+    return { ok: false, savedUrl: null, savedState: null };
+  }
 }
 
 /** Check if our session is still active on the server */
@@ -52,13 +70,15 @@ async function checkOnServer(userId: string): Promise<boolean> {
     const data = await res.json();
     return data.active !== false;
   } catch {
-    return true; // assume active on network error
+    return true;
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const channelRef = useRef<BroadcastChannel | null>(null);
+  const saveStateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [evicted, setEvicted] = useState(false);
+  const [pendingRestore, setPendingRestore] = useState<PendingRestore | null>(null);
 
   const [user, setUser] = useState<User | null>(() => {
     const userId = localStorage.getItem(CURRENT_USER_KEY);
@@ -74,11 +94,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
-  /** Claim session: broadcast to same-browser tabs + tell server */
+  const clearPendingRestore = useCallback(() => setPendingRestore(null), []);
+
+  /** Save current page URL + state to server (debounced) */
+  const saveSessionState = useCallback((url: string, state: Record<string, unknown> | null) => {
+    if (!user) return;
+    if (saveStateTimerRef.current) clearTimeout(saveStateTimerRef.current);
+    saveStateTimerRef.current = setTimeout(() => {
+      saveStateTimerRef.current = null;
+      fetch('/api/game?route=save-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, sessionId: TAB_SESSION_ID, url, state }),
+      }).catch(() => {});
+    }, 800);
+  }, [user?.id]);
+
+  /** Claim session for login flows (no roaming restore) */
   const claimSession = useCallback((userId: string) => {
     setEvicted(false);
     channelRef.current?.postMessage({ type: 'CLAIM', tabId: TAB_SESSION_ID });
-    claimOnServer(userId);
+    claimOnServer(userId).catch(() => {});
   }, []);
 
   async function login(displayName: string, password?: string): Promise<User> {
@@ -158,7 +194,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     channelRef.current = channel;
     channel.onmessage = (e) => {
       if (e.data?.type === 'CLAIM' && e.data.tabId !== TAB_SESSION_ID) {
-        // Another tab claimed the session — we're evicted
         setEvicted(true);
       }
     };
@@ -168,11 +203,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // On mount with cached user: claim session
+  // On mount with cached user: claim session + check for roaming state
   useEffect(() => {
-    if (user) {
-      claimSession(user.id);
-    }
+    if (!user) return;
+    setEvicted(false);
+    channelRef.current?.postMessage({ type: 'CLAIM', tabId: TAB_SESSION_ID });
+
+    claimOnServer(user.id).then((result) => {
+      if (result.savedUrl) {
+        const currentPath = window.location.pathname + window.location.search;
+        if (result.savedUrl !== currentPath) {
+          setPendingRestore({ url: result.savedUrl, state: result.savedState });
+        }
+      }
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Poll server for cross-device eviction detection
@@ -180,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     const pollServer = async () => {
-      if (evicted) return; // don't poll if already evicted
+      if (evicted) return;
       const active = await checkOnServer(user.id);
       if (!active) setEvicted(true);
     };
@@ -190,7 +234,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user?.id, evicted]);
 
   return (
-    <AuthContext.Provider value={{ user, evicted, login, loginWithOAuth, logout, updateUser, refreshUser }}>
+    <AuthContext.Provider value={{
+      user, evicted, pendingRestore,
+      login, loginWithOAuth, logout, updateUser, refreshUser,
+      saveSessionState, clearPendingRestore,
+    }}>
       {children}
     </AuthContext.Provider>
   );

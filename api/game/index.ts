@@ -91,6 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'stats': return handleUserStats(req, res, sql);
     case 'claim-session': return handleClaimSession(req, res, sql);
     case 'check-session': return handleCheckSession(req, res, sql);
+    case 'save-state': return handleSaveState(req, res, sql);
     case 'init': return handleInit(res, sql);
     case 'migrate-ids': return handleMigrateIds(res, sql);
     case 'debug': return res.json({ route, method: req.method, query: req.query, url: req.url });
@@ -519,10 +520,15 @@ async function handleClaimSession(req: VercelRequest, res: VercelResponse, sql: 
   const { userId, sessionId } = req.body;
   if (!userId || !sessionId) return res.status(400).json({ error: 'userId and sessionId required' });
   try {
-    await sql`UPDATE users SET active_session = ${sessionId} WHERE id = ${userId}`;
-    res.json({ ok: true });
+    // Read saved roaming state before claiming
+    const rows = await sql`SELECT session_url, session_state FROM users WHERE id = ${userId}`;
+    const savedUrl = rows.length > 0 ? (rows[0].session_url as string | null) : null;
+    const savedState = rows.length > 0 ? (rows[0].session_state as Record<string, unknown> | null) : null;
+    // Claim and clear roaming state (consumed)
+    await sql`UPDATE users SET active_session = ${sessionId}, session_url = NULL, session_state = NULL WHERE id = ${userId}`;
+    res.json({ ok: true, savedUrl, savedState });
   } catch {
-    res.json({ ok: true }); // column may not exist yet
+    res.json({ ok: true, savedUrl: null, savedState: null });
   }
 }
 
@@ -538,6 +544,25 @@ async function handleCheckSession(req: VercelRequest, res: VercelResponse, sql: 
     res.json({ active });
   } catch {
     res.json({ active: true }); // column may not exist yet
+  }
+}
+
+// ==================== SAVE SESSION STATE ====================
+
+async function handleSaveState(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { userId, sessionId, url, state } = req.body;
+  if (!userId || !sessionId) return res.status(400).json({ error: 'userId and sessionId required' });
+  try {
+    // Only save if this tab still owns the session (prevents evicted tabs from overwriting)
+    await sql`
+      UPDATE users
+      SET session_url = ${url ?? null}, session_state = ${state ? JSON.stringify(state) : null}
+      WHERE id = ${userId} AND active_session = ${sessionId}
+    `;
+    res.json({ ok: true });
+  } catch {
+    res.json({ ok: true });
   }
 }
 
@@ -601,6 +626,8 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`CREATE INDEX IF NOT EXISTS idx_oauth_user ON oauth_accounts(user_id)`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INT DEFAULT 0`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS active_session TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS session_url TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS session_state JSONB`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

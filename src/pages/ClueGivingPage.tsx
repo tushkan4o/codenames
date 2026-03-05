@@ -1,5 +1,5 @@
-import { useMemo, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { generateBoard, generateSeed } from '../lib/boardGenerator';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -18,7 +18,9 @@ export default function ClueGivingPage() {
   const { seed: rawSeed } = useParams<{ seed: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, saveSessionState } = useAuth();
+  const location = useLocation();
+  const roamingState = (location.state as { roamingState?: Record<string, unknown> } | null)?.roamingState ?? null;
   const { t } = useTranslation();
 
   const boardSize = (searchParams.get('size') as BoardSize) || '5x5';
@@ -38,25 +40,9 @@ export default function ClueGivingPage() {
     return baseConfig;
   }, [searchParams, baseConfig]);
 
-  // Persist seed in sessionStorage so refresh keeps the same board
-  // and manual URL changes are ignored
-  const seedStorageKey = `codenames_seed_${boardSize}_${isRanked ? 'r' : 'c'}`;
-  const [currentSeed, setCurrentSeed] = useState(() => {
-    const stored = sessionStorage.getItem(seedStorageKey);
-    if (stored) return stored;
-    const seed = generateSeed();
-    sessionStorage.setItem(seedStorageKey, seed);
-    return seed;
-  });
-  // Sync URL to actual seed (in case sessionStorage overrode URL param)
-  const decodedRawSeed = rawSeed ? decodeURIComponent(rawSeed) : null;
-  if (decodedRawSeed !== currentSeed) {
-    window.history.replaceState(
-      null,
-      '',
-      `/give-clue/${encodeURIComponent(currentSeed)}?${searchParams}`,
-    );
-  }
+  const [currentSeed, setCurrentSeed] = useState(
+    rawSeed ? decodeURIComponent(rawSeed) : generateSeed(),
+  );
 
   const [selectedTargets, setSelectedTargets] = useState<number[]>([]);
   const [selectedNulls, setSelectedNulls] = useState<number[]>([]);
@@ -84,6 +70,31 @@ export default function ClueGivingPage() {
   const [showHomeConfirm, setShowHomeConfirm] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
+  // Restore roaming state from another device (one-time on mount)
+  const roamingAppliedRef = useRef(false);
+  useEffect(() => {
+    if (roamingAppliedRef.current || !roamingState) return;
+    roamingAppliedRef.current = true;
+    if (Array.isArray(roamingState.selectedTargets)) {
+      setSelectedTargets(roamingState.selectedTargets as number[]);
+    }
+    if (Array.isArray(roamingState.selectedNulls)) {
+      setSelectedNulls(roamingState.selectedNulls as number[]);
+    }
+    if (typeof roamingState.reshuffleCount === 'number') {
+      setReshuffleCount(roamingState.reshuffleCount as number);
+    }
+    // Clear location state so F5 doesn't re-apply
+    window.history.replaceState({}, '', window.location.href);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Save state to server on meaningful changes (debounced via saveSessionState)
+  useEffect(() => {
+    if (!user || submitted) return;
+    const url = `/give-clue/${encodeURIComponent(currentSeed)}?${searchParams}`;
+    saveSessionState(url, { selectedTargets, selectedNulls, reshuffleCount });
+  }, [selectedTargets, selectedNulls, reshuffleCount, currentSeed, submitted]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-detect clue-0: if any non-red cards are selected as nulls
   const isClueZero = selectedNulls.length > 0;
 
@@ -91,7 +102,6 @@ export default function ClueGivingPage() {
 
   function handleReshuffle() {
     const newSeed = generateSeed();
-    sessionStorage.setItem(seedStorageKey, newSeed);
     setCurrentSeed(newSeed);
     setSelectedTargets([]);
     setSelectedNulls([]);
@@ -199,8 +209,9 @@ export default function ClueGivingPage() {
     if (!pendingClueRef.current) return;
     try {
       await api.saveClue(pendingClueRef.current as Clue);
-      sessionStorage.removeItem(seedStorageKey);
       setSubmitted(true);
+      // Clear roaming state — next roam goes home
+      saveSessionState('/', null);
     } catch (err) {
       setTargetError(err instanceof Error ? err.message : 'Ошибка сохранения');
     }
@@ -258,7 +269,6 @@ export default function ClueGivingPage() {
 
   function handleGiveAnother() {
     const newSeed = generateSeed();
-    sessionStorage.setItem(seedStorageKey, newSeed);
     setCurrentSeed(newSeed);
     setSelectedTargets([]);
     setSelectedNulls([]);

@@ -40,6 +40,19 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RoamingRestoreHandler() {
+  const { pendingRestore, clearPendingRestore } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!pendingRestore) return;
+    clearPendingRestore();
+    navigate(pendingRestore.url, { replace: true, state: { roamingState: pendingRestore.state } });
+  }, [pendingRestore, clearPendingRestore, navigate]);
+
+  return null;
+}
+
 function OAuthHandler() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -85,6 +98,7 @@ export default function App() {
         <EvictionBanner />
         <ProfileModal />
         <OAuthHandler />
+        <RoamingRestoreHandler />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/oauth/register" element={<OAuthRegisterPage />} />

@@ -74,7 +74,7 @@ function loadCompletedGuess(clueId: string): CompletedGuessState | null {
 export default function GuessingPage() {
   const { clueId } = useParams<{ clueId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, saveSessionState } = useAuth();
   const { t } = useTranslation();
   const [clue, setClue] = useState<Clue | null>(null);
   const [pickedIndices, setPickedIndices] = useState<number[]>([]);
@@ -118,6 +118,9 @@ export default function GuessingPage() {
       setLoading(true);
       const found = await api.getClueById(clueId);
       setClue(found);
+
+      // Save URL for roaming session state
+      if (found) saveSessionState(`/guess/${clueId}`, null);
 
       // Restore completed game from localStorage (e.g. after back-navigation)
       const completed = loadCompletedGuess(clueId);
