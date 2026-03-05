@@ -7,9 +7,10 @@ interface ClueRatingProps {
   onRate: (rating: number) => void;
   onReport: (reason: string) => void;
   initialRating?: number | null;
+  shareOnly?: boolean;
 }
 
-export default function ClueRating({ clueId, onRate, onReport, initialRating }: ClueRatingProps) {
+export default function ClueRating({ clueId, onRate, onReport, initialRating, shareOnly }: ClueRatingProps) {
   const { t } = useTranslation();
   const [currentRating, setCurrentRating] = useState<number | null>(initialRating ?? null);
   const [justRated, setJustRated] = useState(false);
@@ -39,7 +40,6 @@ export default function ClueRating({ clueId, onRate, onReport, initialRating }: 
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const input = document.createElement('input');
       input.value = url;
       document.body.appendChild(input);
@@ -49,6 +49,20 @@ export default function ClueRating({ clueId, onRate, onReport, initialRating }: 
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
     }
+  }
+
+  if (shareOnly) {
+    return (
+      <div className="flex justify-center mt-2">
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-300 transition-colors"
+        >
+          <ShareIcon className="w-4 h-4" />
+          {shareCopied ? t.rating.copied : t.rating.share}
+        </button>
+      </div>
+    );
   }
 
   return (

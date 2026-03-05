@@ -18,6 +18,8 @@ function formatDate(ts: number): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+const panelClass = 'bg-gray-800/60 rounded-b-lg px-4 py-3 border border-gray-700/40 border-t-0';
+
 interface ResultsTabsProps {
   clueId: string;
   spymasterUserId: string;
@@ -62,8 +64,9 @@ export default function ResultsTabs({
     api.getClueStats(clueId).then(setStats);
   }, [clueId]);
 
-  const hasScore = cards && guessedIndices && targetIndices && score !== undefined;
-  const showRating = user && clueUserId !== user.id;
+  const hasScore = cards && guessedIndices && guessedIndices.length > 0 && targetIndices && score !== undefined;
+  const isOwnClue = user && clueUserId === user.id;
+  const showRating = user && !isOwnClue;
 
   const tabs: { key: ResultTab; label: string }[] = [
     { key: 'info', label: t.results.tabInfo },
@@ -90,16 +93,16 @@ export default function ResultsTabs({
 
   return (
     <div className="max-w-md mx-auto mt-3">
-      {/* Horizontal tab strip */}
-      <div className="flex gap-1 mb-2">
+      {/* Horizontal tab strip — flush with content panel */}
+      <div className="flex">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => { setActiveTab(tab.key); setSelectedAttemptIdx(null); onShowAttemptPicks?.([]); }}
-            className={`flex-1 px-2 py-1.5 rounded-t text-xs font-semibold transition-colors whitespace-nowrap ${
+            className={`flex-1 px-2 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap first:rounded-tl-lg last:rounded-tr-lg ${
               activeTab === tab.key
                 ? 'bg-board-blue text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-white'
+                : 'bg-gray-800/60 text-gray-400 hover:text-white'
             }`}
           >
             {tab.label}
@@ -107,122 +110,130 @@ export default function ResultsTabs({
         ))}
       </div>
 
-      {/* Content */}
-      <div className="min-w-0">
-        {/* INFO TAB */}
-        {activeTab === 'info' && (
-          <div className="bg-gray-800/80 rounded-b-lg px-4 py-3 border border-gray-700 text-sm">
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-gray-400">{t.results.clueBy}</span>
-              <button onClick={() => openProfile(clueUserId)} className="text-board-blue hover:text-blue-300 font-semibold transition-colors">{spymasterUserId}</button>
-              {stats?.createdAt ? (
-                <span className="text-gray-500 text-xs">{formatDate(stats.createdAt)}</span>
-              ) : null}
-            </div>
-            {stats && stats.attempts > 0 ? (
-              <div className="flex gap-4 mt-2">
-                <span className="text-blue-400">{stats.attempts} {pluralAttempts(stats.attempts)}</span>
-                <span>
-                  <span className="text-gray-400">{t.results.avgScoreLabel}: </span>
-                  <span className="text-white font-semibold">{stats.avgScore}</span>
-                </span>
-              </div>
-            ) : stats ? (
-              <p className="text-blue-400 font-semibold mt-2">{t.results.firstSolve}</p>
+      {/* Content — consistent panel styling */}
+      {activeTab === 'info' && (
+        <div className={`${panelClass} text-sm`}>
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-gray-400">{t.results.clueBy}</span>
+            <button onClick={() => openProfile(clueUserId)} className="text-board-blue hover:text-blue-300 font-semibold transition-colors">{spymasterUserId}</button>
+            {stats?.createdAt ? (
+              <span className="text-gray-500 text-xs">{formatDate(stats.createdAt)}</span>
             ) : null}
           </div>
-        )}
+          {stats && stats.attempts > 0 ? (
+            <div className="flex gap-4 mt-2">
+              <span className="text-blue-400">{stats.attempts} {pluralAttempts(stats.attempts)}</span>
+              <span>
+                <span className="text-gray-400">{t.results.avgScoreLabel}: </span>
+                <span className="text-white font-semibold">{stats.avgScore}</span>
+              </span>
+            </div>
+          ) : stats ? (
+            <p className="text-blue-400 font-semibold mt-2">{t.results.firstSolve}</p>
+          ) : null}
+        </div>
+      )}
 
-        {/* SCORE TAB */}
-        {activeTab === 'score' && hasScore && (
+      {activeTab === 'score' && hasScore && (
+        <div className={panelClass}>
+          <div className="text-center mb-3">
+            <p className="text-gray-500 text-xs uppercase tracking-wider">{t.results.score}</p>
+            <span className="text-4xl font-extrabold text-white">{score}</span>
+          </div>
           <RevealOverlay
             cards={cards}
             guessedIndices={guessedIndices}
             targetIndices={targetIndices}
             score={score}
+            compact
           />
-        )}
+        </div>
+      )}
 
-        {/* SOLUTIONS TAB */}
-        {activeTab === 'solutions' && (
-          <div className="bg-gray-800/60 rounded-b-lg px-3 py-3 border border-gray-700/30">
-            {sortedDetails.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center">{stats ? t.results.firstSolve : '...'}</p>
-            ) : (
-              <>
-                <h3 className="text-white font-semibold text-xs mb-1.5">
-                  {sortedDetails.length} {pluralAttempts(sortedDetails.length)}
-                </h3>
-                <div className="overflow-y-auto max-h-[220px]">
-                  <table className="w-full text-xs">
-                    <thead className="sticky top-0 bg-gray-800">
-                      <tr className="text-gray-500 border-b border-gray-700/50">
-                        <th className="text-left py-1 pr-2 font-medium">{t.admin.player}</th>
-                        <th
-                          className="text-center py-1 px-2 font-medium cursor-pointer hover:text-white transition-colors select-none"
-                          onClick={() => {
-                            if (attemptSort === 'score') setAttemptDir((d) => d === 'desc' ? 'asc' : 'desc');
-                            else { setAttemptSort('score'); setAttemptDir('desc'); }
-                            setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
-                          }}
-                        >
-                          {t.results.score}
-                          <span className="ml-0.5 text-[0.5em]">{attemptSort === 'score' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
-                        </th>
-                        <th
-                          className="text-center py-1 pl-2 font-medium cursor-pointer hover:text-white transition-colors select-none"
-                          onClick={() => {
-                            if (attemptSort === 'timestamp') setAttemptDir((d) => d === 'asc' ? 'desc' : 'asc');
-                            else { setAttemptSort('timestamp'); setAttemptDir('asc'); }
-                            setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
-                          }}
-                        >
-                          {t.admin.clueDate}
-                          <span className="ml-0.5 text-[0.5em]">{attemptSort === 'timestamp' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
-                        </th>
+      {activeTab === 'solutions' && (
+        <div className={panelClass}>
+          {sortedDetails.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center">{stats ? t.results.firstSolve : '...'}</p>
+          ) : (
+            <>
+              <h3 className="text-white font-semibold text-xs mb-1.5">
+                {sortedDetails.length} {pluralAttempts(sortedDetails.length)}
+              </h3>
+              <div className="overflow-y-auto max-h-[220px]">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-gray-800">
+                    <tr className="text-gray-500 border-b border-gray-700/50">
+                      <th className="text-left py-1 pr-2 font-medium">{t.admin.player}</th>
+                      <th
+                        className="text-center py-1 px-2 font-medium cursor-pointer hover:text-white transition-colors select-none"
+                        onClick={() => {
+                          if (attemptSort === 'score') setAttemptDir((d) => d === 'desc' ? 'asc' : 'desc');
+                          else { setAttemptSort('score'); setAttemptDir('desc'); }
+                          setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
+                        }}
+                      >
+                        {t.results.score}
+                        <span className="ml-0.5 text-[0.5em]">{attemptSort === 'score' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
+                      </th>
+                      <th
+                        className="text-center py-1 pl-2 font-medium cursor-pointer hover:text-white transition-colors select-none"
+                        onClick={() => {
+                          if (attemptSort === 'timestamp') setAttemptDir((d) => d === 'asc' ? 'desc' : 'asc');
+                          else { setAttemptSort('timestamp'); setAttemptDir('asc'); }
+                          setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
+                        }}
+                      >
+                        {t.admin.clueDate}
+                        <span className="ml-0.5 text-[0.5em]">{attemptSort === 'timestamp' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedDetails.map((detail, idx) => (
+                      <tr
+                        key={`${detail.userId}-${detail.timestamp}`}
+                        onClick={() => handleAttemptClick(detail, idx)}
+                        className={`cursor-pointer transition-colors ${
+                          selectedAttemptIdx === idx ? 'bg-board-blue/20' : 'hover:bg-gray-700/50'
+                        }`}
+                      >
+                        <td className="py-1 pr-2 text-left text-gray-300 truncate max-w-[10rem]">
+                          {detail.displayName || detail.userId}
+                        </td>
+                        <td className="py-1 px-2 text-center text-white font-semibold">{detail.score}</td>
+                        <td className="py-1 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {sortedDetails.map((detail, idx) => (
-                        <tr
-                          key={`${detail.userId}-${detail.timestamp}`}
-                          onClick={() => handleAttemptClick(detail, idx)}
-                          className={`cursor-pointer transition-colors ${
-                            selectedAttemptIdx === idx ? 'bg-board-blue/20' : 'hover:bg-gray-700/50'
-                          }`}
-                        >
-                          <td className="py-1 pr-2 text-left text-gray-300 truncate max-w-[10rem]">
-                            {detail.displayName || detail.userId}
-                          </td>
-                          <td className="py-1 px-2 text-center text-white font-semibold">{detail.score}</td>
-                          <td className="py-1 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
-        {/* COMMENTS TAB */}
-        {activeTab === 'comments' && (
-          <div className="bg-gray-800/60 rounded-b-lg px-3 py-3 border border-gray-700/30">
-            <CommentThread clueId={clueId} />
-          </div>
-        )}
-      </div>
+      {activeTab === 'comments' && (
+        <div className={panelClass}>
+          <CommentThread clueId={clueId} />
+        </div>
+      )}
 
-      {/* Rating + Report/Share — compact below tabs */}
-      {showRating && (
+      {/* Rating (other's clues) or Share-only (own clues) */}
+      {showRating ? (
         <ClueRating
           clueId={clueId}
           initialRating={initialRating}
           onRate={onRate || (() => {})}
           onReport={onReport || (() => {})}
         />
-      )}
+      ) : user ? (
+        <ClueRating
+          clueId={clueId}
+          shareOnly
+          onRate={() => {}}
+          onReport={() => {}}
+        />
+      ) : null}
     </div>
   );
 }

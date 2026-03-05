@@ -6,6 +6,7 @@ interface RevealOverlayProps {
   guessedIndices: number[];
   targetIndices: number[];
   score: number;
+  compact?: boolean;
 }
 
 const colorClassMap: Record<CardColor, string> = {
@@ -33,6 +34,7 @@ export default function RevealOverlay({
   guessedIndices,
   targetIndices,
   score,
+  compact,
 }: RevealOverlayProps) {
   const { t } = useTranslation();
 
@@ -48,6 +50,38 @@ export default function RevealOverlay({
   const missedClued = targetIndices.filter((i) => !guessedIndices.includes(i));
   // Неправильные: picked non-red cards
   const pickedWrong = guessedIndices.filter((i) => cards[i].color !== 'red');
+
+  // Compact mode: just the word grid, no wrapper/score (used inside ResultsTabs)
+  if (compact) {
+    return (
+      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
+        {pickedRedClued.length > 0 && (
+          <>
+            <span className="text-gray-400 font-semibold whitespace-nowrap text-right">{t.results.pickedRedClued}:</span>
+            <ColoredWords indices={pickedRedClued} cards={cards} />
+          </>
+        )}
+        {pickedRedUnclued.length > 0 && (
+          <>
+            <span className="text-gray-400 font-semibold whitespace-nowrap text-right">{t.results.pickedRedUnclued}:</span>
+            <ColoredWords indices={pickedRedUnclued} cards={cards} />
+          </>
+        )}
+        {missedClued.length > 0 && (
+          <>
+            <span className="text-gray-400 font-semibold whitespace-nowrap text-right">{t.results.missedClued}:</span>
+            <ColoredWords indices={missedClued} cards={cards} />
+          </>
+        )}
+        {pickedWrong.length > 0 && (
+          <>
+            <span className="text-gray-400 font-semibold whitespace-nowrap text-right">{t.results.pickedWrong}:</span>
+            <ColoredWords indices={pickedWrong} cards={cards} />
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-800/60 rounded-xl p-5 border border-gray-700/30 max-w-md mx-auto mt-4 backdrop-blur-sm">
