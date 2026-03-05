@@ -210,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     channelRef.current?.postMessage({ type: 'CLAIM', tabId: TAB_SESSION_ID });
 
     claimOnServer(user.id).then((result) => {
-      if (!result.savedUrl) return;
+      if (!result.savedUrl || result.savedUrl === '/') return;
       // Store the roaming state for pages to consume
       setRoamingState(result.savedState);
       // If URL differs, trigger a redirect
