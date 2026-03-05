@@ -155,7 +155,7 @@ export default function NavBar() {
             </button>
 
             {showDropdown && (
-              <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-sm bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700/50">
                   <span className="text-xs font-semibold text-gray-400 uppercase">{t.nav.notifications}</span>
                   {notifications.length > 0 && (
@@ -175,10 +175,10 @@ export default function NavBar() {
                       <button
                         key={n.id}
                         onClick={() => handleNotificationClick(n)}
-                        className={`w-full text-left px-3 py-2.5 border-b border-gray-700/30 hover:bg-gray-700/50 transition-colors ${!n.read ? 'bg-gray-700/20' : ''}`}
+                        className={`w-full text-left px-3 py-1.5 border-b border-gray-700/30 hover:bg-gray-700/50 transition-colors flex items-baseline justify-between gap-2 ${!n.read ? 'bg-gray-700/20' : ''}`}
                       >
-                        <p className="text-sm text-gray-200 leading-snug">{getNotificationText(n)}</p>
-                        <span className="text-xs text-gray-500">{formatTimeAgo(n.createdAt)}</span>
+                        <span className="text-xs text-gray-200 truncate">{getNotificationText(n)}</span>
+                        <span className="text-[0.65rem] text-gray-500 shrink-0">{formatTimeAgo(n.createdAt)}</span>
                       </button>
                     ))
                   )}
