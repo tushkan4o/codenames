@@ -111,6 +111,14 @@ export const api = {
     await post('/api/game?route=clues', clue);
   },
 
+  async getCaptainGame(userId: string, ranked: boolean, params: string): Promise<{ seed: string; params: string; reshuffleCount: number }> {
+    return post('/api/game?route=captain-game', { userId, ranked, params });
+  },
+
+  async captainReshuffle(userId: string, ranked: boolean): Promise<{ seed: string; params: string; reshuffleCount: number }> {
+    return post('/api/game?route=captain-reshuffle', { userId, ranked });
+  },
+
   async getRandomClue(
     userId: string,
     excludeIds: string[] = [],

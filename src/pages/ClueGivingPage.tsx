@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { generateBoard, generateSeed } from '../lib/boardGenerator';
+import { generateBoard } from '../lib/boardGenerator';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
@@ -14,31 +14,6 @@ import GameHeader from '../components/game/GameHeader';
 import ClueInput from '../components/clue/ClueInput';
 import SettingsPanel from '../components/settings/SettingsPanel';
 
-const CAPTAIN_GAME_KEY = 'codenames_captain_game';
-
-interface CaptainGame {
-  seed: string;
-  params: string;
-}
-
-function loadCaptainGame(): CaptainGame | null {
-  try {
-    const raw = localStorage.getItem(CAPTAIN_GAME_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed?.seed) return parsed;
-    return null;
-  } catch { return null; }
-}
-
-function saveCaptainGame(seed: string, params: string) {
-  localStorage.setItem(CAPTAIN_GAME_KEY, JSON.stringify({ seed, params }));
-}
-
-export function clearCaptainGame() {
-  localStorage.removeItem(CAPTAIN_GAME_KEY);
-}
-
 export default function ClueGivingPage() {
   const { seed: rawSeed } = useParams<{ seed: string }>();
   const [searchParams] = useSearchParams();
@@ -46,19 +21,12 @@ export default function ClueGivingPage() {
   const { user, saveSessionState, roamingState, clearRoamingState } = useAuth();
   const { t } = useTranslation();
 
-  // Lock seed + params: localStorage is the instant source of truth.
-  // First mount with no saved game = new game from setup (use URL params, save to localStorage).
-  // Subsequent mounts (F5, URL edits) = use localStorage (URL is ignored).
-  const [captainGame] = useState<CaptainGame>(() => {
-    const saved = loadCaptainGame();
-    if (saved) return saved;
-    const game = { seed: generateSeed(), params: searchParams.toString() };
-    saveCaptainGame(game.seed, game.params);
-    return game;
-  });
+  // Server-locked captain game state
+  const [currentSeed, setCurrentSeed] = useState<string | null>(null);
+  const [lockedParams, setLockedParams] = useState<URLSearchParams>(searchParams);
+  const [reshuffleCount, setReshuffleCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  // Use locked params for all config — URL params are cosmetic
-  const lockedParams = useMemo(() => new URLSearchParams(captainGame.params), [captainGame.params]);
   const boardSize = (lockedParams.get('size') as BoardSize) || '5x5';
   const isRanked = lockedParams.get('ranked') !== '0';
   const baseConfig = BOARD_CONFIGS[boardSize];
@@ -76,19 +44,38 @@ export default function ClueGivingPage() {
     return baseConfig;
   }, [lockedParams, baseConfig]);
 
-  const [currentSeed, setCurrentSeed] = useState(captainGame.seed);
+  // Fetch locked seed from server on mount
+  const fetchedRef = useRef(false);
+  useEffect(() => {
+    if (!user || fetchedRef.current) return;
+    fetchedRef.current = true;
 
-  // Always sync URL to locked seed + params (prevents any URL tampering)
-  const lockedUrl = `/give-clue/${encodeURIComponent(currentSeed)}?${lockedParams}`;
-  const currentUrl = `/give-clue/${rawSeed}?${searchParams}`;
-  if (currentUrl !== lockedUrl) {
-    window.history.replaceState(null, '', lockedUrl);
-  }
+    const ranked = searchParams.get('ranked') !== '0';
+    api.getCaptainGame(user.id, ranked, searchParams.toString()).then((game) => {
+      setCurrentSeed(game.seed);
+      setLockedParams(new URLSearchParams(game.params));
+      setReshuffleCount(game.reshuffleCount);
+      setLoading(false);
+      // Sync URL to server seed
+      window.history.replaceState(null, '', `/give-clue/${encodeURIComponent(game.seed)}?${game.params}`);
+    }).catch(() => {
+      setLoading(false);
+    });
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync URL whenever seed changes (prevents any URL tampering)
+  useEffect(() => {
+    if (!currentSeed || loading) return;
+    const lockedUrl = `/give-clue/${encodeURIComponent(currentSeed)}?${lockedParams}`;
+    const currentUrl = `/give-clue/${rawSeed}?${searchParams}`;
+    if (currentUrl !== lockedUrl) {
+      window.history.replaceState(null, '', lockedUrl);
+    }
+  }, [currentSeed, lockedParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [selectedTargets, setSelectedTargets] = useState<number[]>([]);
   const [selectedNulls, setSelectedNulls] = useState<number[]>([]);
   const [submitted, setSubmitted] = useState(false);
-  const [reshuffleCount, setReshuffleCount] = useState(0);
   const [targetError, setTargetError] = useState('');
 
   // Submit animation state
@@ -97,6 +84,7 @@ export default function ClueGivingPage() {
   const pendingClueRef = useRef<object | null>(null);
 
   const board = useMemo(() => {
+    if (!currentSeed) return null;
     return generateBoard(currentSeed, config);
   }, [currentSeed, config]);
 
@@ -104,7 +92,7 @@ export default function ClueGivingPage() {
     displayOrder, draggingOrigIdx,
     handlePointerDown, handlePointerMove, handlePointerUp,
     registerCardRef, resetOrder, setOrder,
-  } = useDragReorder(board.cards.length);
+  } = useDragReorder(board?.cards.length ?? 0);
 
   const [isSorted, setIsSorted] = useState(false);
   const [showReshuffleConfirm, setShowReshuffleConfirm] = useState(false);
@@ -116,52 +104,47 @@ export default function ClueGivingPage() {
   useEffect(() => {
     if (!roamingState || roamingAppliedRef.current) return;
     roamingAppliedRef.current = true;
-    // Restore seed from URL (which was set by the redirect)
-    if (rawSeed) {
-      const seed = decodeURIComponent(rawSeed);
-      setCurrentSeed(seed);
-      saveCaptainGame(seed, lockedParams.toString());
-    }
     if (Array.isArray(roamingState.selectedTargets)) {
       setSelectedTargets(roamingState.selectedTargets as number[]);
     }
     if (Array.isArray(roamingState.selectedNulls)) {
       setSelectedNulls(roamingState.selectedNulls as number[]);
     }
-    if (typeof roamingState.reshuffleCount === 'number') {
-      setReshuffleCount(roamingState.reshuffleCount as number);
-    }
+    // Note: seed and reshuffleCount come from server (captain-game), not roaming state
     clearRoamingState();
   }, [roamingState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save state to server on meaningful changes (debounced via saveSessionState)
-  // Skip saving while roaming state hasn't been applied yet
   useEffect(() => {
-    if (!user || submitted || roamingState) return;
+    if (!user || !currentSeed || submitted || loading || roamingState) return;
     const url = `/give-clue/${encodeURIComponent(currentSeed)}?${lockedParams}`;
     saveSessionState(url, { selectedTargets, selectedNulls, reshuffleCount });
-  }, [selectedTargets, selectedNulls, reshuffleCount, currentSeed, submitted, roamingState]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedTargets, selectedNulls, reshuffleCount, currentSeed, submitted, loading, roamingState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-detect clue-0: if any non-red cards are selected as nulls
   const isClueZero = selectedNulls.length > 0;
 
   const submitDelay = user?.preferences.submitDelay ?? 2000;
 
-  function handleReshuffle() {
-    const newSeed = generateSeed();
-    setCurrentSeed(newSeed);
-    saveCaptainGame(newSeed, lockedParams.toString());
-    setSelectedTargets([]);
-    setSelectedNulls([]);
-    setTargetError('');
-    setReshuffleCount((prev) => prev + 1);
-    setIsSorted(false);
-    resetOrder();
-    window.history.replaceState(
-      null,
-      '',
-      `/give-clue/${encodeURIComponent(newSeed)}?${lockedParams}`,
-    );
+  async function handleReshuffle() {
+    if (!user) return;
+    try {
+      const game = await api.captainReshuffle(user.id, isRanked);
+      setCurrentSeed(game.seed);
+      setReshuffleCount(game.reshuffleCount);
+      setSelectedTargets([]);
+      setSelectedNulls([]);
+      setTargetError('');
+      setIsSorted(false);
+      resetOrder();
+      window.history.replaceState(
+        null,
+        '',
+        `/give-clue/${encodeURIComponent(game.seed)}?${lockedParams}`,
+      );
+    } catch {
+      setTargetError('Ошибка при смене слов');
+    }
   }
 
   function handleReset() {
@@ -173,6 +156,7 @@ export default function ClueGivingPage() {
   }
 
   function handleSortByColor() {
+    if (!board) return;
     if (isSorted) {
       setIsSorted(false);
       resetOrder();
@@ -207,7 +191,7 @@ export default function ClueGivingPage() {
   }
 
   function handleCardClick(index: number) {
-    if (submitting) return;
+    if (!board || submitting) return;
     const card = board.cards[index];
 
     if (card.color === 'red') {
@@ -258,8 +242,7 @@ export default function ClueGivingPage() {
     try {
       await api.saveClue(pendingClueRef.current as Clue);
       setSubmitted(true);
-      clearCaptainGame();
-      // Clear roaming state — next roam goes home
+      // Server clears captain game on submit; clear roaming state too
       saveSessionState('/', null);
     } catch (err) {
       setTargetError(err instanceof Error ? err.message : 'Ошибка сохранения');
@@ -269,17 +252,10 @@ export default function ClueGivingPage() {
   }
 
   function handleSubmitClue(word: string, number: number) {
-    if (!user) return;
-    if (isClueZero) {
-      if (selectedTargets.length === 0) {
-        setTargetError(t.clue.errorNeedsTargets);
-        return;
-      }
-    } else {
-      if (selectedTargets.length === 0) {
-        setTargetError(t.clue.errorNeedsTargets);
-        return;
-      }
+    if (!user || !currentSeed) return;
+    if (selectedTargets.length === 0) {
+      setTargetError(t.clue.errorNeedsTargets);
+      return;
     }
     const clue = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
@@ -316,20 +292,34 @@ export default function ClueGivingPage() {
     }, submitDelay);
   }
 
-  function handleGiveAnother() {
-    const newSeed = generateSeed();
-    setCurrentSeed(newSeed);
-    saveCaptainGame(newSeed, lockedParams.toString());
-    setSelectedTargets([]);
-    setSelectedNulls([]);
-    setTargetError('');
-    setSubmitted(false);
-    setReshuffleCount(0);
-    setIsSorted(false);
-    window.history.replaceState(
-      null,
-      '',
-      `/give-clue/${encodeURIComponent(newSeed)}?${lockedParams}`,
+  async function handleGiveAnother() {
+    if (!user) return;
+    try {
+      const game = await api.getCaptainGame(user.id, isRanked, lockedParams.toString());
+      setCurrentSeed(game.seed);
+      setReshuffleCount(game.reshuffleCount);
+      setSelectedTargets([]);
+      setSelectedNulls([]);
+      setTargetError('');
+      setSubmitted(false);
+      setIsSorted(false);
+      window.history.replaceState(
+        null,
+        '',
+        `/give-clue/${encodeURIComponent(game.seed)}?${lockedParams}`,
+      );
+    } catch {
+      // fallback: just go home
+      navigate('/');
+    }
+  }
+
+  // Loading state while fetching server seed
+  if (loading || !board || !currentSeed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-400 text-lg animate-pulse">{t.app.loading || 'Загрузка...'}</div>
+      </div>
     );
   }
 
@@ -340,7 +330,7 @@ export default function ClueGivingPage() {
         <p className="text-gray-400">{t.game.othersCanGuess}</p>
         <div className="flex gap-3">
           <button
-            onClick={() => { clearCaptainGame(); saveSessionState('/', null); navigate('/'); }}
+            onClick={() => { saveSessionState('/', null); navigate('/'); }}
             className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors inline-flex items-center gap-1.5"
           >
             <HomeIcon className="w-5 h-5" />
@@ -434,7 +424,7 @@ export default function ClueGivingPage() {
                 {t.rating.cancel}
               </button>
               <button
-                onClick={() => { clearCaptainGame(); saveSessionState('/', null); navigate('/'); }}
+                onClick={() => { saveSessionState('/', null); navigate('/'); }}
                 className="px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-semibold transition-colors"
               >
                 {t.admin.confirm}

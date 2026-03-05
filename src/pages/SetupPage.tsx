@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { generateSeed } from '../lib/boardGenerator';
-import { clearCaptainGame } from './ClueGivingPage';
 import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
 import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
@@ -174,7 +173,7 @@ export default function SetupPage() {
           params.set('a', String(assassinCount));
         }
       }
-      clearCaptainGame(); // Clear any previous captain game so new seed/params take effect
+      // Seed is now server-managed — ClueGivingPage will fetch the locked seed
       navigate(`/give-clue/${encodeURIComponent(seed)}?${params}`);
     } else {
       // Check for unfinished game

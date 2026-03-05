@@ -92,6 +92,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'claim-session': return handleClaimSession(req, res, sql);
     case 'check-session': return handleCheckSession(req, res, sql);
     case 'save-state': return handleSaveState(req, res, sql);
+    case 'captain-game': return handleCaptainGame(req, res, sql);
+    case 'captain-reshuffle': return handleCaptainReshuffle(req, res, sql);
     case 'init': return handleInit(res, sql);
     case 'migrate-ids': return handleMigrateIds(res, sql);
     case 'debug': return res.json({ route, method: req.method, query: req.query, url: req.url });
@@ -135,6 +137,12 @@ async function handleClues(req: VercelRequest, res: VercelResponse, sql: ReturnT
       await sql`INSERT INTO clues (id, word, number, board_seed, target_indices, null_indices, created_at, user_id, word_pack, board_size, reshuffle_count, ranked, red_count, blue_count, assassin_count)
         VALUES (${clue.id}, ${clue.word}, ${clue.number}, ${clue.boardSeed}, ${clue.targetIndices}, ${clue.nullIndices || []}, ${clue.createdAt}, ${clue.userId}, ${clue.wordPack || 'ru'}, ${clue.boardSize}, ${clue.reshuffleCount || 0}, ${clue.ranked ?? true}, ${clue.redCount || null}, ${clue.blueCount || null}, ${clue.assassinCount || null})
         ON CONFLICT (id) DO NOTHING`;
+      // Clear captain game for this mode after successful submit
+      if (clue.ranked) {
+        await sql`UPDATE users SET captain_ranked = NULL WHERE id = ${clue.userId}`;
+      } else {
+        await sql`UPDATE users SET captain_casual = NULL WHERE id = ${clue.userId}`;
+      }
       return res.json({ ok: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -566,6 +574,71 @@ async function handleSaveState(req: VercelRequest, res: VercelResponse, sql: Ret
   }
 }
 
+// ==================== CAPTAIN GAME (server-side seed lock) ====================
+
+function generateServerSeed(): string {
+  const now = new Date();
+  const datePart = now.toISOString().slice(0, 10);
+  const randomPart = Math.random().toString(36).slice(2, 8);
+  return `${datePart}-${randomPart}`;
+}
+
+async function handleCaptainGame(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { userId, ranked, params } = req.body;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const col = ranked ? 'captain_ranked' : 'captain_casual';
+  try {
+    const rows = await sql`SELECT captain_ranked, captain_casual FROM users WHERE id = ${userId}`;
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    const existing = rows[0][col] as { seed: string; params: string; reshuffleCount: number } | null;
+    if (existing) {
+      return res.json(existing);
+    }
+
+    // Create new captain game with server-generated seed
+    const game = { seed: generateServerSeed(), params: params || '', reshuffleCount: 0 };
+    if (ranked) {
+      await sql`UPDATE users SET captain_ranked = ${JSON.stringify(game)} WHERE id = ${userId}`;
+    } else {
+      await sql`UPDATE users SET captain_casual = ${JSON.stringify(game)} WHERE id = ${userId}`;
+    }
+    return res.json(game);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: message });
+  }
+}
+
+async function handleCaptainReshuffle(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const { userId, ranked } = req.body;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+
+  const col = ranked ? 'captain_ranked' : 'captain_casual';
+  try {
+    const rows = await sql`SELECT captain_ranked, captain_casual FROM users WHERE id = ${userId}`;
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    const existing = rows[0][col] as { seed: string; params: string; reshuffleCount: number } | null;
+    const newSeed = generateServerSeed();
+    const newCount = (existing?.reshuffleCount || 0) + 1;
+    const game = { seed: newSeed, params: existing?.params || '', reshuffleCount: newCount };
+
+    if (ranked) {
+      await sql`UPDATE users SET captain_ranked = ${JSON.stringify(game)} WHERE id = ${userId}`;
+    } else {
+      await sql`UPDATE users SET captain_casual = ${JSON.stringify(game)} WHERE id = ${userId}`;
+    }
+    return res.json(game);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: message });
+  }
+}
+
 // ==================== MIGRATE CLUE IDS ====================
 
 async function handleMigrateIds(res: VercelResponse, sql: ReturnType<typeof neon>) {
@@ -628,6 +701,8 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS active_session TEXT`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS session_url TEXT`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS session_state JSONB`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_ranked JSONB`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_casual JSONB`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {
