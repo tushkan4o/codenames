@@ -245,6 +245,10 @@ export const api = {
     await patch(`/api/admin?action=updateClue&adminId=${encodeURIComponent(adminId)}&clueId=${encodeURIComponent(clueId)}`, updates);
   },
 
+  async adminRenameUser(adminId: string, userId: string, newDisplayName: string): Promise<{ ok: boolean; displayName: string }> {
+    return patch(`/api/admin?action=renameUser&adminId=${encodeURIComponent(adminId)}&userId=${encodeURIComponent(userId)}`, { newDisplayName });
+  },
+
   // OAuth
   async getOAuthUrl(provider: string, linkUserId?: string): Promise<{ url: string }> {
     const params = new URLSearchParams({ action: 'url', provider });

@@ -79,6 +79,10 @@ export default function AdminPage() {
   const [confirmDeleteResult, setConfirmDeleteResult] = useState<{ clueId: string; userId: string; timestamp: number } | null>(null);
   const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [renamingUserId, setRenamingUserId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renameError, setRenameError] = useState('');
+  const [renameSaving, setRenameSaving] = useState(false);
   const [deletedMessage, setDeletedMessage] = useState<string | null>(null);
 
   const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -206,6 +210,25 @@ export default function AdminPage() {
     setResults((prev) => prev.filter((r) => r.userId !== userId));
     setConfirmDeleteUserId(null);
     showDeleted();
+  }
+
+  async function handleAdminRename(userId: string) {
+    if (!user) return;
+    const trimmed = renameValue.trim();
+    if (!trimmed || trimmed.length < 2) { setRenameError('Мин. 2 символа'); return; }
+    if (trimmed.length > 20) { setRenameError('Макс. 20 символов'); return; }
+    if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(trimmed)) { setRenameError('Недопустимые символы'); return; }
+    setRenameSaving(true);
+    try {
+      await api.adminRenameUser(user.id, userId, trimmed);
+      setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, displayName: trimmed } : u));
+      setRenamingUserId(null);
+      setRenameError('');
+    } catch (err) {
+      setRenameError(err instanceof Error ? err.message : 'Error');
+    } finally {
+      setRenameSaving(false);
+    }
   }
 
   function showDeleted() {
@@ -591,7 +614,37 @@ export default function AdminPage() {
                         >
                           {t.admin.viewProfile}
                         </button>
+                        {renamingUserId === u.id ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={renameValue}
+                              onChange={(e) => { setRenameValue(e.target.value); setRenameError(''); }}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleAdminRename(u.id); if (e.key === 'Escape') { setRenamingUserId(null); setRenameError(''); } }}
+                              autoFocus
+                              className="px-2 py-1 rounded bg-gray-900 border border-gray-600 text-white text-sm font-bold focus:outline-none focus:border-board-blue w-36"
+                              maxLength={20}
+                            />
+                            <button onClick={() => handleAdminRename(u.id)} disabled={renameSaving} className="text-board-blue hover:text-blue-300 transition-colors">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                            </button>
+                            <button onClick={() => { setRenamingUserId(null); setRenameError(''); }} className="text-gray-400 hover:text-white transition-colors">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setRenamingUserId(u.id); setRenameValue(u.displayName); setRenameError(''); }}
+                            className="px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white text-sm font-semibold transition-colors flex items-center gap-1"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                            Переименовать
+                          </button>
+                        )}
                       </div>
+                      {renameError && renamingUserId === u.id && (
+                        <p className="text-board-red text-xs mt-1">{renameError}</p>
+                      )}
 
                       {/* OAuth providers */}
                       <div className="flex items-center gap-2 text-sm">

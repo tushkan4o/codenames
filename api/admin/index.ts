@@ -245,6 +245,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json({ ok: true, updated: updates });
     }
 
+    if (action === 'renameUser') {
+      const { userId } = req.query;
+      if (!userId || typeof userId !== 'string') {
+        return res.status(400).json({ error: 'userId required' });
+      }
+      const { newDisplayName } = req.body || {};
+      if (!newDisplayName || typeof newDisplayName !== 'string') {
+        return res.status(400).json({ error: 'newDisplayName required' });
+      }
+      const trimmed = newDisplayName.trim();
+      if (trimmed.length < 2) return res.status(400).json({ error: 'name_too_short' });
+      if (trimmed.length > 20) return res.status(400).json({ error: 'name_too_long' });
+      if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(trimmed)) return res.status(400).json({ error: 'invalid_chars' });
+      const existing = await sql`SELECT id FROM users WHERE id = ${userId}`;
+      if (existing.length === 0) return res.status(404).json({ error: 'User not found' });
+      await sql`UPDATE users SET display_name = ${trimmed} WHERE id = ${userId}`;
+      return res.json({ ok: true, displayName: trimmed });
+    }
+
     return res.status(400).json({ error: 'Unknown action' });
   }
 
