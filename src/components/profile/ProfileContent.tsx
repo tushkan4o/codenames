@@ -899,7 +899,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                         </button>
                       )}
                     </div>
-                    <div>
+                    <div className="break-words overflow-hidden">
                       <button
                         onClick={() => openProfile(c.authorId)}
                         className="text-board-blue font-semibold hover:text-blue-300 transition-colors"

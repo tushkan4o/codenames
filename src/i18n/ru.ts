@@ -30,6 +30,11 @@ export const ru = {
     newComment: '{player} → «{clue}»',
     newMention: '{player} упомянул вас',
     newProfileComment: '{player} написал в профиле',
+    groupSolves: 'Новые решения в «{clue}»',
+    groupComments: 'Новые комментарии в «{clue}»',
+    groupSolvesAndComments: 'Решения и комментарии в «{clue}»',
+    groupMentions: 'Упоминания в «{clue}»',
+    groupProfileComments: 'Новые комментарии в профиле',
   },
   home: {
     startGame: 'Начать игру',

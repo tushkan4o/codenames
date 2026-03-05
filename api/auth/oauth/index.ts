@@ -297,7 +297,10 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { displayName, preferences, password, preferencesOnly } = req.body;
   if (!displayName) return res.status(400).json({ error: 'displayName required' });
-  if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(displayName.trim())) {
+  const trimmedName = displayName.trim();
+  if (trimmedName.length < 2) return res.status(400).json({ error: 'name_too_short' });
+  if (trimmedName.length > 20) return res.status(400).json({ error: 'name_too_long' });
+  if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(trimmedName)) {
     return res.status(400).json({ error: 'invalid_chars' });
   }
   const sql = neon(process.env.DATABASE_URL!);

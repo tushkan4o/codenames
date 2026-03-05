@@ -268,7 +268,7 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
                   </button>
                 )}
               </div>
-              <div>
+              <div className="break-words overflow-hidden">
                 <button
                   onClick={() => user && handleNicknameClick(c.displayName)}
                   className="text-board-blue font-semibold hover:text-blue-300 transition-colors"
