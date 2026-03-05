@@ -29,6 +29,7 @@ export const ru = {
     newSolve: '{player} решил вашу подсказку «{clue}»',
     newComment: '{player} прокомментировал «{clue}»',
     newMention: '{player} упомянул вас в комментарии',
+    newProfileComment: '{player} оставил комментарий в вашем профиле',
   },
   home: {
     startGame: 'Начать игру',

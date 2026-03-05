@@ -280,6 +280,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Delete user's own activity on other clues
+      await sql`DELETE FROM profile_comments WHERE profile_user_id = ${userId} OR author_id = ${userId}`;
       await sql`DELETE FROM notifications WHERE user_id = ${userId}`;
       await sql`DELETE FROM comments WHERE user_id = ${userId}`;
       await sql`DELETE FROM reports WHERE user_id = ${userId}`;
@@ -324,6 +325,7 @@ async function handleInit(_req: VercelRequest, res: VercelResponse) {
     await sql`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL)`;
     await sql`CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), type TEXT NOT NULL, actor_id TEXT, clue_id TEXT, clue_word TEXT, message TEXT, created_at BIGINT NOT NULL, read BOOLEAN DEFAULT false)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read)`;
+    await sql`CREATE TABLE IF NOT EXISTS profile_comments (id SERIAL PRIMARY KEY, profile_user_id TEXT NOT NULL REFERENCES users(id), author_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL)`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

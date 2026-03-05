@@ -89,6 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'ratings': return handleRatings(req, res, sql);
     case 'comments': return handleComments(req, res, sql);
     case 'notifications': return handleNotifications(req, res, sql);
+    case 'profile-comments': return handleProfileComments(req, res, sql);
     case 'leaderboard': return handleLeaderboard(req, res, sql);
     case 'stats': return handleUserStats(req, res, sql);
     case 'claim-session': return handleClaimSession(req, res, sql);
@@ -543,6 +544,49 @@ async function handleNotifications(req: VercelRequest, res: VercelResponse, sql:
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
+// ==================== PROFILE COMMENTS ====================
+
+async function handleProfileComments(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+  if (req.method === 'GET') {
+    const { profileUserId } = req.query;
+    if (!profileUserId || typeof profileUserId !== 'string') return res.status(400).json({ error: 'profileUserId required' });
+    const rows = await sql`SELECT pc.id, pc.author_id, pc.content, pc.created_at, u.display_name
+      FROM profile_comments pc LEFT JOIN users u ON pc.author_id = u.id
+      WHERE pc.profile_user_id = ${profileUserId} ORDER BY pc.created_at DESC`;
+    return res.json(rows.map((r: Record<string, unknown>) => ({
+      id: Number(r.id), authorId: r.author_id as string, displayName: (r.display_name as string) || (r.author_id as string),
+      content: r.content as string, createdAt: Number(r.created_at),
+    })));
+  }
+
+  if (req.method === 'POST') {
+    const { profileUserId, authorId, content } = req.body;
+    if (!profileUserId || !authorId || !content?.trim()) return res.status(400).json({ error: 'profileUserId, authorId, content required' });
+    const now = Date.now();
+    const trimmed = content.trim();
+    const rows = await sql`INSERT INTO profile_comments (profile_user_id, author_id, content, created_at) VALUES (${profileUserId}, ${authorId}, ${trimmed}, ${now}) RETURNING id`;
+    // Notify profile owner about new comment (if not self)
+    try {
+      if (profileUserId !== authorId) {
+        await sql`INSERT INTO notifications (user_id, type, actor_id, created_at)
+          VALUES (${profileUserId}, 'profile_comment', ${authorId}, ${now})`;
+      }
+    } catch { /* best-effort */ }
+    return res.json({ ok: true, id: Number(rows[0].id) });
+  }
+
+  if (req.method === 'DELETE') {
+    const { id, adminId } = req.query;
+    if (!id || !adminId || typeof adminId !== 'string') return res.status(400).json({ error: 'id and adminId required' });
+    const adminRows = await sql`SELECT is_admin FROM users WHERE id = ${adminId}`;
+    if (adminRows.length === 0 || !adminRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
+    await sql`DELETE FROM profile_comments WHERE id = ${Number(id)}`;
+    return res.json({ ok: true });
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
 // ==================== LEADERBOARD ====================
 
 async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
@@ -905,6 +949,7 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL)`;
     await sql`CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), type TEXT NOT NULL, actor_id TEXT, clue_id TEXT, clue_word TEXT, message TEXT, created_at BIGINT NOT NULL, read BOOLEAN DEFAULT false)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read)`;
+    await sql`CREATE TABLE IF NOT EXISTS profile_comments (id SERIAL PRIMARY KEY, profile_user_id TEXT NOT NULL REFERENCES users(id), author_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL)`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

@@ -290,6 +290,19 @@ export const api = {
     return get(`/api/game?route=stats&search=${encodeURIComponent(query)}`);
   },
 
+  // Profile comments (wall)
+  async getProfileComments(profileUserId: string): Promise<{ id: number; authorId: string; displayName: string; content: string; createdAt: number }[]> {
+    return get(`/api/game?route=profile-comments&profileUserId=${encodeURIComponent(profileUserId)}`);
+  },
+
+  async addProfileComment(profileUserId: string, authorId: string, content: string): Promise<{ ok: boolean; id: number }> {
+    return post('/api/game?route=profile-comments', { profileUserId, authorId, content });
+  },
+
+  async deleteProfileComment(id: number, adminId: string): Promise<void> {
+    await del(`/api/game?route=profile-comments&id=${id}&adminId=${encodeURIComponent(adminId)}`);
+  },
+
   // Comments
   async getCommentsByUser(userId: string): Promise<{ id: number; clueId: string; clueWord: string; content: string; createdAt: number }[]> {
     return get(`/api/game?route=comments&userId=${encodeURIComponent(userId)}`);

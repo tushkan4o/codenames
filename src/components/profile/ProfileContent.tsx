@@ -99,8 +99,10 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [expandedGivenId, setExpandedGivenId] = useState<string | null>(null);
   const [expandedSolvedKey, setExpandedSolvedKey] = useState<string | null>(null);
 
-  // Profile comments
-  const [userComments, setUserComments] = useState<{ id: number; clueId: string; clueWord: string; content: string; createdAt: number }[]>([]);
+  // Profile comments (wall)
+  const [profileComments, setProfileComments] = useState<{ id: number; authorId: string; displayName: string; content: string; createdAt: number }[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [commentSending, setCommentSending] = useState(false);
 
   // OAuth linked accounts
   const [linkedAccounts, setLinkedAccounts] = useState<{ provider: string; providerName: string; email: string | null; linkedAt: number }[]>([]);
@@ -126,10 +128,10 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     setModalClue(null);
     setConfirmDeleteClue(null);
     setConfirmDeleteSolved(null);
-    setUserComments([]);
+    setProfileComments([]);
 
     api.getUserStats(profileId).then(setStats);
-    api.getCommentsByUser(profileId).then(setUserComments).catch(() => {});
+    api.getProfileComments(profileId).then(setProfileComments).catch(() => {});
     api.getCluesByUser(profileId).then((clues) => {
       setCluesGiven(clues);
       clues.forEach((clue) => {
@@ -308,6 +310,36 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     await api.adminDeleteResult(user.id, entry.result.clueId, entry.result.userId, entry.result.timestamp);
     setSolvedEntries((prev) => prev.filter((e) => e.result.clueId !== clueId || e.result.userId !== entry.result.userId || e.result.timestamp !== entry.result.timestamp));
     setConfirmDeleteSolved(null);
+  }
+
+  async function handleSendProfileComment() {
+    if (!user || !commentText.trim() || commentSending) return;
+    setCommentSending(true);
+    try {
+      const result = await api.addProfileComment(profileId, user.id, commentText.trim());
+      setProfileComments((prev) => [{
+        id: result.id,
+        authorId: user.id,
+        displayName: user.displayName,
+        content: commentText.trim(),
+        createdAt: Date.now(),
+      }, ...prev]);
+      setCommentText('');
+    } catch (err) {
+      console.error('Failed to add profile comment:', err);
+    } finally {
+      setCommentSending(false);
+    }
+  }
+
+  async function handleDeleteProfileComment(commentId: number) {
+    if (!user?.isAdmin) return;
+    try {
+      await api.deleteProfileComment(commentId, user.id);
+      setProfileComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch (err) {
+      console.error('Failed to delete profile comment:', err);
+    }
   }
 
   async function handleLinkOAuth(provider: string) {
@@ -607,7 +639,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'comments' ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.profile.commentsTab}
-            {userComments.length > 0 && <span className="ml-1 text-xs opacity-70">({userComments.length})</span>}
+            {profileComments.length > 0 && <span className="ml-1 text-xs opacity-70">({profileComments.length})</span>}
           </button>
         </div>
 
@@ -826,29 +858,63 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
         )}
         {/* ===== COMMENTS TAB ===== */}
         {tab === 'comments' && (
-          userComments.length === 0 ? (
-            <p className="text-center text-gray-500">{t.results.noComments}</p>
-          ) : (
-            <div className="overflow-y-auto flex-1 min-h-0 space-y-1" style={{ scrollbarGutter: 'stable' }}>
-              {userComments.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => { if (c.clueId) { closeProfile(); navigate(`/guess/${c.clueId}`); } }}
-                  className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 cursor-pointer hover:border-gray-600 transition-colors"
+          <div className="flex-1 min-h-0 flex flex-col">
+            {user && (
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && commentText.trim() && !commentSending) {
+                      handleSendProfileComment();
+                    }
+                  }}
+                  placeholder={t.results.commentPlaceholder}
+                  className="flex-1 px-3 py-1.5 rounded bg-gray-800 border border-gray-600 text-white text-sm focus:border-board-blue focus:outline-none"
+                  maxLength={500}
+                />
+                <button
+                  onClick={handleSendProfileComment}
+                  disabled={!commentText.trim() || commentSending}
+                  className="px-3 py-1.5 rounded bg-board-blue hover:brightness-110 text-white text-xs font-bold transition-colors disabled:opacity-50"
                 >
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <span>{formatDate(c.createdAt)}</span>
-                    {c.clueWord && (
-                      <span className="text-gray-400">
-                        <span className="text-white font-bold uppercase">{c.clueWord}</span>
-                      </span>
-                    )}
+                  {t.results.commentSend}
+                </button>
+              </div>
+            )}
+            {profileComments.length === 0 ? (
+              <p className="text-center text-gray-500">{t.results.noComments}</p>
+            ) : (
+              <div className="overflow-y-auto flex-1 min-h-0 space-y-2" style={{ scrollbarGutter: 'stable' }}>
+                {profileComments.map((c) => (
+                  <div key={c.id} className="text-sm group">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 text-xs">{formatDate(c.createdAt)}</span>
+                      {user?.isAdmin && (
+                        <button
+                          onClick={() => handleDeleteProfileComment(c.id)}
+                          className="text-gray-600 hover:text-board-red text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Удалить"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+                    <div>
+                      <button
+                        onClick={() => openProfile(c.authorId)}
+                        className="text-board-blue font-semibold hover:text-blue-300 transition-colors"
+                      >
+                        {c.displayName}
+                      </button>
+                      <span className="text-gray-300">: {c.content}</span>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-300 mt-0.5 line-clamp-2">{c.content}</p>
-                </div>
-              ))}
-            </div>
-          )
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
