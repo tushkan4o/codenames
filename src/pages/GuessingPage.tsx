@@ -135,6 +135,26 @@ export default function GuessingPage() {
         return;
       }
 
+      // Author viewing own clue — show results directly
+      if ((found as Record<string, unknown>)?.isAuthor) {
+        setPickedIndices([]);
+        setRevealedTargets(found!.targetIndices || []);
+        setRevealedNulls(found!.nullIndices || []);
+        setPhase('done');
+        api.getClueStats(clueId).then((s) => {
+          if (s.attempts > 0) {
+            const pcts: Record<number, number> = {};
+            const counts = (s as { pickCounts?: Record<number, number> }).pickCounts || {};
+            for (const [idx, cnt] of Object.entries(counts)) {
+              pcts[Number(idx)] = Math.round((cnt as number / s.attempts) * 100);
+            }
+            setPickPercents(pcts);
+          }
+        });
+        setLoading(false);
+        return;
+      }
+
       // Check for active guess on a different clue (conflict)
       const saved = loadActiveGuess();
       if (saved && saved.clueId !== clueId && saved.pickedIndices.length > 0) {
@@ -432,7 +452,7 @@ export default function GuessingPage() {
     );
   }
 
-  if (clue.userId === user?.id) {
+  if (clue.userId === user?.id && phase !== 'done') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-white gap-4">
         <p>{t.game.cannotGuessOwn}</p>

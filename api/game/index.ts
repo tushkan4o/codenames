@@ -295,20 +295,26 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
       row.board_seed as string, row.board_size as string,
       row.red_count as number | null, row.blue_count as number | null, row.assassin_count as number | null,
     );
-    // Check if user already has a result for this clue
+    // Check if user already has a result for this clue, or is the author
     const { userId: queryUserId } = req.query;
     let existingResult = null;
+    let isAuthor = false;
     if (queryUserId && typeof queryUserId === 'string') {
-      const resultRows = await sql`SELECT guessed_indices, score, correct_count, total_targets FROM results WHERE clue_id = ${id} AND user_id = ${queryUserId}`;
-      if (resultRows.length > 0) {
-        existingResult = {
-          guessedIndices: resultRows[0].guessed_indices,
-          score: Number(resultRows[0].score),
-          correctCount: Number(resultRows[0].correct_count),
-          totalTargets: Number(resultRows[0].total_targets),
-        };
+      if (queryUserId === row.user_id) {
+        isAuthor = true;
+      } else {
+        const resultRows = await sql`SELECT guessed_indices, score, correct_count, total_targets FROM results WHERE clue_id = ${id} AND user_id = ${queryUserId}`;
+        if (resultRows.length > 0) {
+          existingResult = {
+            guessedIndices: resultRows[0].guessed_indices,
+            score: Number(resultRows[0].score),
+            correctCount: Number(resultRows[0].correct_count),
+            totalTargets: Number(resultRows[0].total_targets),
+          };
+        }
       }
     }
+    const includeRevealData = existingResult || isAuthor;
     res.json({
       id: row.id, word: row.word, number: row.number,
       words: boardData.words, colors: boardData.colors,
@@ -318,11 +324,12 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
       ...(row.red_count != null ? { redCount: row.red_count } : {}),
       ...(row.blue_count != null ? { blueCount: row.blue_count } : {}),
       ...(row.assassin_count != null ? { assassinCount: row.assassin_count } : {}),
-      ...(existingResult ? {
-        existingResult,
+      ...(includeRevealData ? {
         targetIndices: row.target_indices,
         nullIndices: row.null_indices || [],
       } : {}),
+      ...(existingResult ? { existingResult } : {}),
+      ...(isAuthor ? { isAuthor: true } : {}),
     });
   }
 }
