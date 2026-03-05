@@ -191,8 +191,8 @@ export const api = {
   },
 
   async getLeaderboard(boardSize?: BoardSize): Promise<{
-    spymasters: { userId: string; cluesGiven: number; avgWordsPerClue: number; avgScoreOnClues: number }[];
-    guessers: { userId: string; cluesSolved: number; avgWordsPicked: number; avgScore: number }[];
+    spymasters: { userId: string; displayName: string; cluesGiven: number; avgWordsPerClue: number; avgScoreOnClues: number }[];
+    guessers: { userId: string; displayName: string; cluesSolved: number; avgWordsPicked: number; avgScore: number }[];
   }> {
     const params = new URLSearchParams({ route: 'leaderboard' });
     if (boardSize) params.set('boardSize', boardSize);

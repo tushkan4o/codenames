@@ -670,6 +670,17 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
     ratingsByClue.get(cid)!.push(Number(r.rating));
   }
 
+  // Fetch display names for all users involved
+  const allUserIds = new Set<string>();
+  for (const c of clues) allUserIds.add(c.user_id as string);
+  for (const r of results) allUserIds.add(r.user_id as string);
+  const userIdArr = Array.from(allUserIds);
+  const displayNameMap = new Map<string, string>();
+  if (userIdArr.length > 0) {
+    const userRows = await sql`SELECT id, display_name FROM users WHERE id = ANY(${userIdArr})`;
+    for (const u of userRows) displayNameMap.set(u.id as string, u.display_name as string);
+  }
+
   const clueStats = clues.map((c) => {
     const clueResults = resultsByClue.get(c.id as string) || [];
     const attempts = clueResults.length;
@@ -681,12 +692,16 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
       ? Math.round(clueRatings.reduce((s, v) => s + v, 0) / ratingsCount * 10) / 10 : 0;
     return {
       id: c.id as string, word: c.word as string, number: Number(c.number),
-      userId: c.user_id as string, ranked: c.ranked ?? true,
+      userId: c.user_id as string, displayName: displayNameMap.get(c.user_id as string) || c.user_id as string,
+      ranked: c.ranked ?? true,
       attempts, avgScore, createdAt: Number(c.created_at) || 0, ratingsCount, avgRating,
     };
   }).sort((a, b) => b.attempts - a.attempts);
 
-  res.json({ spymasters, guessers, clueStats });
+  const spymastersWithNames = spymasters.map((s) => ({ ...s, displayName: displayNameMap.get(s.userId) || s.userId }));
+  const guessersWithNames = guessers.map((g) => ({ ...g, displayName: displayNameMap.get(g.userId) || g.userId }));
+
+  res.json({ spymasters: spymastersWithNames, guessers: guessersWithNames, clueStats });
 }
 
 // ==================== USER STATS ====================

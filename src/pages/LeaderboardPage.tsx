@@ -19,6 +19,7 @@ type SolvedFilter = 'all' | 'solved' | 'unsolved';
 
 interface SpymasterEntry {
   userId: string;
+  displayName: string;
   cluesGiven: number;
   avgWordsPerClue: number;
   avgScoreOnClues: number;
@@ -26,6 +27,7 @@ interface SpymasterEntry {
 
 interface GuesserEntry {
   userId: string;
+  displayName: string;
   cluesSolved: number;
   avgWordsPicked: number;
   avgScore: number;
@@ -36,6 +38,7 @@ interface ClueStatEntry {
   word: string;
   number: number;
   userId: string;
+  displayName: string;
   ranked: boolean;
   attempts: number;
   avgScore: number;
@@ -252,7 +255,7 @@ export default function LeaderboardPage() {
                     <tr key={s.userId} className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 transition-colors">
                       <td className={`${tdClass} text-center`}>{i + 1}</td>
                       <td className={`${tdClass} font-semibold truncate`}>
-                        <button onClick={() => navigate(`/profile/${s.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{s.userId}</button>
+                        <button onClick={() => navigate(`/profile/${s.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{s.displayName}</button>
                       </td>
                       <td className={`${tdClass} text-center`}>{s.cluesGiven}</td>
                       <td className={`${tdClass} text-center`}>{s.avgWordsPerClue.toFixed(1)}</td>
@@ -285,7 +288,7 @@ export default function LeaderboardPage() {
                     <tr key={g.userId} className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/40 transition-colors">
                       <td className={`${tdClass} text-center`}>{i + 1}</td>
                       <td className={`${tdClass} font-semibold truncate`}>
-                        <button onClick={() => navigate(`/profile/${g.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{g.userId}</button>
+                        <button onClick={() => navigate(`/profile/${g.userId}`)} className="text-board-blue hover:text-blue-300 transition-colors">{g.displayName}</button>
                       </td>
                       <td className={`${tdClass} text-center`}>{g.cluesSolved}</td>
                       <td className={`${tdClass} text-center`}>{g.avgWordsPicked.toFixed(1)}</td>
@@ -347,7 +350,7 @@ export default function LeaderboardPage() {
                           {!c.createdAt && <span />}
                           <span>
                             <span className="text-gray-400">{t.leaderboard.author}: </span>
-                            <button onClick={() => openProfile(c.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{c.userId}</button>
+                            <button onClick={() => openProfile(c.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{c.displayName}</button>
                           </span>
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{c.attempts}</span></span>
                           <span><span className="text-gray-400">{t.results.avgScoreLabel}:</span> <span className="text-white font-semibold">{c.avgScore.toFixed(1)}</span></span>
