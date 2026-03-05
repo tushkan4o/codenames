@@ -136,7 +136,7 @@ export default function GuessingPage() {
       }
 
       // Author viewing own clue — show results directly
-      if ((found as Record<string, unknown>)?.isAuthor) {
+      if ((found as unknown as Record<string, unknown>)?.isAuthor) {
         setPickedIndices([]);
         setRevealedTargets(found!.targetIndices || []);
         setRevealedNulls(found!.nullIndices || []);
