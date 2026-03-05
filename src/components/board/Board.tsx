@@ -70,6 +70,7 @@ export default function Board({
       {cards.map((_card, visualIdx) => {
         const originalIndex = displayOrder ? displayOrder[visualIdx] : visualIdx;
         const card = cards[originalIndex];
+        if (!card) return null;
 
         const orderIdx = pickOrder?.indexOf(originalIndex);
         const order = orderIdx !== undefined && orderIdx >= 0 ? orderIdx + 1 : undefined;
