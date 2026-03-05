@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { generateBoard, generateSeed } from '../lib/boardGenerator';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -18,9 +18,7 @@ export default function ClueGivingPage() {
   const { seed: rawSeed } = useParams<{ seed: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, saveSessionState } = useAuth();
-  const location = useLocation();
-  const roamingState = (location.state as { roamingState?: Record<string, unknown> } | null)?.roamingState ?? null;
+  const { user, saveSessionState, roamingState, clearRoamingState } = useAuth();
   const { t } = useTranslation();
 
   const boardSize = (searchParams.get('size') as BoardSize) || '5x5';
@@ -40,9 +38,16 @@ export default function ClueGivingPage() {
     return baseConfig;
   }, [searchParams, baseConfig]);
 
-  const [currentSeed, setCurrentSeed] = useState(
-    rawSeed ? decodeURIComponent(rawSeed) : generateSeed(),
-  );
+  // Generate fresh seed on mount. Roaming state (if any) will override via useEffect.
+  // This prevents manual URL manipulation from affecting the seed.
+  const [currentSeed, setCurrentSeed] = useState(() => generateSeed());
+
+  // Sync URL to actual seed (prevents manual URL tampering from being visible)
+  // Skip sync while roaming state is pending — the seed will change when restored
+  const decodedRawSeed = rawSeed ? decodeURIComponent(rawSeed) : null;
+  if (decodedRawSeed !== currentSeed && !roamingState) {
+    window.history.replaceState(null, '', `/give-clue/${encodeURIComponent(currentSeed)}?${searchParams}`);
+  }
 
   const [selectedTargets, setSelectedTargets] = useState<number[]>([]);
   const [selectedNulls, setSelectedNulls] = useState<number[]>([]);
@@ -70,11 +75,15 @@ export default function ClueGivingPage() {
   const [showHomeConfirm, setShowHomeConfirm] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
-  // Restore roaming state from another device (one-time on mount)
+  // Restore roaming state from another device (reactive — arrives async after claim)
   const roamingAppliedRef = useRef(false);
   useEffect(() => {
-    if (roamingAppliedRef.current || !roamingState) return;
+    if (!roamingState || roamingAppliedRef.current) return;
     roamingAppliedRef.current = true;
+    // Restore seed from URL (which was set by the redirect)
+    if (rawSeed) {
+      setCurrentSeed(decodeURIComponent(rawSeed));
+    }
     if (Array.isArray(roamingState.selectedTargets)) {
       setSelectedTargets(roamingState.selectedTargets as number[]);
     }
@@ -84,16 +93,16 @@ export default function ClueGivingPage() {
     if (typeof roamingState.reshuffleCount === 'number') {
       setReshuffleCount(roamingState.reshuffleCount as number);
     }
-    // Clear location state so F5 doesn't re-apply
-    window.history.replaceState({}, '', window.location.href);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    clearRoamingState();
+  }, [roamingState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save state to server on meaningful changes (debounced via saveSessionState)
+  // Skip saving while roaming state hasn't been applied yet
   useEffect(() => {
-    if (!user || submitted) return;
+    if (!user || submitted || roamingState) return;
     const url = `/give-clue/${encodeURIComponent(currentSeed)}?${searchParams}`;
     saveSessionState(url, { selectedTargets, selectedNulls, reshuffleCount });
-  }, [selectedTargets, selectedNulls, reshuffleCount, currentSeed, submitted]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedTargets, selectedNulls, reshuffleCount, currentSeed, submitted, roamingState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-detect clue-0: if any non-red cards are selected as nulls
   const isClueZero = selectedNulls.length > 0;

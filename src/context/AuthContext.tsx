@@ -7,22 +7,19 @@ const CACHED_USER_KEY = 'codenames_cached_user';
 const SESSION_CHANNEL = 'codenames_session';
 const TAB_SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-interface PendingRestore {
-  url: string;
-  state: Record<string, unknown> | null;
-}
-
 interface AuthContextValue {
   user: User | null;
   evicted: boolean;
-  pendingRestore: PendingRestore | null;
+  pendingRedirect: string | null;
+  clearPendingRedirect: () => void;
+  roamingState: Record<string, unknown> | null;
+  clearRoamingState: () => void;
   login: (displayName: string, password?: string) => Promise<User>;
   loginWithOAuth: (dbUser: Record<string, unknown>) => User;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   refreshUser: () => Promise<void>;
   saveSessionState: (url: string, state: Record<string, unknown> | null) => void;
-  clearPendingRestore: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -47,7 +44,6 @@ interface ClaimResult {
   savedState: Record<string, unknown> | null;
 }
 
-/** Claim the active session on the server, returns saved roaming state */
 async function claimOnServer(userId: string): Promise<ClaimResult> {
   try {
     const res = await fetch('/api/game?route=claim-session', {
@@ -62,7 +58,6 @@ async function claimOnServer(userId: string): Promise<ClaimResult> {
   }
 }
 
-/** Check if our session is still active on the server */
 async function checkOnServer(userId: string): Promise<boolean> {
   try {
     const res = await fetch(`/api/game?route=check-session&userId=${encodeURIComponent(userId)}&sessionId=${encodeURIComponent(TAB_SESSION_ID)}`);
@@ -78,7 +73,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const channelRef = useRef<BroadcastChannel | null>(null);
   const saveStateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [evicted, setEvicted] = useState(false);
-  const [pendingRestore, setPendingRestore] = useState<PendingRestore | null>(null);
+  // pendingRedirect: set when server has a different URL to redirect to
+  const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
+  // roamingState: state from another device/tab, consumed by pages
+  const [roamingState, setRoamingState] = useState<Record<string, unknown> | null>(null);
 
   const [user, setUser] = useState<User | null>(() => {
     const userId = localStorage.getItem(CURRENT_USER_KEY);
@@ -94,7 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
-  const clearPendingRestore = useCallback(() => setPendingRestore(null), []);
+  const clearPendingRedirect = useCallback(() => setPendingRedirect(null), []);
+
+  const clearRoamingState = useCallback(() => setRoamingState(null), []);
 
   /** Save current page URL + state to server (debounced) */
   const saveSessionState = useCallback((url: string, state: Record<string, unknown> | null) => {
@@ -210,11 +210,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     channelRef.current?.postMessage({ type: 'CLAIM', tabId: TAB_SESSION_ID });
 
     claimOnServer(user.id).then((result) => {
-      if (result.savedUrl) {
-        const currentPath = window.location.pathname + window.location.search;
-        if (result.savedUrl !== currentPath) {
-          setPendingRestore({ url: result.savedUrl, state: result.savedState });
-        }
+      if (!result.savedUrl) return;
+      // Store the roaming state for pages to consume
+      setRoamingState(result.savedState);
+      // If URL differs, trigger a redirect
+      const currentPath = window.location.pathname + window.location.search;
+      if (result.savedUrl !== currentPath) {
+        setPendingRedirect(result.savedUrl);
       }
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -235,9 +237,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, evicted, pendingRestore,
+      user, evicted, pendingRedirect, clearPendingRedirect,
+      roamingState, clearRoamingState,
       login, loginWithOAuth, logout, updateUser, refreshUser,
-      saveSessionState, clearPendingRestore,
+      saveSessionState,
     }}>
       {children}
     </AuthContext.Provider>
