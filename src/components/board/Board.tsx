@@ -63,7 +63,7 @@ export default function Board({
 
   return (
     <div
-      className={`grid ${gridColsClass[columns] || 'grid-cols-5'} gap-1 sm:gap-1.5 lg:gap-2 w-full max-w-[min(100%,780px)] lg:max-w-[min(100%,846px)] mx-auto px-1`}
+      className={`grid ${gridColsClass[columns] || 'grid-cols-5'} gap-1 sm:gap-1.5 lg:gap-2 w-full max-w-[min(100%,750px)] lg:max-w-[min(100%,820px)] mx-auto px-1`}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
     >
