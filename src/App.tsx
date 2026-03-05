@@ -104,7 +104,7 @@ export default function App() {
           <Route path="/oauth/register" element={<OAuthRegisterPage />} />
           <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
           <Route path="/setup" element={<RequireAuth><SetupPage /></RequireAuth>} />
-          <Route path="/give-clue/:seed" element={<RequireAuth><ClueGivingPage /></RequireAuth>} />
+          <Route path="/give-clue" element={<RequireAuth><ClueGivingPage /></RequireAuth>} />
           <Route path="/guess/:clueId" element={<RequireAuth><GuessingPage /></RequireAuth>} />
           <Route path="/results/:clueId" element={<RequireAuth><ResultsPage /></RequireAuth>} />
           <Route path="/leaderboard" element={<RequireAuth><LeaderboardPage /></RequireAuth>} />

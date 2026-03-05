@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
-import { generateSeed } from '../lib/boardGenerator';
 import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
 import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
@@ -163,7 +162,6 @@ export default function SetupPage() {
     if (!user) return;
 
     if (mode === 'clue-giving') {
-      const seed = generateSeed();
       const params = new URLSearchParams({ size: boardSize });
       if (!ranked) {
         params.set('ranked', '0');
@@ -173,8 +171,8 @@ export default function SetupPage() {
           params.set('a', String(assassinCount));
         }
       }
-      // Seed is now server-managed — ClueGivingPage will fetch the locked seed
-      navigate(`/give-clue/${encodeURIComponent(seed)}?${params}`);
+      // Seed is server-managed — ClueGivingPage will fetch the locked seed
+      navigate(`/give-clue?${params}`);
     } else {
       // Check for unfinished game
       const saved = localStorage.getItem('codenames_active_guess');

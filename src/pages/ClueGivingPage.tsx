@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { generateBoard } from '../lib/boardGenerator';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -15,7 +15,6 @@ import ClueInput from '../components/clue/ClueInput';
 import SettingsPanel from '../components/settings/SettingsPanel';
 
 export default function ClueGivingPage() {
-  const { seed: rawSeed } = useParams<{ seed: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, saveSessionState, roamingState, clearRoamingState } = useAuth();
@@ -57,21 +56,11 @@ export default function ClueGivingPage() {
       setReshuffleCount(game.reshuffleCount);
       setLoading(false);
       // Sync URL to server seed
-      window.history.replaceState(null, '', `/give-clue/${encodeURIComponent(game.seed)}?${game.params}`);
+      window.history.replaceState(null, '', `/give-clue?${game.params}`);
     }).catch(() => {
       setLoading(false);
     });
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Sync URL whenever seed changes (prevents any URL tampering)
-  useEffect(() => {
-    if (!currentSeed || loading) return;
-    const lockedUrl = `/give-clue/${encodeURIComponent(currentSeed)}?${lockedParams}`;
-    const currentUrl = `/give-clue/${rawSeed}?${searchParams}`;
-    if (currentUrl !== lockedUrl) {
-      window.history.replaceState(null, '', lockedUrl);
-    }
-  }, [currentSeed, lockedParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [selectedTargets, setSelectedTargets] = useState<number[]>([]);
   const [selectedNulls, setSelectedNulls] = useState<number[]>([]);
@@ -117,7 +106,7 @@ export default function ClueGivingPage() {
   // Save state to server on meaningful changes (debounced via saveSessionState)
   useEffect(() => {
     if (!user || !currentSeed || submitted || loading || roamingState) return;
-    const url = `/give-clue/${encodeURIComponent(currentSeed)}?${lockedParams}`;
+    const url = `/give-clue?${lockedParams}`;
     saveSessionState(url, { selectedTargets, selectedNulls, reshuffleCount });
   }, [selectedTargets, selectedNulls, reshuffleCount, currentSeed, submitted, loading, roamingState]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -140,7 +129,7 @@ export default function ClueGivingPage() {
       window.history.replaceState(
         null,
         '',
-        `/give-clue/${encodeURIComponent(game.seed)}?${lockedParams}`,
+        `/give-clue?${lockedParams}`,
       );
     } catch {
       setTargetError('Ошибка при смене слов');
@@ -306,7 +295,7 @@ export default function ClueGivingPage() {
       window.history.replaceState(
         null,
         '',
-        `/give-clue/${encodeURIComponent(game.seed)}?${lockedParams}`,
+        `/give-clue?${lockedParams}`,
       );
     } catch {
       // fallback: just go home
@@ -318,7 +307,7 @@ export default function ClueGivingPage() {
   if (loading || !board || !currentSeed) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-400 text-lg animate-pulse">{t.app.loading || 'Загрузка...'}</div>
+        <div className="text-gray-400 text-lg animate-pulse">Загрузка...</div>
       </div>
     );
   }
