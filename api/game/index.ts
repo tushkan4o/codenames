@@ -474,10 +474,12 @@ async function handleComments(req: VercelRequest, res: VercelResponse, sql: Retu
         await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, created_at)
           VALUES (${clueInfo[0].user_id}, 'new_comment', ${userId}, ${clueId}, ${clueInfo[0].word}, ${now})`;
       }
-      // Notify mentioned users (@nickname)
-      const mentions = trimmed.match(/@([\wа-яА-ЯёЁ\-()[\]]+(?:\s[\wа-яА-ЯёЁ\-()[\]]+)*)/g);
-      if (mentions) {
-        const names = mentions.map((m: string) => m.slice(1).trim()).filter(Boolean);
+      // Notify mentioned users (@[nickname] bracket format + legacy @nickname)
+      const bracketMentions = trimmed.match(/@\[([^\]]+)\]/g);
+      const legacyMentions = trimmed.replace(/@\[[^\]]+\]/g, '').match(/@([\wа-яА-ЯёЁ\-()]+)/g);
+      const mentions = [...(bracketMentions || []), ...(legacyMentions || [])];
+      if (mentions.length > 0) {
+        const names = mentions.map((m: string) => m.startsWith('@[') ? m.slice(2, -1) : m.slice(1)).filter(Boolean);
         for (const name of names) {
           const userRows = await sql`SELECT id FROM users WHERE display_name = ${name}`;
           if (userRows.length > 0) {

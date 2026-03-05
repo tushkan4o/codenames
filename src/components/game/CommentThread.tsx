@@ -23,9 +23,21 @@ function formatDate(ts: number): string {
 }
 
 function renderContent(content: string, onMentionClick?: (name: string) => void) {
-  // Match @mentions — nickname chars without trailing spaces
-  const parts = content.split(/(@[\wа-яА-ЯёЁ\-()[\]]+(?:\s[\wа-яА-ЯёЁ\-()[\]]+)*)/g);
+  // Match @[name] bracket mentions (new format) and legacy @name mentions (single word only)
+  const parts = content.split(/(@\[[^\]]+\]|@[\wа-яА-ЯёЁ\-()]+)/g);
   return parts.map((part, i) => {
+    if (part.startsWith('@[') && part.endsWith(']')) {
+      const name = part.slice(2, -1);
+      return (
+        <span
+          key={i}
+          className="text-amber-400 font-semibold cursor-pointer hover:text-amber-300 transition-colors"
+          onClick={(e) => { e.stopPropagation(); onMentionClick?.(`@${name}`); }}
+        >
+          @{name}
+        </span>
+      );
+    }
     if (part.startsWith('@') && part.length > 1) {
       return (
         <span
@@ -71,6 +83,11 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
       setShowSuggestions(false);
       return;
     }
+    // Skip if this @ is part of a completed bracket mention
+    if (before[atIdx + 1] === '[' && before.indexOf(']', atIdx) !== -1 && before.indexOf(']', atIdx) < cursorPos) {
+      setShowSuggestions(false);
+      return;
+    }
     const query = before.slice(atIdx + 1);
     if (query.length < 2) {
       setShowSuggestions(false);
@@ -97,11 +114,12 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
     const before = text.slice(0, cursorPos);
     const atIdx = before.lastIndexOf('@');
     if (atIdx === -1) return;
-    const newText = text.slice(0, atIdx) + '@' + displayName + ' ' + text.slice(cursorPos);
+    const mention = `@[${displayName}]`;
+    const newText = text.slice(0, atIdx) + mention + ' ' + text.slice(cursorPos);
     setText(newText);
     setShowSuggestions(false);
     setTimeout(() => {
-      const newPos = atIdx + displayName.length + 2;
+      const newPos = atIdx + mention.length + 1;
       input.setSelectionRange(newPos, newPos);
       input.focus();
     }, 0);
@@ -139,8 +157,8 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
   }
 
   function handleNicknameClick(name: string) {
-    // Add @nickname to input when clicking on a comment author
-    const mention = `@${name} `;
+    // Add @[nickname] to input when clicking on a comment author
+    const mention = `@[${name}] `;
     if (text.endsWith(' ') || text === '') {
       setText(text + mention);
     } else {
@@ -150,12 +168,13 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
   }
 
   function handleMentionInContent(mention: string) {
-    // When clicking @mention in content, add it to input
-    const withSpace = mention + ' ';
+    // When clicking @mention in content, add bracket mention to input
+    const name = mention.startsWith('@') ? mention.slice(1) : mention;
+    const bracketMention = `@[${name}] `;
     if (text.endsWith(' ') || text === '') {
-      setText(text + withSpace);
+      setText(text + bracketMention);
     } else {
-      setText(text + ' ' + withSpace);
+      setText(text + ' ' + bracketMention);
     }
     inputRef.current?.focus();
   }
