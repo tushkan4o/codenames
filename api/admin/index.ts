@@ -7,6 +7,7 @@ async function checkAdmin(sql: ReturnType<typeof neon>, adminId: string): Promis
 }
 
 async function deleteClueCascade(sql: ReturnType<typeof neon>, clueId: string) {
+  await sql`DELETE FROM comments WHERE clue_id = ${clueId}`;
   await sql`DELETE FROM reports WHERE clue_id = ${clueId}`;
   await sql`DELETE FROM ratings WHERE clue_id = ${clueId}`;
   await sql`DELETE FROM results WHERE clue_id = ${clueId}`;

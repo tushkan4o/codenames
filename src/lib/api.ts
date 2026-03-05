@@ -138,9 +138,10 @@ export const api = {
     return get(`/api/game?${params}`);
   },
 
-  async getClueById(id: string, reveal = false): Promise<Clue | null> {
+  async getClueById(id: string, reveal = false, userId?: string): Promise<(Clue & { existingResult?: { guessedIndices: number[]; score: number; correctCount: number; totalTargets: number } }) | null> {
     const params = new URLSearchParams({ route: 'clue', id });
     if (reveal) params.set('reveal', 'true');
+    if (userId) params.set('userId', userId);
     return get(`/api/game?${params}`);
   },
 
@@ -269,5 +270,18 @@ export const api = {
 
   async renameUser(userId: string, newDisplayName: string): Promise<{ ok: boolean; displayName: string }> {
     return post('/api/auth/oauth?action=rename', { userId, newDisplayName });
+  },
+
+  // Comments
+  async getComments(clueId: string): Promise<{ id: number; userId: string; displayName: string; content: string; createdAt: number }[]> {
+    return get(`/api/game?route=comments&clueId=${encodeURIComponent(clueId)}`);
+  },
+
+  async addComment(clueId: string, userId: string, content: string): Promise<{ ok: boolean; id: number }> {
+    return post('/api/game?route=comments', { clueId, userId, content });
+  },
+
+  async deleteComment(id: number, adminId: string): Promise<void> {
+    await del(`/api/game?route=comments&id=${id}&adminId=${encodeURIComponent(adminId)}`);
   },
 };

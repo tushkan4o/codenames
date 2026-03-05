@@ -87,6 +87,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'clue': return handleClueById(req, res, sql);
     case 'results': return handleResults(req, res, sql);
     case 'ratings': return handleRatings(req, res, sql);
+    case 'comments': return handleComments(req, res, sql);
     case 'leaderboard': return handleLeaderboard(req, res, sql);
     case 'stats': return handleUserStats(req, res, sql);
     case 'claim-session': return handleClaimSession(req, res, sql);
@@ -294,6 +295,20 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
       row.board_seed as string, row.board_size as string,
       row.red_count as number | null, row.blue_count as number | null, row.assassin_count as number | null,
     );
+    // Check if user already has a result for this clue
+    const { userId: queryUserId } = req.query;
+    let existingResult = null;
+    if (queryUserId && typeof queryUserId === 'string') {
+      const resultRows = await sql`SELECT guessed_indices, score, correct_count, total_targets FROM results WHERE clue_id = ${id} AND user_id = ${queryUserId}`;
+      if (resultRows.length > 0) {
+        existingResult = {
+          guessedIndices: resultRows[0].guessed_indices,
+          score: Number(resultRows[0].score),
+          correctCount: Number(resultRows[0].correct_count),
+          totalTargets: Number(resultRows[0].total_targets),
+        };
+      }
+    }
     res.json({
       id: row.id, word: row.word, number: row.number,
       words: boardData.words, colors: boardData.colors,
@@ -303,6 +318,11 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
       ...(row.red_count != null ? { redCount: row.red_count } : {}),
       ...(row.blue_count != null ? { blueCount: row.blue_count } : {}),
       ...(row.assassin_count != null ? { assassinCount: row.assassin_count } : {}),
+      ...(existingResult ? {
+        existingResult,
+        targetIndices: row.target_indices,
+        nullIndices: row.null_indices || [],
+      } : {}),
     });
   }
 }
@@ -325,8 +345,20 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: Retur
     const result = req.body;
     if (!result?.clueId || !result?.userId) return res.status(400).json({ error: 'Invalid result data' });
     try {
-      const clueRows = await sql`SELECT target_indices, null_indices FROM clues WHERE id = ${result.clueId}`;
+      const clueRows = await sql`SELECT target_indices, null_indices, ranked FROM clues WHERE id = ${result.clueId}`;
       if (clueRows.length === 0) return res.status(404).json({ error: 'Clue not found' });
+      // Server-side ranked access check
+      if (clueRows[0].ranked !== false) {
+        const oauthRows = await sql`SELECT provider FROM oauth_accounts WHERE user_id = ${result.userId}`;
+        const givenRows = await sql`SELECT COUNT(*) as c FROM clues WHERE user_id = ${result.userId} AND ranked = false`;
+        const solvedRows = await sql`SELECT COUNT(*) as c FROM results r JOIN clues cl ON r.clue_id = cl.id WHERE r.user_id = ${result.userId} AND cl.ranked = false`;
+        const hasOAuth = oauthRows.length > 0;
+        const casualGiven = Number(givenRows[0].c);
+        const casualSolved = Number(solvedRows[0].c);
+        if (!hasOAuth || casualGiven < 1 || casualSolved < 5) {
+          return res.status(403).json({ error: 'ranked_access_denied' });
+        }
+      }
       const targetIndices: number[] = clueRows[0].target_indices as number[];
       const nullIndices: number[] = (clueRows[0].null_indices as number[]) || [];
       const guessedSet = new Set(result.guessedIndices as number[]);
@@ -380,6 +412,41 @@ async function handleRatings(req: VercelRequest, res: VercelResponse, sql: Retur
     VALUES (${clueId}, ${userId}, ${rating})
     ON CONFLICT (clue_id, user_id) DO UPDATE SET rating = ${rating}`;
   res.json({ ok: true });
+}
+
+// ==================== COMMENTS ====================
+
+async function handleComments(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+  if (req.method === 'GET') {
+    const { clueId } = req.query;
+    if (!clueId || typeof clueId !== 'string') return res.status(400).json({ error: 'clueId required' });
+    const rows = await sql`SELECT c.id, c.user_id, c.content, c.created_at, u.display_name
+      FROM comments c LEFT JOIN users u ON c.user_id = u.id
+      WHERE c.clue_id = ${clueId} ORDER BY c.created_at DESC`;
+    return res.json(rows.map((r: Record<string, unknown>) => ({
+      id: Number(r.id), userId: r.user_id as string, displayName: (r.display_name as string) || (r.user_id as string),
+      content: r.content as string, createdAt: Number(r.created_at),
+    })));
+  }
+
+  if (req.method === 'POST') {
+    const { clueId, userId, content } = req.body;
+    if (!clueId || !userId || !content?.trim()) return res.status(400).json({ error: 'clueId, userId, content required' });
+    const now = Date.now();
+    const rows = await sql`INSERT INTO comments (clue_id, user_id, content, created_at) VALUES (${clueId}, ${userId}, ${content.trim()}, ${now}) RETURNING id`;
+    return res.json({ ok: true, id: Number(rows[0].id) });
+  }
+
+  if (req.method === 'DELETE') {
+    const { id, adminId } = req.query;
+    if (!id || !adminId || typeof adminId !== 'string') return res.status(400).json({ error: 'id and adminId required' });
+    const adminRows = await sql`SELECT is_admin FROM users WHERE id = ${adminId}`;
+    if (adminRows.length === 0 || !adminRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
+    await sql`DELETE FROM comments WHERE id = ${Number(id)}`;
+    return res.json({ ok: true });
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
 }
 
 // ==================== LEADERBOARD ====================
@@ -733,6 +800,7 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_ranked JSONB`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_casual JSONB`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_active TEXT`;
+    await sql`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL)`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

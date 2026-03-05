@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
+import { ExclamationTriangleIcon, ShareIcon } from '@heroicons/react/24/outline';
 
 interface ClueRatingProps {
+  clueId: string;
   onRate: (rating: number) => void;
   onReport: (reason: string) => void;
   initialRating?: number | null;
 }
 
-export default function ClueRating({ onRate, onReport, initialRating }: ClueRatingProps) {
+export default function ClueRating({ clueId, onRate, onReport, initialRating }: ClueRatingProps) {
   const { t } = useTranslation();
   const [currentRating, setCurrentRating] = useState<number | null>(initialRating ?? null);
   const [justRated, setJustRated] = useState(false);
   const [showReportInput, setShowReportInput] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reported, setReported] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   function handleRate(rating: number) {
     setCurrentRating(rating);
@@ -27,6 +30,25 @@ export default function ClueRating({ onRate, onReport, initialRating }: ClueRati
     onReport(reportReason.trim());
     setReported(true);
     setShowReportInput(false);
+  }
+
+  async function handleShare() {
+    const url = `${window.location.origin}/guess/${clueId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const input = document.createElement('input');
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    }
   }
 
   return (
@@ -83,12 +105,22 @@ export default function ClueRating({ onRate, onReport, initialRating }: ClueRati
           </div>
         </div>
       ) : (
-        <button
-          onClick={() => setShowReportInput(true)}
-          className="text-xs text-red-400 hover:text-red-300 mt-1"
-        >
-          {t.rating.report}
-        </button>
+        <div className="flex items-center gap-4 mt-1">
+          <button
+            onClick={() => setShowReportInput(true)}
+            className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors"
+          >
+            <ExclamationTriangleIcon className="w-4 h-4" />
+            {t.rating.report}
+          </button>
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-300 transition-colors"
+          >
+            <ShareIcon className="w-4 h-4" />
+            {shareCopied ? t.rating.copied : t.rating.share}
+          </button>
+        </div>
       )}
     </div>
   );

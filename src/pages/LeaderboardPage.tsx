@@ -360,7 +360,7 @@ export default function LeaderboardPage() {
                               >
                                 {t.profile.viewBoard}
                               </button>
-                            ) : c.ranked && !canPlayRanked(user) ? (
+                            ) : c.ranked !== false && !canPlayRanked(user) ? (
                               <span className="text-gray-500 text-xs italic">{buildRankedLockMessage(user)}</span>
                             ) : (
                               <button
