@@ -55,10 +55,10 @@ export default function ClueGivingPage() {
       setLockedParams(new URLSearchParams(game.params));
       setReshuffleCount(game.reshuffleCount);
       setLoading(false);
-      // Sync URL to server seed
       window.history.replaceState(null, '', `/give-clue?${game.params}`);
     }).catch(() => {
-      setLoading(false);
+      // Server error (e.g. missing columns) — go home
+      navigate('/');
     });
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -590,6 +590,10 @@ async function handleCaptainGame(req: VercelRequest, res: VercelResponse, sql: R
 
   const col = ranked ? 'captain_ranked' : 'captain_casual';
   try {
+    // Ensure columns exist
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_ranked JSONB`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_casual JSONB`;
+
     const rows = await sql`SELECT captain_ranked, captain_casual FROM users WHERE id = ${userId}`;
     if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
