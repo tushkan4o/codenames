@@ -92,8 +92,8 @@ export default function NavBar() {
   const [nameSaving, setNameSaving] = useState(false);
 
   // Dropdown position state
-  const [bellPos, setBellPos] = useState<{ top: number; right: number } | null>(null);
-  const [gearPos, setGearPos] = useState<{ top: number; right: number } | null>(null);
+  const [bellPos, setBellPos] = useState<{ top: number; right: number; left?: number } | null>(null);
+  const [gearPos, setGearPos] = useState<{ top: number; right: number; left?: number } | null>(null);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -161,7 +161,12 @@ export default function NavBar() {
   function computePos(btnRef: React.RefObject<HTMLButtonElement | null>) {
     if (!btnRef.current) return null;
     const rect = btnRef.current.getBoundingClientRect();
-    return { top: rect.bottom + 8, right: window.innerWidth - rect.right };
+    const isMobile = window.innerWidth < 640;
+    if (isMobile) {
+      // On mobile: position below navbar, horizontally centered with padding
+      return { top: rect.bottom + 8, right: 16, left: 16 };
+    }
+    return { top: rect.bottom + 8, right: window.innerWidth - rect.right, left: undefined };
   }
 
   function handleLogout() {
@@ -303,8 +308,8 @@ export default function NavBar() {
             {showDropdown && bellPos && createPortal(
               <div
                 ref={dropdownRef}
-                className="fixed w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-[9999] overflow-hidden"
-                style={{ top: bellPos.top, right: bellPos.right }}
+                className="fixed bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-[9999] overflow-hidden sm:w-80 sm:max-w-sm"
+                style={{ top: bellPos.top, right: bellPos.right, left: bellPos.left }}
               >
                 <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700/50">
                   <span className="text-xs font-semibold text-gray-400 uppercase">{t.nav.notifications}</span>
@@ -357,8 +362,8 @@ export default function NavBar() {
             {showSettings && gearPos && createPortal(
               <div
                 ref={settingsRef}
-                className="fixed z-[9999] bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-4 min-w-[280px] max-h-[80vh] overflow-y-auto"
-                style={{ top: gearPos.top, right: gearPos.right }}
+                className="fixed z-[9999] bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-4 sm:min-w-[280px] max-h-[80vh] overflow-y-auto"
+                style={{ top: gearPos.top, right: gearPos.right, left: gearPos.left }}
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-white text-sm font-bold">{t.settings.title}</span>
