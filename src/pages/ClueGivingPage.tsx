@@ -10,6 +10,7 @@ import { useDragReorder } from '../hooks/useDragReorder';
 import { HomeIcon, ArrowPathIcon, ArrowUturnLeftIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { BarsArrowDownIcon } from '@heroicons/react/24/solid';
 import Board from '../components/board/Board';
+import NavBar from '../components/layout/NavBar';
 import GameHeader from '../components/game/GameHeader';
 import ClueInput from '../components/clue/ClueInput';
 import SettingsPanel from '../components/settings/SettingsPanel';
@@ -345,7 +346,9 @@ export default function ClueGivingPage() {
   const clueNumber = isClueZero ? 0 : selectedTargets.length;
 
   return (
-    <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-6">
+    <div className="min-h-screen">
+      <NavBar />
+      <div className="px-2 sm:px-4 py-4 sm:py-6">
       <GameHeader mode="clue-giving" config={config} ranked={isRanked} />
 
       {/* Action buttons */}
@@ -490,6 +493,7 @@ export default function ClueGivingPage() {
           onCancel={cancelSubmit}
           externalError={targetError}
         />
+      </div>
       </div>
     </div>
   );

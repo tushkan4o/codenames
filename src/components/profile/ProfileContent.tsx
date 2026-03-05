@@ -35,7 +35,7 @@ function DiscordIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-type Tab = 'given' | 'solved';
+type Tab = 'given' | 'solved' | 'comments';
 type SortDir = 'asc' | 'desc';
 type GivenSortField = 'number' | 'attempts' | 'avgScore';
 type SolvedSortField = 'number' | 'attempts' | 'avgScore' | 'myScore';
@@ -99,6 +99,9 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [expandedGivenId, setExpandedGivenId] = useState<string | null>(null);
   const [expandedSolvedKey, setExpandedSolvedKey] = useState<string | null>(null);
 
+  // Profile comments
+  const [userComments, setUserComments] = useState<{ id: number; clueId: string; clueWord: string; content: string; createdAt: number }[]>([]);
+
   // OAuth linked accounts
   const [linkedAccounts, setLinkedAccounts] = useState<{ provider: string; providerName: string; email: string | null; linkedAt: number }[]>([]);
   const [unlinkConfirm, setUnlinkConfirm] = useState<string | null>(null);
@@ -123,8 +126,10 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     setModalClue(null);
     setConfirmDeleteClue(null);
     setConfirmDeleteSolved(null);
+    setUserComments([]);
 
     api.getUserStats(profileId).then(setStats);
+    api.getCommentsByUser(profileId).then(setUserComments).catch(() => {});
     api.getCluesByUser(profileId).then((clues) => {
       setCluesGiven(clues);
       clues.forEach((clue) => {
@@ -597,6 +602,13 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           >
             {t.profile.solvedTab}
           </button>
+          <button
+            onClick={() => setTab('comments')}
+            className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'comments' ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+          >
+            {t.profile.commentsTab}
+            {userComments.length > 0 && <span className="ml-1 text-xs opacity-70">({userComments.length})</span>}
+          </button>
         </div>
 
         {/* ===== GIVEN TAB ===== */}
@@ -809,6 +821,32 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                 );
               })}
               </div>
+            </div>
+          )
+        )}
+        {/* ===== COMMENTS TAB ===== */}
+        {tab === 'comments' && (
+          userComments.length === 0 ? (
+            <p className="text-center text-gray-500">{t.results.noComments}</p>
+          ) : (
+            <div className="overflow-y-auto flex-1 min-h-0 space-y-1" style={{ scrollbarGutter: 'stable' }}>
+              {userComments.map((c) => (
+                <div
+                  key={c.id}
+                  onClick={() => { if (c.clueId) { closeProfile(); navigate(`/guess/${c.clueId}`); } }}
+                  className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 cursor-pointer hover:border-gray-600 transition-colors"
+                >
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span>{formatDate(c.createdAt)}</span>
+                    {c.clueWord && (
+                      <span className="text-gray-400">
+                        <span className="text-white font-bold uppercase">{c.clueWord}</span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-300 mt-0.5 line-clamp-2">{c.content}</p>
+                </div>
+              ))}
             </div>
           )
         )}

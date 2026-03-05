@@ -9,6 +9,7 @@ import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../types/game';
 import type { Clue, CardState } from '../types/game';
 import { HomeIcon, ArrowPathIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import Board from '../components/board/Board';
+import NavBar from '../components/layout/NavBar';
 import GameHeader from '../components/game/GameHeader';
 import ClueDisplay from '../components/clue/ClueDisplay';
 import ResultsTabs from '../components/game/ResultsTabs';
@@ -517,7 +518,9 @@ export default function GuessingPage() {
   const doneNullIndices = phase === 'done' && revealedNulls.length > 0 ? revealedNulls : [];
 
   return (
-    <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-6">
+    <div className="min-h-screen">
+      <NavBar />
+      <div className="px-2 sm:px-4 py-4 sm:py-6">
       <GameHeader mode="guessing" config={config} ranked={clue.ranked !== false} />
       <ClueDisplay word={clue.word} number={clue.number} teamColor="red" />
 
@@ -715,6 +718,7 @@ export default function GuessingPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -88,6 +88,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'results': return handleResults(req, res, sql);
     case 'ratings': return handleRatings(req, res, sql);
     case 'comments': return handleComments(req, res, sql);
+    case 'notifications': return handleNotifications(req, res, sql);
     case 'leaderboard': return handleLeaderboard(req, res, sql);
     case 'stats': return handleUserStats(req, res, sql);
     case 'claim-session': return handleClaimSession(req, res, sql);
@@ -375,6 +376,14 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: Retur
         ON CONFLICT (id) DO NOTHING`;
       await sql`INSERT INTO results (clue_id, user_id, guessed_indices, correct_count, total_targets, score, timestamp, board_size)
         VALUES (${result.clueId}, ${result.userId}, ${result.guessedIndices}, ${correctCount}, ${targetIndices.length}, ${result.score}, ${result.timestamp}, ${result.boardSize || null})`;
+      // Notify clue author about new solve
+      try {
+        const clueInfo = await sql`SELECT user_id, word FROM clues WHERE id = ${result.clueId}`;
+        if (clueInfo.length > 0 && clueInfo[0].user_id !== result.userId) {
+          await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, created_at)
+            VALUES (${clueInfo[0].user_id}, 'new_solve', ${result.userId}, ${result.clueId}, ${clueInfo[0].word}, ${Date.now()})`;
+        }
+      } catch { /* notifications are best-effort */ }
       return res.json({ ok: true, targetIndices, nullIndices });
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err && (err as Record<string, unknown>).code === '23505') {
@@ -425,6 +434,18 @@ async function handleRatings(req: VercelRequest, res: VercelResponse, sql: Retur
 
 async function handleComments(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
   if (req.method === 'GET') {
+    // Comments by user (for profile)
+    const { userId: commentUserId } = req.query;
+    if (commentUserId && typeof commentUserId === 'string') {
+      const rows = await sql`SELECT c.id, c.clue_id, c.content, c.created_at, cl.word as clue_word
+        FROM comments c LEFT JOIN clues cl ON c.clue_id = cl.id
+        WHERE c.user_id = ${commentUserId} ORDER BY c.created_at DESC`;
+      return res.json(rows.map((r: Record<string, unknown>) => ({
+        id: Number(r.id), clueId: r.clue_id as string, clueWord: (r.clue_word as string) || '',
+        content: r.content as string, createdAt: Number(r.created_at),
+      })));
+    }
+
     const { clueId } = req.query;
     if (!clueId || typeof clueId !== 'string') return res.status(400).json({ error: 'clueId required' });
     const rows = await sql`SELECT c.id, c.user_id, c.content, c.created_at, u.display_name
@@ -440,7 +461,35 @@ async function handleComments(req: VercelRequest, res: VercelResponse, sql: Retu
     const { clueId, userId, content } = req.body;
     if (!clueId || !userId || !content?.trim()) return res.status(400).json({ error: 'clueId, userId, content required' });
     const now = Date.now();
-    const rows = await sql`INSERT INTO comments (clue_id, user_id, content, created_at) VALUES (${clueId}, ${userId}, ${content.trim()}, ${now}) RETURNING id`;
+    const trimmed = content.trim();
+    const rows = await sql`INSERT INTO comments (clue_id, user_id, content, created_at) VALUES (${clueId}, ${userId}, ${trimmed}, ${now}) RETURNING id`;
+    // Notifications: notify clue author + mentioned users
+    try {
+      const clueInfo = await sql`SELECT user_id, word FROM clues WHERE id = ${clueId}`;
+      const notifiedSet = new Set<string>();
+      // Notify clue author about new comment
+      if (clueInfo.length > 0 && clueInfo[0].user_id !== userId) {
+        notifiedSet.add(clueInfo[0].user_id as string);
+        await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, created_at)
+          VALUES (${clueInfo[0].user_id}, 'new_comment', ${userId}, ${clueId}, ${clueInfo[0].word}, ${now})`;
+      }
+      // Notify mentioned users (@nickname)
+      const mentions = trimmed.match(/@([\wа-яА-ЯёЁ\-()[\]]+(?:\s[\wа-яА-ЯёЁ\-()[\]]+)*)/g);
+      if (mentions) {
+        const names = mentions.map((m: string) => m.slice(1).trim()).filter(Boolean);
+        for (const name of names) {
+          const userRows = await sql`SELECT id FROM users WHERE display_name = ${name}`;
+          if (userRows.length > 0) {
+            const mentionedId = userRows[0].id as string;
+            if (mentionedId !== userId && !notifiedSet.has(mentionedId)) {
+              notifiedSet.add(mentionedId);
+              await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, created_at)
+                VALUES (${mentionedId}, 'mention', ${userId}, ${clueId}, ${clueInfo.length > 0 ? clueInfo[0].word : null}, ${now})`;
+            }
+          }
+        }
+      }
+    } catch { /* notifications are best-effort */ }
     return res.json({ ok: true, id: Number(rows[0].id) });
   }
 
@@ -451,6 +500,44 @@ async function handleComments(req: VercelRequest, res: VercelResponse, sql: Retu
     if (adminRows.length === 0 || !adminRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
     await sql`DELETE FROM comments WHERE id = ${Number(id)}`;
     return res.json({ ok: true });
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
+// ==================== NOTIFICATIONS ====================
+
+async function handleNotifications(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+  if (req.method === 'GET') {
+    const { userId } = req.query;
+    if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
+    const rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.created_at, n.read, u.display_name as actor_name
+      FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
+      WHERE n.user_id = ${userId} ORDER BY n.created_at DESC LIMIT 50`;
+    return res.json(rows.map((r: Record<string, unknown>) => ({
+      id: Number(r.id), type: r.type as string, actorId: r.actor_id as string,
+      actorName: (r.actor_name as string) || (r.actor_id as string),
+      clueId: r.clue_id as string, clueWord: r.clue_word as string,
+      createdAt: Number(r.created_at), read: r.read as boolean,
+    })));
+  }
+
+  if (req.method === 'POST') {
+    const { userId, action } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId required' });
+    if (action === 'read_all') {
+      await sql`UPDATE notifications SET read = true WHERE user_id = ${userId}`;
+      return res.json({ ok: true });
+    }
+    if (action === 'read' && req.body.id) {
+      await sql`UPDATE notifications SET read = true WHERE id = ${Number(req.body.id)} AND user_id = ${userId}`;
+      return res.json({ ok: true });
+    }
+    if (action === 'clear_all') {
+      await sql`DELETE FROM notifications WHERE user_id = ${userId}`;
+      return res.json({ ok: true });
+    }
+    return res.status(400).json({ error: 'Unknown action' });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
@@ -560,6 +647,14 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
 
 async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Player search for mention autocomplete
+  const { search } = req.query;
+  if (search && typeof search === 'string') {
+    const pattern = `%${search}%`;
+    const rows = await sql`SELECT id, display_name FROM users WHERE display_name ILIKE ${pattern} LIMIT 10`;
+    return res.json(rows.map((r: Record<string, unknown>) => ({ id: r.id as string, displayName: r.display_name as string })));
+  }
 
   const { userId } = req.query;
   if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
@@ -808,6 +903,8 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_casual JSONB`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_active TEXT`;
     await sql`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL)`;
+    await sql`CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), type TEXT NOT NULL, actor_id TEXT, clue_id TEXT, clue_word TEXT, message TEXT, created_at BIGINT NOT NULL, read BOOLEAN DEFAULT false)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read)`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

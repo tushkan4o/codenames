@@ -272,7 +272,29 @@ export const api = {
     return post('/api/auth/oauth?action=rename', { userId, newDisplayName });
   },
 
+  // Notifications
+  async getNotifications(userId: string): Promise<{ id: number; type: string; actorId: string; actorName: string; clueId: string; clueWord: string; createdAt: number; read: boolean }[]> {
+    return get(`/api/game?route=notifications&userId=${encodeURIComponent(userId)}`);
+  },
+
+  async markNotificationsRead(userId: string): Promise<void> {
+    await post('/api/game?route=notifications', { userId, action: 'read_all' });
+  },
+
+  async clearNotifications(userId: string): Promise<void> {
+    await post('/api/game?route=notifications', { userId, action: 'clear_all' });
+  },
+
+  // Player search (for mentions)
+  async searchPlayers(query: string): Promise<{ id: string; displayName: string }[]> {
+    return get(`/api/game?route=stats&search=${encodeURIComponent(query)}`);
+  },
+
   // Comments
+  async getCommentsByUser(userId: string): Promise<{ id: number; clueId: string; clueWord: string; content: string; createdAt: number }[]> {
+    return get(`/api/game?route=comments&userId=${encodeURIComponent(userId)}`);
+  },
+
   async getComments(clueId: string): Promise<{ id: number; userId: string; displayName: string; content: string; createdAt: number }[]> {
     return get(`/api/game?route=comments&clueId=${encodeURIComponent(clueId)}`);
   },
