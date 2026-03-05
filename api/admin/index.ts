@@ -320,6 +320,7 @@ async function handleInit(_req: VercelRequest, res: VercelResponse) {
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS red_count INT`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS blue_count INT`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS assassin_count INT`;
+    await sql`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL)`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {
