@@ -78,7 +78,7 @@ export default function LeaderboardPage() {
   const [spyDir, setSpyDir] = useState<SortDir>('desc');
   const [guesserSort, setGuesserSort] = useState<'avgScore' | 'cluesSolved' | 'avgWordsPicked' | null>('avgScore');
   const [guesserDir, setGuesserDir] = useState<SortDir>('desc');
-  const [clueSort, setClueSort] = useState<'number' | 'attempts' | 'avgScore' | null>('avgScore');
+  const [clueSort, setClueSort] = useState<'number' | 'attempts' | 'avgScore' | 'date' | null>('avgScore');
   const [clueDir, setClueDir] = useState<SortDir>('desc');
 
   const loadData = useCallback(async (size: SizeFilter) => {
@@ -169,9 +169,8 @@ export default function LeaderboardPage() {
 
   const sortedClues = useMemo(() => {
     if (!clueSort) return [...filteredClues];
-    const key = clueSort;
     return [...filteredClues].sort((a, b) => {
-      const diff = (b[key] as number) - (a[key] as number);
+      const diff = clueSort === 'date' ? b.createdAt - a.createdAt : (b[clueSort] as number) - (a[clueSort] as number);
       return clueDir === 'desc' ? diff : -diff;
     });
   }, [filteredClues, clueSort, clueDir]);
@@ -304,8 +303,9 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_5.5rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
                 <span className={thAccordion} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></span>
+                <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleClueSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={clueSort} dir={clueDir} /></span>
                 <span className={`${thAccordion} text-center`} onClick={() => toggleClueSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></span>
                 <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
                 <span className={`${thAccordion} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
@@ -322,10 +322,11 @@ export default function LeaderboardPage() {
                       onClick={() => setExpandedClueId(isExpanded ? null : c.id)}
                       className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] gap-x-2 items-center">
+                      <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_5.5rem_3.5rem_2rem_2rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
-                          {c.word} <span className="text-gray-500 font-semibold">{c.number}</span>
+                          {c.word} <span className="text-amber-400 font-semibold">{c.number}</span>
                         </span>
+                        <span className="text-xs text-gray-500 text-center hidden sm:block">{c.createdAt > 0 ? formatDate(c.createdAt) : '—'}</span>
                         <span className="text-sm text-gray-400 text-center">{c.avgScore > 0 ? c.avgScore.toFixed(1) : '—'}</span>
                         <span className="text-sm text-center">{c.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">

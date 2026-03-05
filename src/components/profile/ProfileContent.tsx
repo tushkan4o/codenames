@@ -37,8 +37,8 @@ function DiscordIcon({ size = 16 }: { size?: number }) {
 
 type Tab = 'given' | 'solved' | 'comments';
 type SortDir = 'asc' | 'desc';
-type GivenSortField = 'number' | 'attempts' | 'avgScore';
-type SolvedSortField = 'number' | 'attempts' | 'avgScore' | 'myScore';
+type GivenSortField = 'number' | 'attempts' | 'avgScore' | 'date';
+type SolvedSortField = 'number' | 'attempts' | 'avgScore' | 'myScore' | 'date';
 type RankedFilter = 'all' | 'ranked' | 'casual';
 type SolvedFilter = 'all' | 'solved' | 'unsolved';
 
@@ -91,9 +91,9 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [confirmDeleteSolved, setConfirmDeleteSolved] = useState<string | null>(null);
   const [unfinishedModal, setUnfinishedModal] = useState<{ savedClueId: string; targetClueId: string } | null>(null);
 
-  const [givenSort, setGivenSort] = useState<GivenSortField | null>(null);
+  const [givenSort, setGivenSort] = useState<GivenSortField | null>('date');
   const [givenDir, setGivenDir] = useState<SortDir>('desc');
-  const [solvedSort, setSolvedSort] = useState<SolvedSortField | null>(null);
+  const [solvedSort, setSolvedSort] = useState<SolvedSortField | null>('date');
   const [solvedDir, setSolvedDir] = useState<SortDir>('desc');
 
   const [expandedGivenId, setExpandedGivenId] = useState<string | null>(null);
@@ -179,17 +179,14 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     if (solvedFilter === 'solved') filtered = filtered.filter((c) => mySolvedClueIds.has(c.id));
     else if (solvedFilter === 'unsolved') filtered = filtered.filter((c) => !mySolvedClueIds.has(c.id));
     const sorted = [...filtered];
-    if (!givenSort) {
-      sorted.sort((a, b) => b.createdAt - a.createdAt);
-    } else {
-      sorted.sort((a, b) => {
-        let diff = 0;
-        if (givenSort === 'number') diff = b.number - a.number;
-        else if (givenSort === 'attempts') diff = (clueStatsMap[b.id]?.attempts ?? 0) - (clueStatsMap[a.id]?.attempts ?? 0);
-        else if (givenSort === 'avgScore') diff = (clueStatsMap[b.id]?.avgScore ?? 0) - (clueStatsMap[a.id]?.avgScore ?? 0);
-        return givenDir === 'desc' ? diff : -diff;
-      });
-    }
+    sorted.sort((a, b) => {
+      let diff = 0;
+      if (!givenSort || givenSort === 'date') diff = b.createdAt - a.createdAt;
+      else if (givenSort === 'number') diff = b.number - a.number;
+      else if (givenSort === 'attempts') diff = (clueStatsMap[b.id]?.attempts ?? 0) - (clueStatsMap[a.id]?.attempts ?? 0);
+      else if (givenSort === 'avgScore') diff = (clueStatsMap[b.id]?.avgScore ?? 0) - (clueStatsMap[a.id]?.avgScore ?? 0);
+      return givenDir === 'desc' ? diff : -diff;
+    });
     return sorted;
   }, [cluesGiven, givenSort, givenDir, clueStatsMap, rankedFilter, solvedFilter, mySolvedClueIds]);
 
@@ -200,24 +197,21 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     if (solvedFilter === 'solved') filtered = filtered.filter((e) => canViewClue(e.result.clueId, e.clue?.userId));
     else if (solvedFilter === 'unsolved') filtered = filtered.filter((e) => !canViewClue(e.result.clueId, e.clue?.userId));
     const sorted = [...filtered];
-    if (!solvedSort) {
-      sorted.sort((a, b) => b.result.timestamp - a.result.timestamp);
-    } else {
-      sorted.sort((a, b) => {
-        let diff = 0;
-        if (solvedSort === 'number') diff = (b.clue?.number ?? 0) - (a.clue?.number ?? 0);
-        else if (solvedSort === 'attempts') {
-          const aAttempts = a.clue ? (clueStatsMap[a.clue.id]?.attempts ?? 0) : 0;
-          const bAttempts = b.clue ? (clueStatsMap[b.clue.id]?.attempts ?? 0) : 0;
-          diff = bAttempts - aAttempts;
-        } else if (solvedSort === 'avgScore') {
-          const aScore = a.clue ? (clueStatsMap[a.clue.id]?.avgScore ?? 0) : 0;
-          const bScore = b.clue ? (clueStatsMap[b.clue.id]?.avgScore ?? 0) : 0;
-          diff = bScore - aScore;
-        } else if (solvedSort === 'myScore') diff = (b.result.score ?? 0) - (a.result.score ?? 0);
-        return solvedDir === 'desc' ? diff : -diff;
-      });
-    }
+    sorted.sort((a, b) => {
+      let diff = 0;
+      if (!solvedSort || solvedSort === 'date') diff = b.result.timestamp - a.result.timestamp;
+      else if (solvedSort === 'number') diff = (b.clue?.number ?? 0) - (a.clue?.number ?? 0);
+      else if (solvedSort === 'attempts') {
+        const aAttempts = a.clue ? (clueStatsMap[a.clue.id]?.attempts ?? 0) : 0;
+        const bAttempts = b.clue ? (clueStatsMap[b.clue.id]?.attempts ?? 0) : 0;
+        diff = bAttempts - aAttempts;
+      } else if (solvedSort === 'avgScore') {
+        const aScore = a.clue ? (clueStatsMap[a.clue.id]?.avgScore ?? 0) : 0;
+        const bScore = b.clue ? (clueStatsMap[b.clue.id]?.avgScore ?? 0) : 0;
+        diff = bScore - aScore;
+      } else if (solvedSort === 'myScore') diff = (b.result.score ?? 0) - (a.result.score ?? 0);
+      return solvedDir === 'desc' ? diff : -diff;
+    });
     return sorted;
   }, [solvedEntries, solvedSort, solvedDir, clueStatsMap, rankedFilter, solvedFilter, mySolvedClueIds, isOwnProfile, user]);
 
@@ -649,8 +643,9 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             <p className="text-center text-gray-500">{t.profile.noCluesGiven}</p>
           ) : (
             <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_5.5rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
                 <span className={thClass} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></span>
+                <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleGivenSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={givenSort} dir={givenDir} /></span>
                 <span className={`${thClass} text-center`} onClick={() => toggleGivenSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={givenSort} dir={givenDir} /></span>
                 <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
                 <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
@@ -668,11 +663,12 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       onClick={() => setExpandedGivenId(isExpanded ? null : clue.id)}
                       className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] gap-x-2 items-center">
+                      <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_5.5rem_3.5rem_2rem_2rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
-                          {clue.word} <span className="text-gray-500 font-semibold">{clue.number}</span>
+                          {clue.word} <span className="text-amber-400 font-semibold">{clue.number}</span>
                           {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                         </span>
+                        <span className="text-xs text-gray-500 text-center hidden sm:block">{clue.createdAt > 0 ? formatDate(clue.createdAt) : '—'}</span>
                         <span className="text-sm text-gray-400 text-center">{cStats ? cStats.avgScore.toFixed(1) : '—'}</span>
                         <span className="text-sm text-center">{clue.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
@@ -757,8 +753,9 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             <p className="text-center text-gray-500">{t.profile.noCluesSolved}</p>
           ) : (
             <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_3rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_5.5rem_3rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
                 <span className={thClass} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
+                <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={solvedSort} dir={solvedDir} /></span>
                 <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></span>
                 <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></span>
                 <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
@@ -776,11 +773,12 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       onClick={() => setExpandedSolvedKey(isExpanded ? null : solvedKey)}
                       className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      <div className="grid grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_3rem_3.5rem_2rem_2rem] gap-x-2 items-center">
+                      <div className="grid grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_5.5rem_3rem_3.5rem_2rem_2rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {entry.clue?.word ?? entry.result.clueId.slice(0, 12)}
-                          <span className="ml-1 text-gray-500 font-semibold">{entry.clue?.number ?? entry.result.totalTargets}</span>
+                          <span className="ml-1 text-amber-400 font-semibold">{entry.clue?.number ?? entry.result.totalTargets}</span>
                         </span>
+                        <span className="text-xs text-gray-500 text-center hidden sm:block">{entry.result.timestamp > 0 ? formatDate(entry.result.timestamp) : '—'}</span>
                         <span className="text-sm font-bold text-white text-center">
                           {entry.result.score ?? 0}
                           <span className="text-gray-500 font-normal ml-0.5 text-xs">({entry.result.correctCount}/{entry.result.totalTargets})</span>
