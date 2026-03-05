@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useProfileModal } from '../../context/ProfileModalContext';
@@ -100,9 +100,11 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [expandedSolvedKey, setExpandedSolvedKey] = useState<string | null>(null);
 
   // Profile comments (wall)
-  const [profileComments, setProfileComments] = useState<{ id: number; authorId: string; displayName: string; content: string; createdAt: number }[]>([]);
+  const [profileComments, setProfileComments] = useState<{ id: number; authorId: string; displayName: string; content: string; createdAt: number; replyToId: number | null; replyToDisplayName: string | null; replyToContent: string | null }[]>([]);
   const [commentText, setCommentText] = useState('');
   const [commentSending, setCommentSending] = useState(false);
+  const [commentReplyTo, setCommentReplyTo] = useState<{ id: number; displayName: string; content: string } | null>(null);
+  const commentInputRef = useRef<HTMLInputElement>(null);
 
   // OAuth linked accounts
   const [linkedAccounts, setLinkedAccounts] = useState<{ provider: string; providerName: string; email: string | null; linkedAt: number }[]>([]);
@@ -310,15 +312,19 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     if (!user || !commentText.trim() || commentSending) return;
     setCommentSending(true);
     try {
-      const result = await api.addProfileComment(profileId, user.id, commentText.trim());
+      const result = await api.addProfileComment(profileId, user.id, commentText.trim(), commentReplyTo?.id);
       setProfileComments((prev) => [{
         id: result.id,
         authorId: user.id,
         displayName: user.displayName,
         content: commentText.trim(),
         createdAt: Date.now(),
+        replyToId: commentReplyTo?.id ?? null,
+        replyToDisplayName: commentReplyTo?.displayName ?? null,
+        replyToContent: commentReplyTo?.content ?? null,
       }, ...prev]);
       setCommentText('');
+      setCommentReplyTo(null);
     } catch (err) {
       console.error('Failed to add profile comment:', err);
     } finally {
@@ -858,27 +864,42 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
         {tab === 'comments' && (
           <div className="flex-1 min-h-0 flex flex-col">
             {user && (
-              <div className="flex gap-2 mb-3">
-                <input
-                  type="text"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && commentText.trim() && !commentSending) {
-                      handleSendProfileComment();
-                    }
-                  }}
-                  placeholder={t.results.commentPlaceholder}
-                  className="flex-1 px-3 py-1.5 rounded bg-gray-800 border border-gray-600 text-white text-sm focus:border-board-blue focus:outline-none"
-                  maxLength={500}
-                />
-                <button
-                  onClick={handleSendProfileComment}
-                  disabled={!commentText.trim() || commentSending}
-                  className="px-3 py-1.5 rounded bg-board-blue hover:brightness-110 text-white text-xs font-bold transition-colors disabled:opacity-50"
-                >
-                  {t.results.commentSend}
-                </button>
+              <div className="mb-3">
+                {commentReplyTo && (
+                  <div className="flex items-center gap-2 mb-1 px-3 py-1 bg-gray-700/40 border-l-2 border-board-blue rounded text-xs">
+                    <span className="text-gray-400 truncate flex-1">
+                      <span className="text-board-blue font-semibold">{commentReplyTo.displayName}</span>
+                      <span className="text-gray-500">: {commentReplyTo.content.slice(0, 60)}{commentReplyTo.content.length > 60 ? '...' : ''}</span>
+                    </span>
+                    <button onClick={() => setCommentReplyTo(null)} className="text-gray-500 hover:text-white transition-colors shrink-0">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    ref={commentInputRef}
+                    type="text"
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape' && commentReplyTo) { setCommentReplyTo(null); return; }
+                      if (e.key === 'Enter' && commentText.trim() && !commentSending) {
+                        handleSendProfileComment();
+                      }
+                    }}
+                    placeholder={commentReplyTo ? t.results.replyPlaceholder : t.results.commentPlaceholder}
+                    className="flex-1 px-3 py-1.5 rounded bg-gray-800 border border-gray-600 text-white text-sm focus:border-board-blue focus:outline-none"
+                    maxLength={500}
+                  />
+                  <button
+                    onClick={handleSendProfileComment}
+                    disabled={!commentText.trim() || commentSending}
+                    className="px-3 py-1.5 rounded bg-board-blue hover:brightness-110 text-white text-xs font-bold transition-colors disabled:opacity-50"
+                  >
+                    {t.results.commentSend}
+                  </button>
+                </div>
               </div>
             )}
             {profileComments.length === 0 ? (
@@ -889,16 +910,29 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   <div key={c.id} className="text-sm group">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500 text-xs">{formatDate(c.createdAt)}</span>
+                      {user && (
+                        <button
+                          onClick={() => { setCommentReplyTo({ id: c.id, displayName: c.displayName, content: c.content }); commentInputRef.current?.focus(); }}
+                          className="text-gray-600 hover:text-board-blue text-[0.65rem] font-semibold sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                        >
+                          {t.results.reply}
+                        </button>
+                      )}
                       {user?.isAdmin && (
                         <button
                           onClick={() => handleDeleteProfileComment(c.id)}
-                          className="text-gray-600 hover:text-board-red text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="text-gray-600 hover:text-board-red text-xs font-bold sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                           title="Удалить"
                         >
                           &times;
                         </button>
                       )}
                     </div>
+                    {c.replyToId && c.replyToDisplayName && (
+                      <div className="ml-1 mb-0.5 pl-2 border-l-2 border-gray-600/50 text-[0.65rem] text-gray-500 truncate">
+                        <span className="font-semibold">{c.replyToDisplayName}</span>: {c.replyToContent?.slice(0, 50)}{(c.replyToContent?.length ?? 0) > 50 ? '...' : ''}
+                      </div>
+                    )}
                     <div className="break-words overflow-hidden">
                       <button
                         onClick={() => openProfile(c.authorId)}

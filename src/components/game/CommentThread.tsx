@@ -9,6 +9,9 @@ interface Comment {
   displayName: string;
   content: string;
   createdAt: number;
+  replyToId: number | null;
+  replyToDisplayName: string | null;
+  replyToContent: string | null;
 }
 
 interface MentionSuggestion {
@@ -64,6 +67,9 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Reply state
+  const [replyTo, setReplyTo] = useState<{ id: number; displayName: string; content: string } | null>(null);
 
   // Mention autocomplete state
   const [suggestions, setSuggestions] = useState<MentionSuggestion[]>([]);
@@ -153,11 +159,14 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
         return;
       }
     }
+    if (e.key === 'Escape' && replyTo) {
+      setReplyTo(null);
+      return;
+    }
     if (e.key === 'Enter') handleSend();
   }
 
   function handleNicknameClick(name: string) {
-    // Add @[nickname] to input when clicking on a comment author
     const mention = `@[${name}] `;
     if (text.endsWith(' ') || text === '') {
       setText(text + mention);
@@ -168,7 +177,6 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
   }
 
   function handleMentionInContent(mention: string) {
-    // When clicking @mention in content, add bracket mention to input
     const name = mention.startsWith('@') ? mention.slice(1) : mention;
     const bracketMention = `@[${name}] `;
     if (text.endsWith(' ') || text === '') {
@@ -179,19 +187,28 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
     inputRef.current?.focus();
   }
 
+  function handleReply(comment: Comment) {
+    setReplyTo({ id: comment.id, displayName: comment.displayName, content: comment.content });
+    inputRef.current?.focus();
+  }
+
   async function handleSend() {
     if (!user || !text.trim() || sending) return;
     setSending(true);
     try {
-      const result = await api.addComment(clueId, user.id, text.trim());
+      const result = await api.addComment(clueId, user.id, text.trim(), replyTo?.id);
       setComments((prev) => [{
         id: result.id,
         userId: user.id,
         displayName: user.displayName,
         content: text.trim(),
         createdAt: Date.now(),
+        replyToId: replyTo?.id ?? null,
+        replyToDisplayName: replyTo?.displayName ?? null,
+        replyToContent: replyTo?.content ?? null,
       }, ...prev]);
       setText('');
+      setReplyTo(null);
     } catch (err) {
       console.error('Failed to add comment:', err);
     } finally {
@@ -213,6 +230,17 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
     <div className="space-y-3">
       {user && (
         <div className="relative">
+          {replyTo && (
+            <div className="flex items-center gap-2 mb-1 px-3 py-1 bg-gray-700/40 border-l-2 border-board-blue rounded text-xs">
+              <span className="text-gray-400 truncate flex-1">
+                <span className="text-board-blue font-semibold">{replyTo.displayName}</span>
+                <span className="text-gray-500">: {replyTo.content.slice(0, 60)}{replyTo.content.length > 60 ? '...' : ''}</span>
+              </span>
+              <button onClick={() => setReplyTo(null)} className="text-gray-500 hover:text-white transition-colors shrink-0">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+          )}
           <div className="flex gap-2">
             <input
               ref={inputRef}
@@ -220,7 +248,7 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
               value={text}
               onChange={handleInputChange}
               onKeyDown={handleInputKeyDown}
-              placeholder={t.results.commentPlaceholder}
+              placeholder={replyTo ? t.results.replyPlaceholder : t.results.commentPlaceholder}
               className="flex-1 px-3 py-1.5 rounded bg-gray-800 border border-gray-600 text-white text-sm focus:border-board-blue focus:outline-none"
               maxLength={500}
             />
@@ -258,16 +286,29 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
             <div key={c.id} className="text-sm group">
               <div className="flex items-center gap-2">
                 <span className="text-gray-500 text-xs">{formatDate(c.createdAt)}</span>
+                {user && (
+                  <button
+                    onClick={() => handleReply(c)}
+                    className="text-gray-600 hover:text-board-blue text-[0.65rem] font-semibold sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                  >
+                    {t.results.reply}
+                  </button>
+                )}
                 {user?.isAdmin && (
                   <button
                     onClick={() => handleDelete(c.id)}
-                    className="text-gray-600 hover:text-board-red text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="text-gray-600 hover:text-board-red text-xs font-bold sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                     title="Удалить"
                   >
                     &times;
                   </button>
                 )}
               </div>
+              {c.replyToId && c.replyToDisplayName && (
+                <div className="ml-1 mb-0.5 pl-2 border-l-2 border-gray-600/50 text-[0.65rem] text-gray-500 truncate">
+                  <span className="font-semibold">{c.replyToDisplayName}</span>: {c.replyToContent?.slice(0, 50)}{(c.replyToContent?.length ?? 0) > 50 ? '...' : ''}
+                </div>
+              )}
               <div className="break-words overflow-hidden">
                 <button
                   onClick={() => user && handleNicknameClick(c.displayName)}

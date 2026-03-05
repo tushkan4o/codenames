@@ -449,21 +449,28 @@ async function handleComments(req: VercelRequest, res: VercelResponse, sql: Retu
 
     const { clueId } = req.query;
     if (!clueId || typeof clueId !== 'string') return res.status(400).json({ error: 'clueId required' });
-    const rows = await sql`SELECT c.id, c.user_id, c.content, c.created_at, u.display_name
+    const rows = await sql`SELECT c.id, c.user_id, c.content, c.created_at, c.reply_to_id, u.display_name,
+      rc.user_id as reply_user_id, ru.display_name as reply_display_name, rc.content as reply_content
       FROM comments c LEFT JOIN users u ON c.user_id = u.id
+      LEFT JOIN comments rc ON c.reply_to_id = rc.id
+      LEFT JOIN users ru ON rc.user_id = ru.id
       WHERE c.clue_id = ${clueId} ORDER BY c.created_at DESC`;
     return res.json(rows.map((r: Record<string, unknown>) => ({
       id: Number(r.id), userId: r.user_id as string, displayName: (r.display_name as string) || (r.user_id as string),
       content: r.content as string, createdAt: Number(r.created_at),
+      replyToId: r.reply_to_id ? Number(r.reply_to_id) : null,
+      replyToDisplayName: (r.reply_display_name as string) || null,
+      replyToContent: (r.reply_content as string) || null,
     })));
   }
 
   if (req.method === 'POST') {
-    const { clueId, userId, content } = req.body;
+    const { clueId, userId, content, replyToId } = req.body;
     if (!clueId || !userId || !content?.trim()) return res.status(400).json({ error: 'clueId, userId, content required' });
     const now = Date.now();
     const trimmed = content.trim();
-    const rows = await sql`INSERT INTO comments (clue_id, user_id, content, created_at) VALUES (${clueId}, ${userId}, ${trimmed}, ${now}) RETURNING id`;
+    const replyId = replyToId ? Number(replyToId) : null;
+    const rows = await sql`INSERT INTO comments (clue_id, user_id, content, created_at, reply_to_id) VALUES (${clueId}, ${userId}, ${trimmed}, ${now}, ${replyId}) RETURNING id`;
     // Notifications: notify clue author + mentioned users
     try {
       const clueInfo = await sql`SELECT user_id, word FROM clues WHERE id = ${clueId}`;
@@ -552,21 +559,28 @@ async function handleProfileComments(req: VercelRequest, res: VercelResponse, sq
   if (req.method === 'GET') {
     const { profileUserId } = req.query;
     if (!profileUserId || typeof profileUserId !== 'string') return res.status(400).json({ error: 'profileUserId required' });
-    const rows = await sql`SELECT pc.id, pc.author_id, pc.content, pc.created_at, u.display_name
+    const rows = await sql`SELECT pc.id, pc.author_id, pc.content, pc.created_at, pc.reply_to_id, u.display_name,
+      rpc.author_id as reply_author_id, ru.display_name as reply_display_name, rpc.content as reply_content
       FROM profile_comments pc LEFT JOIN users u ON pc.author_id = u.id
+      LEFT JOIN profile_comments rpc ON pc.reply_to_id = rpc.id
+      LEFT JOIN users ru ON rpc.author_id = ru.id
       WHERE pc.profile_user_id = ${profileUserId} ORDER BY pc.created_at DESC`;
     return res.json(rows.map((r: Record<string, unknown>) => ({
       id: Number(r.id), authorId: r.author_id as string, displayName: (r.display_name as string) || (r.author_id as string),
       content: r.content as string, createdAt: Number(r.created_at),
+      replyToId: r.reply_to_id ? Number(r.reply_to_id) : null,
+      replyToDisplayName: (r.reply_display_name as string) || null,
+      replyToContent: (r.reply_content as string) || null,
     })));
   }
 
   if (req.method === 'POST') {
-    const { profileUserId, authorId, content } = req.body;
+    const { profileUserId, authorId, content, replyToId } = req.body;
     if (!profileUserId || !authorId || !content?.trim()) return res.status(400).json({ error: 'profileUserId, authorId, content required' });
     const now = Date.now();
     const trimmed = content.trim();
-    const rows = await sql`INSERT INTO profile_comments (profile_user_id, author_id, content, created_at) VALUES (${profileUserId}, ${authorId}, ${trimmed}, ${now}) RETURNING id`;
+    const replyId = replyToId ? Number(replyToId) : null;
+    const rows = await sql`INSERT INTO profile_comments (profile_user_id, author_id, content, created_at, reply_to_id) VALUES (${profileUserId}, ${authorId}, ${trimmed}, ${now}, ${replyId}) RETURNING id`;
     // Notify profile owner about new comment (if not self)
     try {
       if (profileUserId !== authorId) {
@@ -963,10 +977,12 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_ranked JSONB`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_casual JSONB`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_active TEXT`;
-    await sql`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL)`;
+    await sql`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL, reply_to_id INT)`;
+    await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS reply_to_id INT`;
     await sql`CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), type TEXT NOT NULL, actor_id TEXT, clue_id TEXT, clue_word TEXT, message TEXT, created_at BIGINT NOT NULL, read BOOLEAN DEFAULT false)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read)`;
-    await sql`CREATE TABLE IF NOT EXISTS profile_comments (id SERIAL PRIMARY KEY, profile_user_id TEXT NOT NULL REFERENCES users(id), author_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL)`;
+    await sql`CREATE TABLE IF NOT EXISTS profile_comments (id SERIAL PRIMARY KEY, profile_user_id TEXT NOT NULL REFERENCES users(id), author_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL, reply_to_id INT)`;
+    await sql`ALTER TABLE profile_comments ADD COLUMN IF NOT EXISTS reply_to_id INT`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

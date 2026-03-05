@@ -295,12 +295,12 @@ export const api = {
   },
 
   // Profile comments (wall)
-  async getProfileComments(profileUserId: string): Promise<{ id: number; authorId: string; displayName: string; content: string; createdAt: number }[]> {
+  async getProfileComments(profileUserId: string): Promise<{ id: number; authorId: string; displayName: string; content: string; createdAt: number; replyToId: number | null; replyToDisplayName: string | null; replyToContent: string | null }[]> {
     return get(`/api/game?route=profile-comments&profileUserId=${encodeURIComponent(profileUserId)}`);
   },
 
-  async addProfileComment(profileUserId: string, authorId: string, content: string): Promise<{ ok: boolean; id: number }> {
-    return post('/api/game?route=profile-comments', { profileUserId, authorId, content });
+  async addProfileComment(profileUserId: string, authorId: string, content: string, replyToId?: number): Promise<{ ok: boolean; id: number }> {
+    return post('/api/game?route=profile-comments', { profileUserId, authorId, content, replyToId: replyToId || null });
   },
 
   async deleteProfileComment(id: number, adminId: string): Promise<void> {
@@ -312,12 +312,12 @@ export const api = {
     return get(`/api/game?route=comments&userId=${encodeURIComponent(userId)}`);
   },
 
-  async getComments(clueId: string): Promise<{ id: number; userId: string; displayName: string; content: string; createdAt: number }[]> {
+  async getComments(clueId: string): Promise<{ id: number; userId: string; displayName: string; content: string; createdAt: number; replyToId: number | null; replyToDisplayName: string | null; replyToContent: string | null }[]> {
     return get(`/api/game?route=comments&clueId=${encodeURIComponent(clueId)}`);
   },
 
-  async addComment(clueId: string, userId: string, content: string): Promise<{ ok: boolean; id: number }> {
-    return post('/api/game?route=comments', { clueId, userId, content });
+  async addComment(clueId: string, userId: string, content: string, replyToId?: number): Promise<{ ok: boolean; id: number }> {
+    return post('/api/game?route=comments', { clueId, userId, content, replyToId: replyToId || null });
   },
 
   async deleteComment(id: number, adminId: string): Promise<void> {

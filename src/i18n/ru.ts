@@ -152,8 +152,10 @@ export const ru = {
     tabSolutions: 'Решения',
     tabComments: 'Комментарии',
     commentPlaceholder: 'Написать комментарий...',
+    replyPlaceholder: 'Написать ответ...',
     commentSend: 'Отправить',
     noComments: 'Комментариев пока нет',
+    reply: 'ответить',
   },
   leaderboard: {
     title: 'Рейтинг',
