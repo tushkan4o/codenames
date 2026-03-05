@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { computeGuessScore } from '../lib/scoring';
 import { api } from '../lib/api';
+import { canPlayRanked, buildRankedLockMessage } from '../lib/rankedAccess';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../types/game';
@@ -439,6 +440,21 @@ export default function GuessingPage() {
             {t.results.backHome}
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (clue.ranked !== false && !canPlayRanked(user)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-white gap-4 px-4">
+        <p className="text-lg font-bold">Рейтинговые подсказки недоступны</p>
+        <p className="text-gray-400 text-sm text-center max-w-md">{buildRankedLockMessage(user)}</p>
+        <button
+          onClick={() => navigate('/')}
+          className="px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors"
+        >
+          {t.results.backHome}
+        </button>
       </div>
     );
   }

@@ -4,9 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { useProfileModal } from '../context/ProfileModalContext';
 import { api } from '../lib/api';
+import { canPlayRanked, buildRankedLockMessage } from '../lib/rankedAccess';
 import NavBar from '../components/layout/NavBar';
 import BoardReviewModal from '../components/game/BoardReviewModal';
 import type { BoardSize, Clue, GuessResult } from '../types/game';
+
+const ACTIVE_GUESS_KEY = 'codenames_active_guess';
 
 type Tab = 'spymasters' | 'guessers' | 'clues';
 type SizeFilter = 'all' | BoardSize;
@@ -69,6 +72,7 @@ export default function LeaderboardPage() {
   const [confirmDeleteClue, setConfirmDeleteClue] = useState<string | null>(null);
   const [rankedFilter, setRankedFilter] = useState<RankedFilter>('all');
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>('all');
+  const [unfinishedModal, setUnfinishedModal] = useState<{ savedClueId: string; targetClueId: string } | null>(null);
 
   const [spySort, setSpySort] = useState<'avgScoreOnClues' | 'cluesGiven' | 'avgWordsPerClue' | null>('avgScoreOnClues');
   const [spyDir, setSpyDir] = useState<SortDir>('desc');
@@ -105,6 +109,17 @@ export default function LeaderboardPage() {
       setModalClue(clue);
       setModalResult(myResults.get(clueId));
     } else {
+      // Check for unfinished game
+      try {
+        const saved = localStorage.getItem(ACTIVE_GUESS_KEY);
+        if (saved) {
+          const state = JSON.parse(saved);
+          if (state.clueId && state.pickedIndices?.length > 0 && state.clueId !== clueId) {
+            setUnfinishedModal({ savedClueId: state.clueId, targetClueId: clueId });
+            return;
+          }
+        }
+      } catch { /* ignore */ }
       closeProfile();
       navigate(`/guess/${clueId}`);
     }
@@ -338,12 +353,23 @@ export default function LeaderboardPage() {
                           <span><span className="text-gray-400">{t.results.ratingsCount}:</span> <span className="text-white font-semibold">{c.ratingsCount ?? 0}</span></span>
                           <span><span className="text-gray-400">{t.admin.avgRating}:</span> <span className="text-white font-semibold">{c.ratingsCount > 0 ? c.avgRating.toFixed(1) : '—'}</span></span>
                           <div className="col-span-2 flex items-center gap-2 justify-end mt-1">
-                            <button
-                              onClick={() => user && handleClueAction(c.id, solved, isOwn)}
-                              className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
-                            >
-                              {canView ? t.profile.viewBoard : t.profile.solve}
-                            </button>
+                            {canView ? (
+                              <button
+                                onClick={() => user && handleClueAction(c.id, solved, isOwn)}
+                                className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                              >
+                                {t.profile.viewBoard}
+                              </button>
+                            ) : c.ranked && !canPlayRanked(user) ? (
+                              <span className="text-gray-500 text-xs italic">{buildRankedLockMessage(user)}</span>
+                            ) : (
+                              <button
+                                onClick={() => user && handleClueAction(c.id, solved, isOwn)}
+                                className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                              >
+                                {t.profile.solve}
+                              </button>
+                            )}
                             {user?.isAdmin && confirmDeleteClue !== c.id && (
                               <button
                                 onClick={() => setConfirmDeleteClue(c.id)}
@@ -372,6 +398,28 @@ export default function LeaderboardPage() {
           )
         )}
       </div>
+
+      {unfinishedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setUnfinishedModal(null)}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center" onClick={(e) => e.stopPropagation()}>
+            <p className="text-white text-sm mb-4">У вас есть незавершённая игра</p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setUnfinishedModal(null)}
+                className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => { const id = unfinishedModal.savedClueId; setUnfinishedModal(null); closeProfile(); navigate(`/guess/${id}`); }}
+                className="px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-semibold transition-colors"
+              >
+                Дорешать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modalClue && (
         <BoardReviewModal clue={modalClue} result={modalResult} onClose={() => { setModalClue(null); setModalResult(undefined); }} />

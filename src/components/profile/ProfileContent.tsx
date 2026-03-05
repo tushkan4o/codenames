@@ -4,9 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useProfileModal } from '../../context/ProfileModalContext';
 import { useTranslation } from '../../i18n/useTranslation';
 import { api } from '../../lib/api';
+import { canPlayRanked, buildRankedLockMessage } from '../../lib/rankedAccess';
 import BoardReviewModal from '../game/BoardReviewModal';
 import type { Clue, GuessResult } from '../../types/game';
 import type { UserStats, CardFontSize, ColorSortMode } from '../../types/user';
+
+const ACTIVE_GUESS_KEY = 'codenames_active_guess';
 
 const REVEAL_STEPS = [500, 1000, 1500, 2000];
 const REVEAL_LABELS: Record<number, string> = { 500: '0.5', 1000: '1', 1500: '1.5', 2000: '2' };
@@ -86,6 +89,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [rankedFilter, setRankedFilter] = useState<RankedFilter>('all');
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>('all');
   const [confirmDeleteSolved, setConfirmDeleteSolved] = useState<string | null>(null);
+  const [unfinishedModal, setUnfinishedModal] = useState<{ savedClueId: string; targetClueId: string } | null>(null);
 
   const [givenSort, setGivenSort] = useState<GivenSortField | null>(null);
   const [givenDir, setGivenDir] = useState<SortDir>('desc');
@@ -217,6 +221,17 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       setModalClue(clue);
       setModalResult(undefined);
     } else {
+      // Check for unfinished game
+      try {
+        const saved = localStorage.getItem(ACTIVE_GUESS_KEY);
+        if (saved) {
+          const state = JSON.parse(saved);
+          if (state.clueId && state.pickedIndices?.length > 0 && state.clueId !== clue.id) {
+            setUnfinishedModal({ savedClueId: state.clueId, targetClueId: clue.id });
+            return;
+          }
+        }
+      } catch { /* ignore */ }
       closeProfile();
       navigate(`/guess/${clue.id}`);
     }
@@ -229,6 +244,17 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       setModalClue(entry.clue);
       setModalResult(entry.result);
     } else {
+      // Check for unfinished game
+      try {
+        const saved = localStorage.getItem(ACTIVE_GUESS_KEY);
+        if (saved) {
+          const state = JSON.parse(saved);
+          if (state.clueId && state.pickedIndices?.length > 0 && state.clueId !== entry.clue.id) {
+            setUnfinishedModal({ savedClueId: state.clueId, targetClueId: entry.clue.id });
+            return;
+          }
+        }
+      } catch { /* ignore */ }
       closeProfile();
       navigate(`/guess/${entry.clue.id}`);
     }
@@ -636,12 +662,21 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           <span><span className="text-gray-400">{t.results.ratingsCount}:</span> <span className="text-white font-semibold">{cStats?.ratingsCount ?? '—'}</span></span>
                           <span><span className="text-gray-400">{t.admin.avgRating}:</span> <span className="text-white font-semibold">{cStats && cStats.ratingsCount > 0 ? cStats.avgRating.toFixed(1) : '—'}</span></span>
                           <div className="col-span-2 flex items-center gap-2 justify-end mt-1">
-                            {(!clue.disabled || canView) && (
+                            {canView ? (
                               <button
                                 onClick={() => handleGivenAction(clue)}
                                 className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
                               >
-                                {canView ? t.profile.viewBoard : t.profile.solve}
+                                {t.profile.viewBoard}
+                              </button>
+                            ) : clue.disabled ? null : clue.ranked !== false && !canPlayRanked(user) ? (
+                              <span className="text-gray-500 text-xs italic">{buildRankedLockMessage(user)}</span>
+                            ) : (
+                              <button
+                                onClick={() => handleGivenAction(clue)}
+                                className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                              >
+                                {t.profile.solve}
                               </button>
                             )}
                             {user?.isAdmin && confirmDeleteClue !== clue.id && (
@@ -733,12 +768,21 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           <span><span className="text-gray-400">{t.results.ratingsCount}:</span> <span className="text-white font-semibold">{cStats?.ratingsCount ?? '—'}</span></span>
                           <span><span className="text-gray-400">{t.admin.avgRating}:</span> <span className="text-white font-semibold">{cStats && cStats.ratingsCount > 0 ? cStats.avgRating.toFixed(1) : '—'}</span></span>
                           <div className="col-span-2 flex items-center gap-2 justify-end mt-1">
-                            {(!entry.clue?.disabled || canView) && (
+                            {canView ? (
                               <button
                                 onClick={() => handleSolvedAction(entry)}
                                 className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
                               >
-                                {canView ? t.profile.viewBoard : t.profile.solve}
+                                {t.profile.viewBoard}
+                              </button>
+                            ) : entry.clue?.disabled ? null : entry.clue?.ranked !== false && !canPlayRanked(user) ? (
+                              <span className="text-gray-500 text-xs italic">{buildRankedLockMessage(user)}</span>
+                            ) : (
+                              <button
+                                onClick={() => handleSolvedAction(entry)}
+                                className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                              >
+                                {t.profile.solve}
                               </button>
                             )}
                             {user?.isAdmin && confirmDeleteSolved !== solvedKey && (
@@ -769,6 +813,28 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           )
         )}
       </div>
+
+      {unfinishedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setUnfinishedModal(null)}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 text-center" onClick={(e) => e.stopPropagation()}>
+            <p className="text-white text-sm mb-4">У вас есть незавершённая игра</p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setUnfinishedModal(null)}
+                className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => { const id = unfinishedModal.savedClueId; setUnfinishedModal(null); closeProfile(); navigate(`/guess/${id}`); }}
+                className="px-5 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-semibold transition-colors"
+              >
+                Дорешать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modalClue && (
         <BoardReviewModal clue={modalClue} result={modalResult} onClose={() => { setModalClue(null); setModalResult(undefined); }} />
