@@ -7,7 +7,7 @@ import type { CardState } from '../types/game';
 import Board from '../components/board/Board';
 import ClueDisplay from '../components/clue/ClueDisplay';
 import TutorialOverlay from '../components/tutorial/TutorialOverlay';
-import TutorialResults from '../components/tutorial/TutorialResults';
+import ResultsTabs from '../components/game/ResultsTabs';
 
 const REVEAL_DURATION = 800;
 
@@ -277,11 +277,15 @@ export default function TutorialPage() {
         const wrongCount = state.pickedIndices.filter(i => !clueTargets.includes(i)).length;
         const demoScore = Math.max(0, Math.round((correctCount / clueTargets.length) * 100 - wrongCount * 15));
         return (
-          <TutorialResults
+          <ResultsTabs
+            clueId="demo"
+            spymasterUserId={tt.demoCaptain || 'Демо-капитан'}
+            clueUserId="demo"
             cards={currentScenario.cards}
             guessedIndices={state.pickedIndices}
             targetIndices={clueTargets}
             score={demoScore}
+            demoMode
           />
         );
       })()}

@@ -35,17 +35,20 @@ interface ResultsTabsProps {
   onRate?: (rating: number) => void;
   onReport?: (reason: string) => void;
   initialRating?: number | null;
+  // Demo mode (tutorial) — skip API calls, show static data
+  demoMode?: boolean;
 }
 
 export default function ResultsTabs({
   clueId, spymasterUserId, clueUserId,
   cards, guessedIndices, targetIndices, score,
   onShowAttemptPicks, onRate, onReport, initialRating,
+  demoMode,
 }: ResultsTabsProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { openProfile } = useProfileModal();
-  const [activeTab, setActiveTab] = useState<ResultTab>('info');
+  const [activeTab, setActiveTab] = useState<ResultTab>(demoMode ? 'score' : 'info');
 
   // Stats data (shared between info and solutions)
   const [stats, setStats] = useState<{
@@ -53,7 +56,7 @@ export default function ResultsTabs({
     avgScore: number;
     details?: AttemptDetail[];
     createdAt?: number;
-  } | null>(null);
+  } | null>(demoMode ? { attempts: 0, avgScore: 0 } : null);
 
   // Solutions tab sort
   const [attemptSort, setAttemptSort] = useState<'timestamp' | 'score' | null>('timestamp');
@@ -61,12 +64,14 @@ export default function ResultsTabs({
   const [selectedAttemptIdx, setSelectedAttemptIdx] = useState<number | null>(null);
 
   useEffect(() => {
-    api.getClueStats(clueId).then(setStats);
-  }, [clueId]);
+    if (!demoMode) {
+      api.getClueStats(clueId).then(setStats);
+    }
+  }, [clueId, demoMode]);
 
   const hasScore = cards && guessedIndices && guessedIndices.length > 0 && targetIndices && score !== undefined;
-  const isOwnClue = user && clueUserId === user.id;
-  const showRating = user && !isOwnClue;
+  const isOwnClue = !demoMode && user && clueUserId === user.id;
+  const showRating = demoMode || (user && !isOwnClue);
 
   const tabs: { key: ResultTab; label: string }[] = [
     { key: 'info', label: t.results.tabInfo },
@@ -114,7 +119,11 @@ export default function ResultsTabs({
         <div className={`${panelClass} text-sm`}>
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className="text-gray-400">{t.results.clueBy}</span>
-            <button onClick={() => openProfile(clueUserId)} className="text-board-blue hover:text-blue-300 font-semibold transition-colors">{spymasterUserId}</button>
+            {demoMode ? (
+              <span className="text-board-blue font-semibold">{spymasterUserId}</span>
+            ) : (
+              <button onClick={() => openProfile(clueUserId)} className="text-board-blue hover:text-blue-300 font-semibold transition-colors">{spymasterUserId}</button>
+            )}
             {stats?.createdAt ? (
               <span className="text-gray-500 text-xs">{formatDate(stats.createdAt)}</span>
             ) : null}
@@ -201,7 +210,11 @@ export default function ResultsTabs({
 
       {activeTab === 'comments' && (
         <div className={panelClass}>
-          <CommentThread clueId={clueId} />
+          {demoMode ? (
+            <p className="text-sm text-gray-500 text-center py-4">{t.results.noComments}</p>
+          ) : (
+            <CommentThread clueId={clueId} />
+          )}
         </div>
       )}
 
@@ -212,6 +225,7 @@ export default function ResultsTabs({
           initialRating={initialRating}
           onRate={onRate || (() => {})}
           onReport={onReport || (() => {})}
+          disabled={demoMode}
         />
       ) : user ? (
         <ClueRating
