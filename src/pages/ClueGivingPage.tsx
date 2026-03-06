@@ -355,10 +355,11 @@ export default function ClueGivingPage() {
       <div className={`flex flex-wrap justify-center gap-2 mb-3 transition-opacity ${submitting ? 'opacity-30 pointer-events-none' : ''}`}>
         <button
           onClick={() => setShowHomeConfirm(true)}
-          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center"
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center gap-1"
           title={t.game.home}
         >
           <HomeIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">{t.game.home}</span>
         </button>
         <button
           onClick={() => setShowReshuffleConfirm(true)}
@@ -366,13 +367,14 @@ export default function ClueGivingPage() {
           title={t.game.reshuffle}
         >
           <ArrowPathIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">{t.game.reshuffle}</span>
           {reshuffleCount > 0 && (
             <span className="text-gray-300 text-xs">({reshuffleCount})</span>
           )}
         </button>
         <button
           onClick={handleSortByColor}
-          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border inline-flex items-center ${
+          className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors border inline-flex items-center gap-1 ${
             isSorted
               ? 'bg-board-blue/30 text-board-blue border-board-blue/40'
               : 'bg-gray-700 hover:bg-gray-600 text-gray-300 border-transparent'
@@ -380,30 +382,33 @@ export default function ClueGivingPage() {
           title={t.game.sortByColor}
         >
           <BarsArrowDownIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">{t.game.sortByColor}</span>
         </button>
         <button
           onClick={handleReset}
-          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center"
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center gap-1"
           title={t.game.reset}
         >
           <ArrowUturnLeftIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">{t.game.reset}</span>
         </button>
         <button
           onClick={() => setShowHelp(true)}
-          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center"
+          className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-semibold transition-colors inline-flex items-center gap-1"
           title={t.help.title}
         >
           <QuestionMarkCircleIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">{t.help.title}</span>
         </button>
         <SettingsPanel mode="clue-giving" />
       </div>
 
       {showHelp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowHelp(false)}>
-          <div className="bg-gray-800 rounded-xl p-6 max-w-sm mx-4 relative" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-md mx-4 relative max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setShowHelp(false)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
             <h3 className="text-white font-bold text-lg mb-3">{t.help.captainTitle}</h3>
-            <p className="text-gray-300 text-sm whitespace-pre-line">{t.help.captainRules}</p>
+            <p className="text-gray-300 text-sm whitespace-pre-line leading-relaxed">{t.help.captainRules}</p>
           </div>
         </div>
       )}
