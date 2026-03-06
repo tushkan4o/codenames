@@ -23,7 +23,6 @@ export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlay
   const tooltipRef = useRef<HTMLDivElement>(null);
   const prevStepId = useRef(step.id);
 
-  // Reset shake on step change
   useEffect(() => {
     if (prevStepId.current !== step.id) {
       setShake(false);
@@ -45,7 +44,6 @@ export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlay
     } else if (hl.type === 'card') {
       el = document.querySelector(`[data-card-index="${hl.cardIndex}"]`);
     } else if (hl.type === 'cards') {
-      // Compute bounding box of all cards
       const rects: DOMRect[] = [];
       for (const idx of hl.cardIndices) {
         const cardEl = document.querySelector(`[data-card-index="${idx}"]`);
@@ -84,13 +82,11 @@ export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlay
     };
   }, [measureTarget]);
 
-  // Tooltip text
   const tutorialTexts = t.tutorial as Record<string, string>;
   const text = tutorialTexts[step.textKey] || step.textKey;
   const isAcknowledge = step.action.type === 'acknowledge';
   const position = step.tooltipPosition || 'bottom';
 
-  // Tooltip positioning
   const getTooltipStyle = (): React.CSSProperties => {
     if (position === 'center' || !targetRect) {
       return {
@@ -104,7 +100,6 @@ export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlay
     const centerX = targetRect.left + targetRect.width / 2;
     const tooltipWidth = 320;
 
-    // Clamp X so tooltip doesn't go off-screen
     let left = centerX - tooltipWidth / 2;
     left = Math.max(12, Math.min(left, window.innerWidth - tooltipWidth - 12));
 
@@ -116,7 +111,6 @@ export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlay
         width: tooltipWidth,
       };
     }
-    // bottom
     return {
       position: 'fixed',
       top: targetRect.top + targetRect.height + PADDING + 8,
@@ -125,54 +119,18 @@ export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlay
     };
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    // Only handle acknowledge steps on backdrop click
-    if (isAcknowledge) {
-      e.stopPropagation();
-      onAcknowledge();
-      return;
-    }
-    // Trigger shake for non-acknowledge steps
-    setShake(true);
-    setTimeout(() => setShake(false), 400);
-  };
-
   return (
     <>
-      {/* Backdrop with cutout */}
-      {targetRect ? (
-        <>
-          {/* Semi-transparent overlay with a hole cut out via clip-path */}
-          <div
-            className="fixed inset-0 z-[60]"
-            style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.7)',
-              clipPath: `polygon(
-                0% 0%, 0% 100%, 100% 100%, 100% 0%, 0% 0%,
-                ${targetRect.left - PADDING}px ${targetRect.top - PADDING}px,
-                ${targetRect.left - PADDING}px ${targetRect.top + targetRect.height + PADDING}px,
-                ${targetRect.left + targetRect.width + PADDING}px ${targetRect.top + targetRect.height + PADDING}px,
-                ${targetRect.left + targetRect.width + PADDING}px ${targetRect.top - PADDING}px,
-                ${targetRect.left - PADDING}px ${targetRect.top - PADDING}px
-              )`,
-            }}
-            onClick={handleBackdropClick}
-          />
-          {/* Highlight ring */}
-          <div
-            className="fixed z-[61] rounded-lg pointer-events-none ring-2 ring-board-blue animate-pulse"
-            style={{
-              top: targetRect.top - PADDING,
-              left: targetRect.left - PADDING,
-              width: targetRect.width + PADDING * 2,
-              height: targetRect.height + PADDING * 2,
-            }}
-          />
-        </>
-      ) : (
+      {/* Highlight ring around target — no dark backdrop */}
+      {targetRect && (
         <div
-          className="fixed inset-0 z-[60] bg-black/70"
-          onClick={handleBackdropClick}
+          className="fixed z-[61] rounded-lg pointer-events-none ring-2 ring-board-blue animate-pulse"
+          style={{
+            top: targetRect.top - PADDING,
+            left: targetRect.left - PADDING,
+            width: targetRect.width + PADDING * 2,
+            height: targetRect.height + PADDING * 2,
+          }}
         />
       )}
 
