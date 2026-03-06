@@ -1,10 +1,14 @@
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
 import { useTutorialMachine } from '../tutorial/useTutorialMachine';
 import { BOARD_CONFIGS } from '../types/game';
+import type { CardState } from '../types/game';
 import Board from '../components/board/Board';
 import ClueDisplay from '../components/clue/ClueDisplay';
 import TutorialOverlay from '../components/tutorial/TutorialOverlay';
+
+const REVEAL_DURATION = 800;
 
 export default function TutorialPage() {
   const navigate = useNavigate();
@@ -12,6 +16,60 @@ export default function TutorialPage() {
   const tt = t.tutorial as Record<string, string>;
   const machine = useTutorialMachine();
   const { state, currentScenario, currentStep, currentScenarios, isActive } = machine;
+
+  // Border trace animation state (scout mode)
+  const [revealingIndices, setRevealingIndices] = useState<Set<number>>(new Set());
+  const revealTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+
+  // Handle card click with reveal animation for scout mode
+  const handleCardClick = useCallback((idx: number) => {
+    if (!currentScenario || currentScenario.mode === 'captain') {
+      machine.handleCardClick(idx);
+      return;
+    }
+
+    // Scout mode: if card is currently revealing, cancel it
+    if (revealingIndices.has(idx)) {
+      clearTimeout(revealTimers.current[idx]);
+      delete revealTimers.current[idx];
+      setRevealingIndices(prev => {
+        const next = new Set(prev);
+        next.delete(idx);
+        return next;
+      });
+      return;
+    }
+
+    // Already picked — ignore
+    if (state.pickedIndices.includes(idx)) return;
+
+    // Start border trace animation
+    setRevealingIndices(prev => new Set(prev).add(idx));
+
+    // After animation, commit the pick to the state machine
+    revealTimers.current[idx] = setTimeout(() => {
+      delete revealTimers.current[idx];
+      setRevealingIndices(prev => {
+        const next = new Set(prev);
+        next.delete(idx);
+        return next;
+      });
+      machine.handleCardClick(idx);
+    }, REVEAL_DURATION);
+  }, [currentScenario, machine, revealingIndices, state.pickedIndices]);
+
+  // Build cards with revealed state for picked cards (scout mode)
+  const displayCards: CardState[] = useMemo(() => {
+    if (!currentScenario) return [];
+    if (currentScenario.mode === 'captain') return currentScenario.cards;
+    // Scout: mark picked cards as revealed so their color shows
+    return currentScenario.cards.map((card, idx) => {
+      if (state.pickedIndices.includes(idx) || state.showColors) {
+        return { ...card, revealed: true };
+      }
+      return card;
+    });
+  }, [currentScenario, state.pickedIndices, state.showColors]);
 
   // ─── Mode selection screen ───────────────────────────────
   if (state.mode === null) {
@@ -122,6 +180,7 @@ export default function TutorialPage() {
 
   const isCaptain = currentScenario.mode === 'captain';
   const boardConfig = BOARD_CONFIGS[currentScenario.columns === 4 ? '4x4' : '5x5'];
+  const redIndices = currentScenario.cards.filter(c => c.color === 'red').map(c => c.position);
 
   return (
     <div className="min-h-screen pb-8">
@@ -140,27 +199,32 @@ export default function TutorialPage() {
 
       {/* Clue display for scout mode */}
       {!isCaptain && currentScenario.clue && (
-        <div className="mb-3" data-tutorial-id="clue-display">
-          <ClueDisplay
-            word={currentScenario.clue.word}
-            number={currentScenario.clue.number}
-          />
+        <div className="flex justify-center mb-3">
+          <div data-tutorial-id="clue-display">
+            <ClueDisplay
+              word={currentScenario.clue.word}
+              number={currentScenario.clue.number}
+              teamColor="red"
+            />
+          </div>
         </div>
       )}
 
       {/* Board */}
       <div data-tutorial-id="board">
         <Board
-          cards={currentScenario.cards}
+          cards={displayCards}
           columns={currentScenario.columns}
           showColors={isCaptain || state.showColors}
           selectedIndices={[]}
-          targetIndices={isCaptain ? state.selectedTargets : (state.showColors ? currentScenario.cards.filter(c => c.color === 'red').map(c => c.position) : [])}
+          targetIndices={isCaptain ? state.selectedTargets : (state.showColors ? redIndices : [])}
           nullIndices={state.selectedNulls}
-          onCardClick={(idx) => machine.handleCardClick(idx)}
+          onCardClick={handleCardClick}
           disabled={false}
           pickOrder={!isCaptain ? state.pickedIndices : undefined}
           highlightTargets={state.showColors && !isCaptain}
+          revealingIndices={revealingIndices.size > 0 ? revealingIndices : undefined}
+          revealDuration={REVEAL_DURATION}
         />
       </div>
 
