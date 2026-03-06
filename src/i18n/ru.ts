@@ -145,7 +145,7 @@ export const ru = {
     attempts: 'попыток',
     avgScoreLabel: 'Ср. счёт',
     ratingsCount: 'Оценок',
-    firstSolve: 'Первое решение!',
+    firstSolve: 'Нет решений',
     puzzleStats: 'Статистика пазла',
     tabInfo: 'Информация',
     tabScore: 'Счёт',
@@ -205,7 +205,8 @@ export const ru = {
   },
   rating: {
     rateClue: 'Оцените подсказку:',
-    thanks: 'Спасибо за оценку!',
+    rateLabel: 'Оценить',
+    thanks: 'Спасибо!',
     report: 'Пожаловаться',
     reportPlaceholder: 'Причина жалобы...',
     reportSent: 'Жалоба отправлена',

@@ -18,7 +18,7 @@ function formatDate(ts: number): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-const panelClass = 'bg-gray-800/60 rounded-b-lg px-4 py-3 border border-gray-700/40 border-t-0';
+const panelClass = 'bg-gray-800/60 rounded-b-lg px-4 py-3';
 
 interface ResultsTabsProps {
   clueId: string;
@@ -130,63 +130,56 @@ export default function ResultsTabs({
           </div>
           {stats && stats.attempts > 0 ? (
             <div className="flex gap-4 mt-2">
-              <span className="text-blue-400">{stats.attempts} {pluralAttempts(stats.attempts)}</span>
+              <span className="text-gray-400">{stats.attempts} {pluralAttempts(stats.attempts)}</span>
               <span>
                 <span className="text-gray-400">{t.results.avgScoreLabel}: </span>
                 <span className="text-white font-semibold">{stats.avgScore}</span>
               </span>
             </div>
           ) : stats ? (
-            <p className="text-blue-400 font-semibold mt-2">{t.results.firstSolve}</p>
+            <p className="text-gray-500 mt-2">{t.results.firstSolve}</p>
           ) : null}
           {sortedDetails.length > 0 && (
-            <div className="mt-3 overflow-y-auto max-h-[220px]" style={{ scrollbarGutter: 'stable' }}>
-              <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-gray-800">
-                  <tr className="text-gray-500 border-b border-gray-700/50">
-                    <th className="text-left py-1 pr-2 font-medium">{t.admin.player}</th>
-                    <th
-                      className="text-center py-1 px-2 font-medium cursor-pointer hover:text-white transition-colors select-none"
-                      onClick={() => {
-                        if (attemptSort === 'score') setAttemptDir((d) => d === 'desc' ? 'asc' : 'desc');
-                        else { setAttemptSort('score'); setAttemptDir('desc'); }
-                        setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
-                      }}
-                    >
-                      {t.results.score}
-                      <span className="ml-0.5 text-[0.5em]">{attemptSort === 'score' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
-                    </th>
-                    <th
-                      className="text-center py-1 pl-2 font-medium cursor-pointer hover:text-white transition-colors select-none"
-                      onClick={() => {
-                        if (attemptSort === 'timestamp') setAttemptDir((d) => d === 'asc' ? 'desc' : 'asc');
-                        else { setAttemptSort('timestamp'); setAttemptDir('asc'); }
-                        setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
-                      }}
-                    >
-                      {t.admin.clueDate}
-                      <span className="ml-0.5 text-[0.5em]">{attemptSort === 'timestamp' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedDetails.map((detail, idx) => (
-                    <tr
-                      key={`${detail.userId}-${detail.timestamp}`}
-                      onClick={() => handleAttemptClick(detail, idx)}
-                      className={`cursor-pointer transition-colors ${
-                        selectedAttemptIdx === idx ? 'bg-board-blue/20' : 'hover:bg-gray-700/50'
-                      }`}
-                    >
-                      <td className="py-1 pr-2 text-left text-gray-300 truncate max-w-[10rem]">
-                        {detail.displayName || detail.userId}
-                      </td>
-                      <td className="py-1 px-2 text-center text-white font-semibold">{detail.score}</td>
-                      <td className="py-1 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="mt-3 overflow-y-auto max-h-[220px]">
+              <div className="space-y-0">
+                {sortedDetails.map((detail, idx) => (
+                  <div
+                    key={`${detail.userId}-${detail.timestamp}`}
+                    onClick={() => handleAttemptClick(detail, idx)}
+                    className={`flex items-center justify-between py-1.5 px-1 cursor-pointer transition-colors rounded text-xs ${
+                      selectedAttemptIdx === idx ? 'bg-board-blue/15' : 'hover:bg-gray-700/30'
+                    }`}
+                  >
+                    <span className="text-gray-300 truncate max-w-[10rem]">
+                      {detail.displayName || detail.userId}
+                    </span>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span
+                        className="text-gray-500 cursor-pointer hover:text-gray-400 transition-colors select-none"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (attemptSort === 'score') setAttemptDir((d) => d === 'desc' ? 'asc' : 'desc');
+                          else { setAttemptSort('score'); setAttemptDir('desc'); }
+                          setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
+                        }}
+                      >
+                        <span className="text-white font-semibold">{detail.score}</span>
+                      </span>
+                      <span
+                        className="text-gray-600 cursor-pointer hover:text-gray-500 transition-colors select-none"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (attemptSort === 'timestamp') setAttemptDir((d) => d === 'asc' ? 'desc' : 'asc');
+                          else { setAttemptSort('timestamp'); setAttemptDir('asc'); }
+                          setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
+                        }}
+                      >
+                        {formatDate(detail.timestamp)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

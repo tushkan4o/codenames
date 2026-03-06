@@ -25,12 +25,17 @@ function formatDate(ts: number): string {
 }
 
 export function pluralAttempts(n: number): string {
+  return pluralSolves(n);
+}
+
+export function pluralSolves(n: number): string {
+  if (n === 0) return 'решений';
   const abs = Math.abs(n) % 100;
   const last = abs % 10;
-  if (abs > 10 && abs < 20) return 'попыток';
-  if (last === 1) return 'попытка';
-  if (last >= 2 && last <= 4) return 'попытки';
-  return 'попыток';
+  if (abs > 10 && abs < 20) return 'решений';
+  if (last === 1) return 'решение';
+  if (last >= 2 && last <= 4) return 'решения';
+  return 'решений';
 }
 
 type AttemptSort = 'timestamp' | 'score';

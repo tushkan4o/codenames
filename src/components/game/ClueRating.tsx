@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from '../../i18n/useTranslation';
+import { ExclamationTriangleIcon, ShareIcon } from '@heroicons/react/24/outline';
 
 interface ClueRatingProps {
   clueId: string;
@@ -57,54 +58,59 @@ export default function ClueRating({ clueId, onRate, onReport, initialRating, sh
 
   return (
     <div className="mt-2">
-      {/* Main row: stars on left, buttons on right */}
-      <div className="flex items-center justify-between bg-gray-800/40 rounded-lg px-4 py-2.5 border border-gray-700/30">
-        <div className="flex gap-1">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              onClick={() => handleRate(star)}
-              onMouseEnter={() => !disabled && setHoverRating(star)}
-              onMouseLeave={() => setHoverRating(null)}
-              disabled={disabled}
-              className={`text-lg transition-colors ${
-                star <= displayRating
-                  ? 'text-yellow-400'
-                  : 'text-gray-600'
-              } ${disabled ? 'cursor-default' : 'cursor-pointer hover:text-yellow-300'}`}
-            >
-              ★
-            </button>
-          ))}
+      {/* Main row: label + stars on left, buttons on right */}
+      <div className="flex items-center justify-between px-1 py-2">
+        <div className="flex items-center gap-2">
+          {!justRated && (
+            <span className="text-yellow-400 text-xs font-semibold">{t.rating.rateLabel}</span>
+          )}
+          {justRated && (
+            <span className="text-blue-400 text-xs">{t.rating.thanks}</span>
+          )}
+          <div className="flex gap-0.5">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => handleRate(star)}
+                onMouseEnter={() => !disabled && setHoverRating(star)}
+                onMouseLeave={() => setHoverRating(null)}
+                disabled={disabled}
+                className={`text-lg transition-colors ${
+                  star <= displayRating
+                    ? 'text-yellow-400'
+                    : 'text-gray-600'
+                } ${disabled ? 'cursor-default' : 'cursor-pointer hover:text-yellow-300'}`}
+              >
+                ★
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
           {!shareOnly && !disabled && (
             <button
               onClick={() => setShowReportInput(!showReportInput)}
-              className="text-gray-500 text-xs hover:text-gray-400 transition-colors"
+              className="flex items-center gap-1 text-xs text-red-400/70 hover:text-red-400 transition-colors"
             >
+              <ExclamationTriangleIcon className="w-3.5 h-3.5" />
               {t.rating.report}
             </button>
           )}
           {!disabled && (
             <button
               onClick={handleShare}
-              className="text-gray-500 text-xs hover:text-gray-400 transition-colors"
+              className="flex items-center gap-1 text-xs text-blue-400/70 hover:text-blue-400 transition-colors"
             >
+              <ShareIcon className="w-3.5 h-3.5" />
               {shareCopied ? t.rating.copied : t.rating.share}
             </button>
           )}
         </div>
       </div>
 
-      {/* Feedback messages */}
-      {justRated && (
-        <p className="text-blue-400 text-xs text-center mt-1">{t.rating.thanks}</p>
-      )}
-
       {/* Report input */}
       {showReportInput && !reported && (
-        <div className="flex flex-col items-center gap-2 mt-2 w-full">
+        <div className="flex flex-col items-center gap-2 mt-1 w-full">
           <input
             type="text"
             value={reportReason}
