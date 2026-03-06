@@ -143,7 +143,7 @@ export default function ResultsTabs({
           {sortedDetails.length > 0 && (
             <div className="mt-2 overflow-y-auto max-h-[220px]">
               {/* Header */}
-              <div className="grid grid-cols-[1fr_2.5rem_auto] gap-x-2 px-1 pb-1 text-[10px] text-gray-600">
+              <div className="grid grid-cols-[1fr_2rem_7.5rem] gap-x-2 px-1 pb-1 text-[10px] text-gray-600">
                 <span className="text-left">{t.admin.player}</span>
                 <span
                   className="text-center cursor-pointer hover:text-gray-400 transition-colors select-none"
@@ -171,7 +171,7 @@ export default function ResultsTabs({
                 <div
                   key={`${detail.userId}-${detail.timestamp}`}
                   onClick={() => handleAttemptClick(detail, idx)}
-                  className={`grid grid-cols-[1fr_2.5rem_auto] gap-x-2 items-center py-0.5 px-1 cursor-pointer transition-colors rounded text-xs leading-tight ${
+                  className={`grid grid-cols-[1fr_2rem_7.5rem] gap-x-2 items-center py-0.5 px-1 cursor-pointer transition-colors rounded text-xs leading-tight ${
                     selectedAttemptIdx === idx ? 'bg-board-blue/15' : 'hover:bg-gray-700/30'
                   }`}
                 >
