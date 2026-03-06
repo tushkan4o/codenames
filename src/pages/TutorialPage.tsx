@@ -146,7 +146,6 @@ export default function TutorialPage() {
     const hasNext = state.scenarioIndex + 1 < currentScenarios.length;
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4">
-        <div className="text-6xl mb-4">🎉</div>
         <h2 className="text-3xl font-extrabold text-white mb-2">{tt.complete}</h2>
         <p className="text-gray-400 mb-8">{tt.scenarioComplete}</p>
 
@@ -159,12 +158,6 @@ export default function TutorialPage() {
               {tt.nextScenario}
             </button>
           )}
-          <button
-            onClick={() => machine.goBack()}
-            className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg transition-colors"
-          >
-            {tt.selectModeAgain}
-          </button>
           <button
             onClick={() => navigate('/')}
             className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold text-lg transition-colors"
