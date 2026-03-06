@@ -45,6 +45,12 @@ export default function HomePage() {
           >
             {t.nav.profile}
           </button>
+          <button
+            onClick={() => navigate('/tutorial')}
+            className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg transition-colors"
+          >
+            {t.tutorial.title}
+          </button>
         </div>
 
         {stats && (stats.cluesGiven > 0 || stats.cluesSolved > 0) && (

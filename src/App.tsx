@@ -14,6 +14,7 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminPage from './pages/AdminPage';
 import OAuthRegisterPage from './pages/OAuthRegisterPage';
+import TutorialPage from './pages/TutorialPage';
 
 function EvictionBanner() {
   const { evicted, user } = useAuth();
@@ -102,6 +103,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/oauth/register" element={<OAuthRegisterPage />} />
+          <Route path="/tutorial" element={<TutorialPage />} />
           <Route path="/" element={<RequireAuth><HomePage /></RequireAuth>} />
           <Route path="/setup" element={<RequireAuth><SetupPage /></RequireAuth>} />
           <Route path="/give-clue" element={<RequireAuth><ClueGivingPage /></RequireAuth>} />

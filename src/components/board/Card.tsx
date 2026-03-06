@@ -19,6 +19,7 @@ interface CardProps {
   fontSize?: CardFontSize;
   revealing?: boolean;
   revealDuration?: number;
+  cardIndex?: number;
 }
 
 const fontSizeMap: Record<CardFontSize, string> = {
@@ -75,6 +76,7 @@ export default function Card({
   fontSize,
   revealing,
   revealDuration,
+  cardIndex,
 }: CardProps) {
   // During border trace animation, don't show color yet
   const shouldShowColor = (showColor || revealed) && !revealing;
@@ -134,6 +136,7 @@ export default function Card({
       disabled={disabled}
       type="button"
       style={style}
+      data-card-index={cardIndex}
     >
       <span className="text-center leading-tight hyphens-auto" lang="ru" style={{ overflowWrap: 'break-word' }}>{word}</span>
 

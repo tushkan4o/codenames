@@ -129,6 +129,13 @@ export default function LoginPage() {
           {oauthLoading === 'discord' ? '...' : t.oauth.loginDiscord}
         </button>
       </div>
+
+      <button
+        onClick={() => navigate('/tutorial')}
+        className="mt-6 text-gray-500 hover:text-gray-300 text-sm transition-colors"
+      >
+        {t.tutorial.title}
+      </button>
     </div>
   );
 }

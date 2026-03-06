@@ -102,6 +102,7 @@ export default function Board({
               fontSize={cardFontSize}
               revealing={revealingIndices?.has(originalIndex)}
               revealDuration={revealDuration}
+              cardIndex={originalIndex}
             />
           );
         }
@@ -132,6 +133,7 @@ export default function Board({
               fontSize={cardFontSize}
               revealing={revealingIndices?.has(originalIndex)}
               revealDuration={revealDuration}
+              cardIndex={originalIndex}
             />
           </div>
         );
