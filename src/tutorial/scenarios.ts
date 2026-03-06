@@ -39,7 +39,7 @@ const captain1: TutorialScenario = {
       textKey: 'captain1Step2',
       highlight: { type: 'board' },
       action: { type: 'acknowledge' },
-      tooltipPosition: 'top',
+      tooltipPosition: 'bottom',
     },
     {
       id: 'c1-select-targets',

@@ -15,6 +15,8 @@ interface Rect {
 }
 
 const PADDING = 6;
+const GAP = 8;
+const TOOLTIP_WIDTH = 320;
 
 export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlayProps) {
   const { t } = useTranslation();
@@ -98,31 +100,35 @@ export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlay
     }
 
     const centerX = targetRect.left + targetRect.width / 2;
-    const tooltipWidth = 320;
+    let left = centerX - TOOLTIP_WIDTH / 2;
+    left = Math.max(12, Math.min(left, window.innerWidth - TOOLTIP_WIDTH - 12));
 
-    let left = centerX - tooltipWidth / 2;
-    left = Math.max(12, Math.min(left, window.innerWidth - tooltipWidth - 12));
+    // Try preferred position, fall back if off-screen
+    const aboveTop = targetRect.top - PADDING - GAP;
+    const belowTop = targetRect.top + targetRect.height + PADDING + GAP;
 
-    if (position === 'top') {
+    if (position === 'top' && aboveTop > 100) {
+      // Enough room above — use bottom anchor
       return {
         position: 'fixed',
-        bottom: window.innerHeight - targetRect.top + PADDING + 8,
+        bottom: window.innerHeight - aboveTop,
         left,
-        width: tooltipWidth,
+        width: TOOLTIP_WIDTH,
       };
     }
+    // Default: below target, clamped to viewport
     return {
       position: 'fixed',
-      top: targetRect.top + targetRect.height + PADDING + 8,
+      top: Math.min(belowTop, window.innerHeight - 120),
       left,
-      width: tooltipWidth,
+      width: TOOLTIP_WIDTH,
     };
   };
 
   return (
     <>
-      {/* Highlight ring around target — no dark backdrop */}
-      {targetRect && (
+      {/* Highlight ring around target */}
+      {targetRect && step.highlight.type !== 'board' && (
         <div
           className="fixed z-[61] rounded-lg pointer-events-none ring-2 ring-board-blue animate-pulse"
           style={{

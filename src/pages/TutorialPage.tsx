@@ -154,12 +154,13 @@ export default function TutorialPage() {
           cards={currentScenario.cards}
           columns={currentScenario.columns}
           showColors={isCaptain || state.showColors}
-          selectedIndices={isCaptain ? state.selectedTargets : state.pickedIndices}
+          selectedIndices={[]}
+          targetIndices={isCaptain ? state.selectedTargets : (state.showColors ? currentScenario.cards.filter(c => c.color === 'red').map(c => c.position) : [])}
+          nullIndices={state.selectedNulls}
           onCardClick={(idx) => machine.handleCardClick(idx)}
           disabled={false}
           pickOrder={!isCaptain ? state.pickedIndices : undefined}
           highlightTargets={state.showColors && !isCaptain}
-          targetIndices={isCaptain ? undefined : currentScenario.cards.filter(c => c.color === 'red').map(c => c.position)}
         />
       </div>
 
