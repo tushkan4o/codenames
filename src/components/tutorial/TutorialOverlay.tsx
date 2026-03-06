@@ -17,10 +17,12 @@ interface Rect {
 const PADDING = 6;
 const GAP = 8;
 const TOOLTIP_WIDTH = 320;
+const MARGIN = 12;
 
 export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlayProps) {
   const { t } = useTranslation();
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
+  const [tooltipRect, setTooltipRect] = useState<{ width: number; height: number } | null>(null);
   const [shake, setShake] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const prevStepId = useRef(step.id);
@@ -31,6 +33,14 @@ export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlay
       prevStepId.current = step.id;
     }
   }, [step.id]);
+
+  // Measure tooltip size after render
+  useEffect(() => {
+    if (tooltipRef.current) {
+      const r = tooltipRef.current.getBoundingClientRect();
+      setTooltipRect({ width: r.width, height: r.height });
+    }
+  }, [step.id, step.textKey]);
 
   const measureTarget = useCallback(() => {
     const hl = step.highlight;
@@ -87,10 +97,10 @@ export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlay
   const tutorialTexts = t.tutorial as Record<string, string>;
   const text = tutorialTexts[step.textKey] || step.textKey;
   const isAcknowledge = step.action.type === 'acknowledge';
-  const position = step.tooltipPosition || 'bottom';
+  const preferred = step.tooltipPosition || 'bottom';
 
   const getTooltipStyle = (): React.CSSProperties => {
-    if (position === 'center' || !targetRect) {
+    if (preferred === 'center' || !targetRect) {
       return {
         position: 'fixed',
         top: '50%',
@@ -99,27 +109,41 @@ export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlay
       };
     }
 
+    const ttH = tooltipRect?.height || 150;
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+
+    // Horizontal: center on target, clamp to viewport
     const centerX = targetRect.left + targetRect.width / 2;
     let left = centerX - TOOLTIP_WIDTH / 2;
-    left = Math.max(12, Math.min(left, window.innerWidth - TOOLTIP_WIDTH - 12));
+    left = Math.max(MARGIN, Math.min(left, vw - TOOLTIP_WIDTH - MARGIN));
 
-    // Try preferred position, fall back if off-screen
-    const aboveTop = targetRect.top - PADDING - GAP;
-    const belowTop = targetRect.top + targetRect.height + PADDING + GAP;
+    // Vertical: try preferred side, fall back to other side, then clamp
+    const spaceAbove = targetRect.top - PADDING - GAP;
+    const spaceBelow = vh - (targetRect.top + targetRect.height + PADDING + GAP);
 
-    if (position === 'top' && aboveTop > 100) {
-      // Enough room above — use bottom anchor
-      return {
-        position: 'fixed',
-        bottom: window.innerHeight - aboveTop,
-        left,
-        width: TOOLTIP_WIDTH,
-      };
+    let top: number;
+
+    if (preferred === 'top' && spaceAbove >= ttH) {
+      // Fits above
+      top = targetRect.top - PADDING - GAP - ttH;
+    } else if (preferred === 'bottom' && spaceBelow >= ttH) {
+      // Fits below
+      top = targetRect.top + targetRect.height + PADDING + GAP;
+    } else if (spaceBelow >= spaceAbove) {
+      // More room below
+      top = targetRect.top + targetRect.height + PADDING + GAP;
+    } else {
+      // More room above
+      top = targetRect.top - PADDING - GAP - ttH;
     }
-    // Default: below target, clamped to viewport
+
+    // Final clamp to keep within viewport
+    top = Math.max(MARGIN, Math.min(top, vh - ttH - MARGIN));
+
     return {
       position: 'fixed',
-      top: Math.min(belowTop, window.innerHeight - 120),
+      top,
       left,
       width: TOOLTIP_WIDTH,
     };
