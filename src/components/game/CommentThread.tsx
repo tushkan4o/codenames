@@ -281,7 +281,7 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
       {comments.length === 0 ? (
         <p className="text-gray-500 text-sm text-center">{t.results.noComments}</p>
       ) : (
-        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+        <div className="space-y-2 max-h-[300px] overflow-y-auto" style={{ scrollbarGutter: 'stable' }}>
           {comments.map((c) => (
             <div key={c.id} className="text-sm group">
               <div className="flex items-center gap-2">

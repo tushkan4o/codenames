@@ -10,7 +10,7 @@ import type { AttemptDetail } from './ClueStatsPanel';
 import { pluralAttempts } from './ClueStatsPanel';
 import { useProfileModal } from '../../context/ProfileModalContext';
 
-type ResultTab = 'info' | 'score' | 'solutions' | 'comments';
+type ResultTab = 'info' | 'score' | 'comments';
 
 function formatDate(ts: number): string {
   const d = new Date(ts);
@@ -71,7 +71,6 @@ export default function ResultsTabs({
   const tabs: { key: ResultTab; label: string }[] = [
     { key: 'info', label: t.results.tabInfo },
     ...(hasScore ? [{ key: 'score' as ResultTab, label: t.results.tabScore }] : []),
-    { key: 'solutions', label: t.results.tabSolutions },
     { key: 'comments', label: t.results.tabComments },
   ];
 
@@ -131,6 +130,56 @@ export default function ResultsTabs({
           ) : stats ? (
             <p className="text-blue-400 font-semibold mt-2">{t.results.firstSolve}</p>
           ) : null}
+          {sortedDetails.length > 0 && (
+            <div className="mt-3 overflow-y-auto max-h-[220px]" style={{ scrollbarGutter: 'stable' }}>
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-gray-800">
+                  <tr className="text-gray-500 border-b border-gray-700/50">
+                    <th className="text-left py-1 pr-2 font-medium">{t.admin.player}</th>
+                    <th
+                      className="text-center py-1 px-2 font-medium cursor-pointer hover:text-white transition-colors select-none"
+                      onClick={() => {
+                        if (attemptSort === 'score') setAttemptDir((d) => d === 'desc' ? 'asc' : 'desc');
+                        else { setAttemptSort('score'); setAttemptDir('desc'); }
+                        setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
+                      }}
+                    >
+                      {t.results.score}
+                      <span className="ml-0.5 text-[0.5em]">{attemptSort === 'score' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
+                    </th>
+                    <th
+                      className="text-center py-1 pl-2 font-medium cursor-pointer hover:text-white transition-colors select-none"
+                      onClick={() => {
+                        if (attemptSort === 'timestamp') setAttemptDir((d) => d === 'asc' ? 'desc' : 'asc');
+                        else { setAttemptSort('timestamp'); setAttemptDir('asc'); }
+                        setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
+                      }}
+                    >
+                      {t.admin.clueDate}
+                      <span className="ml-0.5 text-[0.5em]">{attemptSort === 'timestamp' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedDetails.map((detail, idx) => (
+                    <tr
+                      key={`${detail.userId}-${detail.timestamp}`}
+                      onClick={() => handleAttemptClick(detail, idx)}
+                      className={`cursor-pointer transition-colors ${
+                        selectedAttemptIdx === idx ? 'bg-board-blue/20' : 'hover:bg-gray-700/50'
+                      }`}
+                    >
+                      <td className="py-1 pr-2 text-left text-gray-300 truncate max-w-[10rem]">
+                        {detail.displayName || detail.userId}
+                      </td>
+                      <td className="py-1 px-2 text-center text-white font-semibold">{detail.score}</td>
+                      <td className="py-1 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -147,68 +196,6 @@ export default function ResultsTabs({
             score={score}
             compact
           />
-        </div>
-      )}
-
-      {activeTab === 'solutions' && (
-        <div className={panelClass}>
-          {sortedDetails.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center">{stats ? t.results.firstSolve : '...'}</p>
-          ) : (
-            <>
-              <h3 className="text-white font-semibold text-xs mb-1.5">
-                {sortedDetails.length} {pluralAttempts(sortedDetails.length)}
-              </h3>
-              <div className="overflow-y-auto max-h-[220px]">
-                <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-gray-800">
-                    <tr className="text-gray-500 border-b border-gray-700/50">
-                      <th className="text-left py-1 pr-2 font-medium">{t.admin.player}</th>
-                      <th
-                        className="text-center py-1 px-2 font-medium cursor-pointer hover:text-white transition-colors select-none"
-                        onClick={() => {
-                          if (attemptSort === 'score') setAttemptDir((d) => d === 'desc' ? 'asc' : 'desc');
-                          else { setAttemptSort('score'); setAttemptDir('desc'); }
-                          setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
-                        }}
-                      >
-                        {t.results.score}
-                        <span className="ml-0.5 text-[0.5em]">{attemptSort === 'score' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
-                      </th>
-                      <th
-                        className="text-center py-1 pl-2 font-medium cursor-pointer hover:text-white transition-colors select-none"
-                        onClick={() => {
-                          if (attemptSort === 'timestamp') setAttemptDir((d) => d === 'asc' ? 'desc' : 'asc');
-                          else { setAttemptSort('timestamp'); setAttemptDir('asc'); }
-                          setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
-                        }}
-                      >
-                        {t.admin.clueDate}
-                        <span className="ml-0.5 text-[0.5em]">{attemptSort === 'timestamp' ? (attemptDir === 'desc' ? '\u25BC' : '\u25B2') : ''}</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedDetails.map((detail, idx) => (
-                      <tr
-                        key={`${detail.userId}-${detail.timestamp}`}
-                        onClick={() => handleAttemptClick(detail, idx)}
-                        className={`cursor-pointer transition-colors ${
-                          selectedAttemptIdx === idx ? 'bg-board-blue/20' : 'hover:bg-gray-700/50'
-                        }`}
-                      >
-                        <td className="py-1 pr-2 text-left text-gray-300 truncate max-w-[10rem]">
-                          {detail.displayName || detail.userId}
-                        </td>
-                        <td className="py-1 px-2 text-center text-white font-semibold">{detail.score}</td>
-                        <td className="py-1 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
         </div>
       )}
 

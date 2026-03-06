@@ -9,6 +9,7 @@ export default function ProfileModal() {
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center bg-board-bg overflow-y-auto py-6 px-4"
+      style={{ scrollbarGutter: 'stable' }}
       onClick={closeProfile}
     >
       <div
