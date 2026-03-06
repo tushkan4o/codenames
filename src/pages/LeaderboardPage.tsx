@@ -236,7 +236,7 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 px-4 py-1 items-center">
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 pr-4 py-1 items-center">
                 <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                 <span className={thAccordion}>{t.leaderboard.player}</span>
                 <span className={`${thAccordion} text-center`} onClick={() => toggleSpySort('cluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="cluesGiven" activeField={spySort} dir={spyDir} /></span>
@@ -248,7 +248,7 @@ export default function LeaderboardPage() {
                   <div
                     key={s.userId}
                     onClick={() => openProfile(s.userId)}
-                    className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600"
+                    className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-4 py-2.5 cursor-pointer transition-colors hover:border-gray-600"
                   >
                     <div className="grid grid-cols-[1rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 items-center">
                       <span className="text-gray-500 text-sm text-center">{i + 1}</span>
@@ -269,7 +269,7 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 px-4 py-1 items-center">
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 pr-4 py-1 items-center">
                 <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                 <span className={thAccordion}>{t.leaderboard.player}</span>
                 <span className={`${thAccordion} text-center`} onClick={() => toggleGuesserSort('cluesSolved')}>{t.leaderboard.cluesSolved}<SortArrow field="cluesSolved" activeField={guesserSort} dir={guesserDir} /></span>
@@ -281,9 +281,9 @@ export default function LeaderboardPage() {
                   <div
                     key={g.userId}
                     onClick={() => openProfile(g.userId)}
-                    className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600"
+                    className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-4 py-2.5 cursor-pointer transition-colors hover:border-gray-600"
                   >
-                    <div className="grid grid-cols-[1rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 px-4 py-1 items-center">
+                    <div className="grid grid-cols-[1rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 items-center">
                       <span className="text-gray-500 text-sm text-center">{i + 1}</span>
                       <span className="font-semibold text-sm text-white truncate">{g.displayName}</span>
                       <span className="text-sm text-gray-400 text-center">{g.cluesSolved}</span>
