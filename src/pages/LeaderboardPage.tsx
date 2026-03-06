@@ -203,8 +203,6 @@ export default function LeaderboardPage() {
     `px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${active ? `${color} text-white` : 'bg-gray-800 text-gray-400 hover:text-white'}`;
 
   const [expandedClueId, setExpandedClueId] = useState<string | null>(null);
-  const [expandedSpyId, setExpandedSpyId] = useState<string | null>(null);
-  const [expandedGuesserId, setExpandedGuesserId] = useState<string | null>(null);
 
   const thAccordion = 'py-2 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
 
@@ -238,7 +236,7 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_3rem_3rem_3rem] gap-x-2 px-4 py-1 items-center">
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_4rem_4rem_4rem] gap-x-2 px-4 py-1 items-center">
                 <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                 <span className={thAccordion}>{t.leaderboard.player}</span>
                 <span className={`${thAccordion} text-center`} onClick={() => toggleSpySort('cluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="cluesGiven" activeField={spySort} dir={spyDir} /></span>
@@ -246,42 +244,21 @@ export default function LeaderboardPage() {
                 <span className={`${thAccordion} text-center`} onClick={() => toggleSpySort('avgScoreOnClues')}>{t.leaderboard.avgScoreOnClues}<SortArrow field="avgScoreOnClues" activeField={spySort} dir={spyDir} /></span>
               </div>
               <div className="space-y-1">
-                {sortedSpymasters.map((s, i) => {
-                  const isExpanded = expandedSpyId === s.userId;
-                  return (
-                    <div key={s.userId}>
-                      <div
-                        onClick={() => setExpandedSpyId(isExpanded ? null : s.userId)}
-                        className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
-                      >
-                        <div className="grid grid-cols-[1.5rem_1fr_3rem_3rem_3rem] gap-x-2 items-center">
-                          <span className="text-gray-500 text-sm text-center">{i + 1}</span>
-                          <span className="font-semibold text-sm text-white truncate">{s.displayName}</span>
-                          <span className="text-sm text-gray-400 text-center">{s.cluesGiven}</span>
-                          <span className="text-sm text-gray-400 text-center">{s.avgWordsPerClue.toFixed(1)}</span>
-                          <span className="text-sm text-gray-400 text-center">{s.avgScoreOnClues.toFixed(1)}</span>
-                        </div>
-                      </div>
-                      {isExpanded && (
-                        <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                            <span><span className="text-gray-400">{t.leaderboard.cluesGiven}:</span> <span className="text-white font-semibold">{s.cluesGiven}</span></span>
-                            <span><span className="text-gray-400">{t.leaderboard.avgWordsPerClue}:</span> <span className="text-white font-semibold">{s.avgWordsPerClue.toFixed(1)}</span></span>
-                            <span><span className="text-gray-400">{t.leaderboard.avgScoreOnClues}:</span> <span className="text-white font-semibold">{s.avgScoreOnClues.toFixed(1)}</span></span>
-                            <div className="col-span-2 flex justify-end mt-1">
-                              <button
-                                onClick={() => openProfile(s.userId)}
-                                className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
-                              >
-                                {t.profile.title}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                {sortedSpymasters.map((s, i) => (
+                  <div
+                    key={s.userId}
+                    onClick={() => openProfile(s.userId)}
+                    className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600"
+                  >
+                    <div className="grid grid-cols-[1.5rem_1fr_4rem_4rem_4rem] gap-x-2 items-center">
+                      <span className="text-gray-500 text-sm text-center">{i + 1}</span>
+                      <span className="font-semibold text-sm text-white truncate">{s.displayName}</span>
+                      <span className="text-sm text-gray-400 text-center">{s.cluesGiven}</span>
+                      <span className="text-sm text-gray-400 text-center">{s.avgWordsPerClue.toFixed(1)}</span>
+                      <span className="text-sm text-gray-400 text-center">{s.avgScoreOnClues.toFixed(1)}</span>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
           )
@@ -292,7 +269,7 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_3rem_3rem_3rem] gap-x-2 px-4 py-1 items-center">
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_4rem_4rem_4rem] gap-x-2 px-4 py-1 items-center">
                 <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                 <span className={thAccordion}>{t.leaderboard.player}</span>
                 <span className={`${thAccordion} text-center`} onClick={() => toggleGuesserSort('cluesSolved')}>{t.leaderboard.cluesSolved}<SortArrow field="cluesSolved" activeField={guesserSort} dir={guesserDir} /></span>
@@ -300,42 +277,21 @@ export default function LeaderboardPage() {
                 <span className={`${thAccordion} text-center`} onClick={() => toggleGuesserSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={guesserSort} dir={guesserDir} /></span>
               </div>
               <div className="space-y-1">
-                {sortedGuessers.map((g, i) => {
-                  const isExpanded = expandedGuesserId === g.userId;
-                  return (
-                    <div key={g.userId}>
-                      <div
-                        onClick={() => setExpandedGuesserId(isExpanded ? null : g.userId)}
-                        className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
-                      >
-                        <div className="grid grid-cols-[1.5rem_1fr_3rem_3rem_3rem] gap-x-2 items-center">
-                          <span className="text-gray-500 text-sm text-center">{i + 1}</span>
-                          <span className="font-semibold text-sm text-white truncate">{g.displayName}</span>
-                          <span className="text-sm text-gray-400 text-center">{g.cluesSolved}</span>
-                          <span className="text-sm text-gray-400 text-center">{g.avgWordsPicked.toFixed(1)}</span>
-                          <span className="text-sm text-gray-400 text-center">{g.avgScore.toFixed(1)}</span>
-                        </div>
-                      </div>
-                      {isExpanded && (
-                        <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                            <span><span className="text-gray-400">{t.leaderboard.cluesSolved}:</span> <span className="text-white font-semibold">{g.cluesSolved}</span></span>
-                            <span><span className="text-gray-400">{t.leaderboard.avgWordsPicked}:</span> <span className="text-white font-semibold">{g.avgWordsPicked.toFixed(1)}</span></span>
-                            <span><span className="text-gray-400">{t.leaderboard.avgScore}:</span> <span className="text-white font-semibold">{g.avgScore.toFixed(1)}</span></span>
-                            <div className="col-span-2 flex justify-end mt-1">
-                              <button
-                                onClick={() => openProfile(g.userId)}
-                                className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
-                              >
-                                {t.profile.title}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                {sortedGuessers.map((g, i) => (
+                  <div
+                    key={g.userId}
+                    onClick={() => openProfile(g.userId)}
+                    className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600"
+                  >
+                    <div className="grid grid-cols-[1.5rem_1fr_4rem_4rem_4rem] gap-x-2 items-center">
+                      <span className="text-gray-500 text-sm text-center">{i + 1}</span>
+                      <span className="font-semibold text-sm text-white truncate">{g.displayName}</span>
+                      <span className="text-sm text-gray-400 text-center">{g.cluesSolved}</span>
+                      <span className="text-sm text-gray-400 text-center">{g.avgWordsPicked.toFixed(1)}</span>
+                      <span className="text-sm text-gray-400 text-center">{g.avgScore.toFixed(1)}</span>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
           )
