@@ -4,3 +4,8 @@ dist
 *.local
 .env
 .env.*
+
+# Claude Code
+tasks/
+CLAUDE.md
+.claude/
