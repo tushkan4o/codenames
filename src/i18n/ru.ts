@@ -350,7 +350,7 @@ export const ru = {
     complete: 'Отлично!',
     scenarioComplete: 'Вы завершили этот пример',
     nextScenario: 'Следующий пример',
-    selectModeAgain: 'Выбрать режим',
+    otherMode: 'Другой режим',
     toHome: 'На главную',
     // Captain scenario 1 (4x4 basics)
     captain1Title: 'Первые шаги',

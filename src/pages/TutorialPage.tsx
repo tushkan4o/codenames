@@ -144,6 +144,8 @@ export default function TutorialPage() {
   // ─── Scenario complete screen ────────────────────────────
   if (state.scenarioComplete && currentScenario) {
     const hasNext = state.scenarioIndex + 1 < currentScenarios.length;
+    const otherMode = state.mode === 'captain' ? 'scout' : 'captain';
+    const otherModeLabel = otherMode === 'captain' ? tt.captain : tt.scout;
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4">
         <h2 className="text-3xl font-extrabold text-white mb-2">{tt.complete}</h2>
@@ -158,6 +160,12 @@ export default function TutorialPage() {
               {tt.nextScenario}
             </button>
           )}
+          <button
+            onClick={() => machine.selectMode(otherMode)}
+            className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg transition-colors"
+          >
+            {tt.otherMode}: {otherModeLabel}
+          </button>
           <button
             onClick={() => navigate('/')}
             className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold text-lg transition-colors"
