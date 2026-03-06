@@ -104,7 +104,7 @@ export default function ResultsTabs({
           <button
             key={tab.key}
             onClick={() => { setActiveTab(tab.key); setSelectedAttemptIdx(null); onShowAttemptPicks?.([]); }}
-            className={`flex-1 px-2 py-2 text-xs font-semibold transition-colors whitespace-nowrap ${
+            className={`flex-1 px-2 py-2 text-xs font-semibold transition-colors whitespace-nowrap focus:outline-none ${
               activeTab === tab.key
                 ? 'bg-board-blue text-white rounded-lg'
                 : 'text-gray-400 hover:text-white'
