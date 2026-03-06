@@ -115,7 +115,7 @@ function reducer(state: TutorialState, action: Action): TutorialState {
 
     case 'ACKNOWLEDGE': {
       const step = getStep(state);
-      if (!step || step.action.type !== 'acknowledge') return state;
+      if (!step || (step.action.type !== 'acknowledge' && step.action.type !== 'auto')) return state;
       return advanceStep(state);
     }
 

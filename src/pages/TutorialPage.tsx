@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
 import { useTutorialMachine } from '../tutorial/useTutorialMachine';
@@ -17,6 +17,15 @@ export default function TutorialPage() {
   const tt = t.tutorial as Record<string, string>;
   const machine = useTutorialMachine();
   const { state, currentScenario, currentStep, currentScenarios, isActive } = machine;
+
+  // Auto-advance for 'auto' steps (delay + click to skip)
+  useEffect(() => {
+    if (!currentStep || currentStep.action.type !== 'auto') return;
+    const timer = setTimeout(() => {
+      machine.handleAcknowledge();
+    }, currentStep.action.delayMs);
+    return () => clearTimeout(timer);
+  }, [currentStep, machine]);
 
   // Border trace animation state (scout mode)
   const [revealingIndices, setRevealingIndices] = useState<Set<number>>(new Set());
@@ -301,8 +310,16 @@ export default function TutorialPage() {
         </button>
       </div>
 
-      {/* Tutorial overlay */}
-      {currentStep && (
+      {/* Click-to-skip overlay for auto-pause steps */}
+      {currentStep && currentStep.action.type === 'auto' && (
+        <div
+          className="fixed inset-0 z-[60] cursor-pointer"
+          onClick={() => machine.handleAcknowledge()}
+        />
+      )}
+
+      {/* Tutorial overlay (skip for auto-pause steps) */}
+      {currentStep && currentStep.action.type !== 'auto' && (
         <TutorialOverlay
           step={currentStep}
           onAcknowledge={() => machine.handleAcknowledge()}

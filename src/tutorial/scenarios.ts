@@ -203,9 +203,9 @@ const scout1: TutorialScenario = {
   ],
 };
 
-// ─── Scout Scenario 2: Wrong picks (5x5) ────────────────────────
+// ─── Scout Scenario 2: Wrong picks + full run (5x5) ─────────────
 // Same board as captain2
-// Clue: "МОРОЗ 6" — but player will make a mistake
+// Clue: "МОРОЗ 6" — player makes a blue mistake, then picks remaining reds
 const scout2: TutorialScenario = {
   id: 'scout2',
   mode: 'scout',
@@ -214,7 +214,7 @@ const scout2: TutorialScenario = {
   columns: 5,
   cards: captain2Cards.map(c => ({ ...c })),
   clue: { word: 'МОРОЗ', number: 6 },
-  clueTargetIndices: [0, 5, 7, 10, 12, 17],
+  clueTargetIndices: [0, 5, 7, 10, 12, 15],
   steps: [
     {
       id: 's2-intro',
@@ -231,12 +231,26 @@ const scout2: TutorialScenario = {
       tooltipPosition: 'top',
     },
     {
+      id: 's2-pause1',
+      textKey: '',
+      highlight: { type: 'none' },
+      action: { type: 'auto', delayMs: 3000 },
+      tooltipPosition: 'center',
+    },
+    {
       id: 's2-pick-correct2',
       textKey: 'scout2Step3',
       highlight: { type: 'card', cardIndex: 5 },
       action: { type: 'click-card', cardIndex: 5 },
       tooltipPosition: 'top',
       boardOverrides: { pickedIndices: [0] },
+    },
+    {
+      id: 's2-pause2',
+      textKey: '',
+      highlight: { type: 'none' },
+      action: { type: 'auto', delayMs: 3000 },
+      tooltipPosition: 'center',
     },
     {
       id: 's2-pick-wrong',
@@ -255,19 +269,93 @@ const scout2: TutorialScenario = {
       boardOverrides: { pickedIndices: [0, 5, 1] },
     },
     {
-      id: 's2-end-turn',
+      id: 's2-pause3',
+      textKey: '',
+      highlight: { type: 'none' },
+      action: { type: 'auto', delayMs: 3000 },
+      tooltipPosition: 'center',
+    },
+    {
+      id: 's2-pick-correct3',
       textKey: 'scout2Step6',
+      highlight: { type: 'card', cardIndex: 7 },
+      action: { type: 'click-card', cardIndex: 7 },
+      tooltipPosition: 'top',
+    },
+    {
+      id: 's2-pause4',
+      textKey: '',
+      highlight: { type: 'none' },
+      action: { type: 'auto', delayMs: 3000 },
+      tooltipPosition: 'center',
+    },
+    {
+      id: 's2-pick-correct4',
+      textKey: 'scout2Step7',
+      highlight: { type: 'card', cardIndex: 10 },
+      action: { type: 'click-card', cardIndex: 10 },
+      tooltipPosition: 'top',
+      boardOverrides: { pickedIndices: [0, 5, 1, 7] },
+    },
+    {
+      id: 's2-pause5',
+      textKey: '',
+      highlight: { type: 'none' },
+      action: { type: 'auto', delayMs: 3000 },
+      tooltipPosition: 'center',
+    },
+    {
+      id: 's2-pick-correct5',
+      textKey: 'scout2Step8',
+      highlight: { type: 'card', cardIndex: 12 },
+      action: { type: 'click-card', cardIndex: 12 },
+      tooltipPosition: 'top',
+      boardOverrides: { pickedIndices: [0, 5, 1, 7, 10] },
+    },
+    {
+      id: 's2-pause6',
+      textKey: '',
+      highlight: { type: 'none' },
+      action: { type: 'auto', delayMs: 3000 },
+      tooltipPosition: 'center',
+    },
+    {
+      id: 's2-pick-correct6',
+      textKey: 'scout2Step9',
+      highlight: { type: 'card', cardIndex: 15 },
+      action: { type: 'click-card', cardIndex: 15 },
+      tooltipPosition: 'top',
+      boardOverrides: { pickedIndices: [0, 5, 1, 7, 10, 12] },
+    },
+    {
+      id: 's2-explain-rules',
+      textKey: 'scout2Step10',
+      highlight: { type: 'none' },
+      action: { type: 'acknowledge' },
+      tooltipPosition: 'center',
+      boardOverrides: { pickedIndices: [0, 5, 1, 7, 10, 12, 15] },
+    },
+    {
+      id: 's2-pause7',
+      textKey: '',
+      highlight: { type: 'none' },
+      action: { type: 'auto', delayMs: 3000 },
+      tooltipPosition: 'center',
+    },
+    {
+      id: 's2-end-turn',
+      textKey: 'scout2Step11',
       highlight: { type: 'element', selector: '[data-tutorial-id="end-turn"]' },
       action: { type: 'click-button', buttonId: 'end-turn' },
       tooltipPosition: 'top',
     },
     {
       id: 's2-done',
-      textKey: 'scout2Step7',
+      textKey: 'scout2Step12',
       highlight: { type: 'none' },
       action: { type: 'acknowledge' },
       tooltipPosition: 'center',
-      boardOverrides: { pickedIndices: [0, 5, 1], showColors: true },
+      boardOverrides: { pickedIndices: [0, 5, 1, 7, 10, 12, 15], showColors: true },
     },
   ],
 };
