@@ -153,6 +153,7 @@ const scout1: TutorialScenario = {
   columns: 4,
   cards: captain1Cards.map(c => ({ ...c })),
   clue: { word: 'ЖИВОТНОЕ', number: 2 },
+  clueTargetIndices: [0, 5],
   steps: [
     {
       id: 's1-welcome',
@@ -213,6 +214,7 @@ const scout2: TutorialScenario = {
   columns: 5,
   cards: captain2Cards.map(c => ({ ...c })),
   clue: { word: 'МОРОЗ', number: 6 },
+  clueTargetIndices: [0, 5, 7, 10, 12, 17],
   steps: [
     {
       id: 's2-intro',

@@ -45,5 +45,6 @@ export interface TutorialScenario {
   columns: 4 | 5;
   cards: CardState[];
   clue?: { word: string; number: number };
+  clueTargetIndices?: number[];
   steps: TutorialStep[];
 }

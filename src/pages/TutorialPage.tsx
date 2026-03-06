@@ -7,6 +7,7 @@ import type { CardState } from '../types/game';
 import Board from '../components/board/Board';
 import ClueDisplay from '../components/clue/ClueDisplay';
 import TutorialOverlay from '../components/tutorial/TutorialOverlay';
+import TutorialResults from '../components/tutorial/TutorialResults';
 
 const REVEAL_DURATION = 800;
 
@@ -180,7 +181,7 @@ export default function TutorialPage() {
 
   const isCaptain = currentScenario.mode === 'captain';
   const boardConfig = BOARD_CONFIGS[currentScenario.columns === 4 ? '4x4' : '5x5'];
-  const redIndices = currentScenario.cards.filter(c => c.color === 'red').map(c => c.position);
+  const clueTargets = currentScenario.clueTargetIndices || [];
 
   return (
     <div className="min-h-screen pb-8">
@@ -217,7 +218,7 @@ export default function TutorialPage() {
           columns={currentScenario.columns}
           showColors={isCaptain || state.showColors}
           selectedIndices={[]}
-          targetIndices={isCaptain ? state.selectedTargets : (state.showColors ? redIndices : [])}
+          targetIndices={isCaptain ? state.selectedTargets : (state.showColors ? clueTargets : [])}
           nullIndices={state.selectedNulls}
           onCardClick={handleCardClick}
           disabled={false}
@@ -269,6 +270,21 @@ export default function TutorialPage() {
           </button>
         </div>
       )}
+
+      {/* Scout mode: results panel after reveal */}
+      {!isCaptain && state.showColors && currentScenario && (() => {
+        const correctCount = state.pickedIndices.filter(i => clueTargets.includes(i)).length;
+        const wrongCount = state.pickedIndices.filter(i => !clueTargets.includes(i)).length;
+        const demoScore = Math.max(0, Math.round((correctCount / clueTargets.length) * 100 - wrongCount * 15));
+        return (
+          <TutorialResults
+            cards={currentScenario.cards}
+            guessedIndices={state.pickedIndices}
+            targetIndices={clueTargets}
+            score={demoScore}
+          />
+        );
+      })()}
 
       {/* Back button */}
       <div className="flex justify-center mt-4">
