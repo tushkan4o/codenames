@@ -18,7 +18,7 @@ function formatDate(ts: number): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-const panelClass = 'bg-gray-800/60 rounded-b-lg px-4 py-3';
+const panelClass = 'bg-gray-800/60 rounded-lg px-4 py-3 mt-1';
 
 interface ResultsTabsProps {
   clueId: string;
@@ -97,16 +97,16 @@ export default function ResultsTabs({
 
   return (
     <div className="max-w-md mx-auto mt-3">
-      {/* Horizontal tab strip — flush with content panel */}
-      <div className="flex">
+      {/* Horizontal tab strip */}
+      <div className="flex gap-1">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => { setActiveTab(tab.key); setSelectedAttemptIdx(null); onShowAttemptPicks?.([]); }}
-            className={`flex-1 px-2 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap first:rounded-tl-lg last:rounded-tr-lg ${
+            className={`flex-1 px-2 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap rounded-lg ${
               activeTab === tab.key
                 ? 'bg-board-blue text-white'
-                : 'bg-gray-800/60 text-gray-400 hover:text-white'
+                : 'text-gray-400 hover:text-white'
             }`}
           >
             {tab.label}
@@ -140,46 +140,51 @@ export default function ResultsTabs({
             <p className="text-gray-500 mt-2">{t.results.firstSolve}</p>
           ) : null}
           {sortedDetails.length > 0 && (
-            <div className="mt-3 overflow-y-auto max-h-[220px]">
-              <div className="space-y-0">
-                {sortedDetails.map((detail, idx) => (
-                  <div
-                    key={`${detail.userId}-${detail.timestamp}`}
-                    onClick={() => handleAttemptClick(detail, idx)}
-                    className={`flex items-center justify-between py-1.5 px-1 cursor-pointer transition-colors rounded text-xs ${
-                      selectedAttemptIdx === idx ? 'bg-board-blue/15' : 'hover:bg-gray-700/30'
-                    }`}
+            <div className="mt-2 overflow-y-auto max-h-[220px]">
+              {/* Header */}
+              <div className="flex items-center justify-between px-1 pb-1 text-[10px] text-gray-600">
+                <span>{t.admin.player}</span>
+                <div className="flex items-center gap-3">
+                  <span
+                    className="cursor-pointer hover:text-gray-400 transition-colors select-none"
+                    onClick={() => {
+                      if (attemptSort === 'score') setAttemptDir((d) => d === 'desc' ? 'asc' : 'desc');
+                      else { setAttemptSort('score'); setAttemptDir('desc'); }
+                      setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
+                    }}
                   >
-                    <span className="text-gray-300 truncate max-w-[10rem]">
-                      {detail.displayName || detail.userId}
-                    </span>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span
-                        className="text-gray-500 cursor-pointer hover:text-gray-400 transition-colors select-none"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (attemptSort === 'score') setAttemptDir((d) => d === 'desc' ? 'asc' : 'desc');
-                          else { setAttemptSort('score'); setAttemptDir('desc'); }
-                          setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
-                        }}
-                      >
-                        <span className="text-white font-semibold">{detail.score}</span>
-                      </span>
-                      <span
-                        className="text-gray-600 cursor-pointer hover:text-gray-500 transition-colors select-none"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (attemptSort === 'timestamp') setAttemptDir((d) => d === 'asc' ? 'desc' : 'asc');
-                          else { setAttemptSort('timestamp'); setAttemptDir('asc'); }
-                          setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
-                        }}
-                      >
-                        {formatDate(detail.timestamp)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                    {t.results.score}{attemptSort === 'score' ? (attemptDir === 'desc' ? ' \u25BC' : ' \u25B2') : ''}
+                  </span>
+                  <span
+                    className="cursor-pointer hover:text-gray-400 transition-colors select-none"
+                    onClick={() => {
+                      if (attemptSort === 'timestamp') setAttemptDir((d) => d === 'asc' ? 'desc' : 'asc');
+                      else { setAttemptSort('timestamp'); setAttemptDir('asc'); }
+                      setSelectedAttemptIdx(null); onShowAttemptPicks?.([]);
+                    }}
+                  >
+                    {t.admin.clueDate}{attemptSort === 'timestamp' ? (attemptDir === 'desc' ? ' \u25BC' : ' \u25B2') : ''}
+                  </span>
+                </div>
               </div>
+              {/* Rows */}
+              {sortedDetails.map((detail, idx) => (
+                <div
+                  key={`${detail.userId}-${detail.timestamp}`}
+                  onClick={() => handleAttemptClick(detail, idx)}
+                  className={`flex items-center justify-between py-0.5 px-1 cursor-pointer transition-colors rounded text-xs leading-tight ${
+                    selectedAttemptIdx === idx ? 'bg-board-blue/15' : 'hover:bg-gray-700/30'
+                  }`}
+                >
+                  <span className="text-gray-300 truncate max-w-[10rem]">
+                    {detail.displayName || detail.userId}
+                  </span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-white font-semibold">{detail.score}</span>
+                    <span className="text-gray-600">{formatDate(detail.timestamp)}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

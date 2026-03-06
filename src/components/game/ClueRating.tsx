@@ -61,12 +61,9 @@ export default function ClueRating({ clueId, onRate, onReport, initialRating, sh
       {/* Main row: label + stars on left, buttons on right */}
       <div className="flex items-center justify-between px-1 py-2">
         <div className="flex items-center gap-2">
-          {!justRated && (
-            <span className="text-yellow-400 text-xs font-semibold">{t.rating.rateLabel}</span>
-          )}
-          {justRated && (
-            <span className="text-blue-400 text-xs">{t.rating.thanks}</span>
-          )}
+          <span className="text-yellow-400 text-xs font-semibold min-w-[4rem]">
+            {justRated ? t.rating.thanks : t.rating.rateLabel}
+          </span>
           <div className="flex gap-0.5">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
@@ -99,7 +96,7 @@ export default function ClueRating({ clueId, onRate, onReport, initialRating, sh
           {!disabled && (
             <button
               onClick={handleShare}
-              className="flex items-center gap-1 text-xs text-blue-400/70 hover:text-blue-400 transition-colors"
+              className="flex items-center gap-1 text-xs text-blue-400/70 hover:text-blue-400 transition-colors min-w-[5.5rem] justify-end"
             >
               <ShareIcon className="w-3.5 h-3.5" />
               {shareCopied ? t.rating.copied : t.rating.share}
