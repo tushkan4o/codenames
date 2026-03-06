@@ -83,22 +83,22 @@ export default function ClueRating({ clueId, onRate, onReport, initialRating, sh
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           {!shareOnly && !disabled && (
             <button
               onClick={() => setShowReportInput(!showReportInput)}
-              className="flex items-center gap-1 text-xs text-red-400/70 hover:text-red-400 transition-colors"
+              className="flex items-center gap-1 text-xs text-red-400/70 hover:text-red-400 transition-colors w-[6.5rem] justify-end"
             >
-              <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+              <ExclamationTriangleIcon className="w-3.5 h-3.5 shrink-0" />
               {t.rating.report}
             </button>
           )}
           {!disabled && (
             <button
               onClick={handleShare}
-              className="flex items-center gap-1 text-xs text-blue-400/70 hover:text-blue-400 transition-colors min-w-[5.5rem] justify-end"
+              className="flex items-center gap-1 text-xs text-blue-400/70 hover:text-blue-400 transition-colors w-[6.5rem] justify-end"
             >
-              <ShareIcon className="w-3.5 h-3.5" />
+              <ShareIcon className="w-3.5 h-3.5 shrink-0" />
               {shareCopied ? t.rating.copied : t.rating.share}
             </button>
           )}
