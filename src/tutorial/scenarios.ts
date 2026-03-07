@@ -193,16 +193,8 @@ const scout1: TutorialScenario = {
       boardOverrides: { pickedIndices: [0, 5] },
     },
     {
-      id: 's1-end-turn',
-      textKey: 'scout1Step6',
-      highlight: { type: 'element', selector: '[data-tutorial-id="end-turn"]' },
-      action: { type: 'click-button', buttonId: 'end-turn' },
-      tooltipPosition: 'top',
-      boardOverrides: { pickedIndices: [0, 5, 9] },
-    },
-    {
       id: 's1-done',
-      textKey: 'scout1Step7',
+      textKey: 'scout1Step6',
       highlight: { type: 'none' },
       action: { type: 'acknowledge' },
       tooltipPosition: 'center',
