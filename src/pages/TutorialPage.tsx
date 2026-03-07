@@ -9,6 +9,7 @@ import Board from '../components/board/Board';
 import ClueDisplay from '../components/clue/ClueDisplay';
 import TutorialHighlight from '../components/tutorial/TutorialOverlay';
 import ResultsTabs from '../components/game/ResultsTabs';
+import { computeGuessScore } from '../lib/scoring';
 
 const REVEAL_DURATION = 800;
 
@@ -308,9 +309,7 @@ export default function TutorialPage() {
 
       {/* Scout mode: results panel after reveal */}
       {!isCaptain && state.showColors && currentScenario && (() => {
-        const correctCount = state.pickedIndices.filter(i => clueTargets.includes(i)).length;
-        const wrongCount = state.pickedIndices.filter(i => !clueTargets.includes(i)).length;
-        const demoScore = Math.max(0, Math.round((correctCount / clueTargets.length) * 100 - wrongCount * 15));
+        const demoScore = computeGuessScore(state.pickedIndices, currentScenario.cards);
         return (
           <ResultsTabs
             clueId="demo"
