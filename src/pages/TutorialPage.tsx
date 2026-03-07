@@ -11,6 +11,20 @@ import ResultsTabs from '../components/game/ResultsTabs';
 
 const REVEAL_DURATION = 800;
 
+function TutorialNav() {
+  const navigate = useNavigate();
+  return (
+    <nav className="flex items-center justify-between px-4 py-3 bg-gray-900/80 border-b border-gray-800/50 backdrop-blur-sm">
+      <button
+        onClick={() => navigate('/')}
+        className="text-lg font-extrabold text-white hover:text-board-blue transition-colors tracking-tight"
+      >
+        CODENAMES
+      </button>
+    </nav>
+  );
+}
+
 export default function TutorialPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -84,8 +98,9 @@ export default function TutorialPage() {
   // ─── Mode selection screen ───────────────────────────────
   if (state.mode === null) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4">
-        <h1 className="text-5xl font-extrabold text-white mb-2 tracking-tight">{t.app.title}</h1>
+      <div className="min-h-screen">
+        <TutorialNav />
+        <div className="flex flex-col items-center justify-center px-4 pt-20">
         <p className="text-gray-400 mb-10">{tt.title}</p>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
@@ -105,12 +120,7 @@ export default function TutorialPage() {
           </button>
         </div>
 
-        <button
-          onClick={() => navigate('/')}
-          className="mt-8 px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold transition-colors"
-        >
-          {tt.toHome}
-        </button>
+        </div>
       </div>
     );
   }
@@ -119,7 +129,9 @@ export default function TutorialPage() {
   if (!isActive && !state.scenarioComplete) {
     const modeLabel = state.mode === 'captain' ? tt.captain : tt.scout;
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen">
+        <TutorialNav />
+        <div className="flex flex-col items-center justify-center px-4 pt-20">
         <h1 className="text-3xl font-extrabold text-white mb-2 tracking-tight">{tt.title}</h1>
         <p className="text-gray-400 mb-8">{modeLabel}</p>
 
@@ -146,6 +158,7 @@ export default function TutorialPage() {
         >
           {tt.back}
         </button>
+        </div>
       </div>
     );
   }
@@ -156,7 +169,9 @@ export default function TutorialPage() {
     const otherMode = state.mode === 'captain' ? 'scout' : 'captain';
     const otherModeLabel = otherMode === 'captain' ? tt.captain : tt.scout;
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen">
+        <TutorialNav />
+        <div className="flex flex-col items-center justify-center px-4 pt-20">
         <h2 className="text-3xl font-extrabold text-white mb-2">{tt.complete}</h2>
         <p className="text-gray-400 mb-8">{tt.scenarioComplete}</p>
 
@@ -182,6 +197,7 @@ export default function TutorialPage() {
             {tt.toHome}
           </button>
         </div>
+        </div>
       </div>
     );
   }
@@ -195,17 +211,16 @@ export default function TutorialPage() {
 
   return (
     <div className="min-h-screen pb-8">
-      {/* Header */}
-      <div className="text-center pt-4 mb-3">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">{t.app.title}</h1>
-        <div className="flex items-center justify-center gap-3 mt-0.5">
-          <span className={`text-sm font-semibold ${isCaptain ? 'text-board-blue' : 'text-gray-400'}`}>
-            {tt.title}: {isCaptain ? tt.captain : tt.scout}
-          </span>
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border bg-gray-700/50 text-gray-400 border-gray-600/30">
-            {boardConfig.size}
-          </span>
-        </div>
+      <TutorialNav />
+
+      {/* Sub-header */}
+      <div className="flex items-center justify-center gap-3 pt-3 mb-3">
+        <span className={`text-sm font-semibold ${isCaptain ? 'text-board-blue' : 'text-gray-400'}`}>
+          {tt.title}: {isCaptain ? tt.captain : tt.scout}
+        </span>
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border bg-gray-700/50 text-gray-400 border-gray-600/30">
+          {boardConfig.size}
+        </span>
       </div>
 
       {/* Clue display for scout mode */}
