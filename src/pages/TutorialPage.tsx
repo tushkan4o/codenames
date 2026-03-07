@@ -324,16 +324,6 @@ export default function TutorialPage() {
         );
       })()}
 
-      {/* Back button */}
-      <div className="flex justify-center mt-4">
-        <button
-          onClick={() => machine.goBack()}
-          className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-400 text-sm font-semibold transition-colors"
-        >
-          {tt.back}
-        </button>
-      </div>
-
       {/* Highlight ring around target element */}
       {currentStep && (
         <TutorialHighlight step={currentStep} />

@@ -44,8 +44,8 @@ const captain1: TutorialScenario = {
     {
       id: 'c1-select-targets',
       textKey: 'captain1Step3',
-      highlight: { type: 'cards', cardIndices: [0, 5] },
-      action: { type: 'click-cards', cardIndices: [0, 5] },
+      highlight: { type: 'cards', cardIndices: [0, 5, 9] },
+      action: { type: 'click-cards', cardIndices: [0, 5, 9] },
       tooltipPosition: 'top',
     },
     {
@@ -54,7 +54,7 @@ const captain1: TutorialScenario = {
       highlight: { type: 'element', selector: '[data-tutorial-id="clue-input"]' },
       action: { type: 'type-clue', word: 'ЖИВОТНОЕ' },
       tooltipPosition: 'top',
-      boardOverrides: { selectedTargets: [0, 5] },
+      boardOverrides: { selectedTargets: [0, 5, 9] },
     },
     {
       id: 'c1-submit',
@@ -78,14 +78,14 @@ const captain1: TutorialScenario = {
 //  ЗИМА(r)    КНИГА(b)   ОКЕАН(r)   СВЕТ(n)    МЫШЬ(b)
 //  ЛЕД(r)    РАКЕТА(b)  СНЕГ(r)    ПУСТЫНЯ(n) ГОРОД(b)
 //  МЕТЕЛЬ(r)  МАСКА(a)   ХОЛОД(r)   ЗВЕЗДА(b)  РОЗА(n)
-//  ЛЫЖИ(r)   КЛЮЧ(b)    МОРОЗ(r)   ВОЛНА(b)   ТАНЕЦ(n)
+//  ЛЫЖИ(r)   КЛЮЧ(b)    КАБАН(r)   ВОЛНА(b)   ТАНЕЦ(n)
 //  КАТОК(r)   ПЕСОК(n)   ШУБА(r)    ЗЕРКАЛО(b) КОФЕ(b)
 
 const captain2Cards: CardState[] = [
   card('ЗИМА', 'red', 0),     card('КНИГА', 'blue', 1),    card('ОКЕАН', 'red', 2),     card('СВЕТ', 'neutral', 3),  card('МЫШЬ', 'blue', 4),
   card('ЛЕД', 'red', 5),     card('РАКЕТА', 'blue', 6),   card('СНЕГ', 'red', 7),      card('ПУСТЫНЯ', 'neutral', 8), card('ГОРОД', 'blue', 9),
   card('МЕТЕЛЬ', 'red', 10),  card('МАСКА', 'assassin', 11), card('ХОЛОД', 'red', 12),  card('ЗВЕЗДА', 'blue', 13),  card('РОЗА', 'neutral', 14),
-  card('ЛЫЖИ', 'red', 15),   card('КЛЮЧ', 'blue', 16),    card('МОРОЗ', 'red', 17),    card('ВОЛНА', 'blue', 18),   card('ТАНЕЦ', 'neutral', 19),
+  card('ЛЫЖИ', 'red', 15),   card('КЛЮЧ', 'blue', 16),    card('КАБАН', 'red', 17),    card('ВОЛНА', 'blue', 18),   card('ТАНЕЦ', 'neutral', 19),
   card('КАТОК', 'red', 20),   card('ПЕСОК', 'neutral', 21), card('ШУБА', 'red', 22),    card('ЗЕРКАЛО', 'blue', 23), card('КОФЕ', 'blue', 24),
 ];
 
@@ -107,15 +107,15 @@ const captain2: TutorialScenario = {
     {
       id: 'c2-many-words',
       textKey: 'captain2Step2',
-      highlight: { type: 'cards', cardIndices: [0, 5, 7, 10, 12, 17] },
+      highlight: { type: 'cards', cardIndices: [0, 5, 7, 10, 12, 22] },
       action: { type: 'acknowledge' },
       tooltipPosition: 'top',
     },
     {
       id: 'c2-select-targets',
       textKey: 'captain2Step3',
-      highlight: { type: 'cards', cardIndices: [0, 5, 7, 10, 12, 17] },
-      action: { type: 'click-cards', cardIndices: [0, 5, 7, 10, 12, 17] },
+      highlight: { type: 'cards', cardIndices: [0, 5, 7, 10, 12, 22] },
+      action: { type: 'click-cards', cardIndices: [0, 5, 7, 10, 12, 22] },
       tooltipPosition: 'top',
     },
     {
@@ -124,7 +124,7 @@ const captain2: TutorialScenario = {
       highlight: { type: 'element', selector: '[data-tutorial-id="clue-input"]' },
       action: { type: 'type-clue', word: 'МОРОЗ' },
       tooltipPosition: 'top',
-      boardOverrides: { selectedTargets: [0, 5, 7, 10, 12, 17] },
+      boardOverrides: { selectedTargets: [0, 5, 7, 10, 12, 22] },
     },
     {
       id: 'c2-submit',
@@ -152,8 +152,8 @@ const scout1: TutorialScenario = {
   descKey: 'scout1Desc',
   columns: 4,
   cards: captain1Cards.map(c => ({ ...c })),
-  clue: { word: 'ЖИВОТНОЕ', number: 2 },
-  clueTargetIndices: [0, 5],
+  clue: { word: 'ЖИВОТНОЕ', number: 3 },
+  clueTargetIndices: [0, 5, 9],
   steps: [
     {
       id: 's1-welcome',
@@ -185,20 +185,28 @@ const scout1: TutorialScenario = {
       boardOverrides: { pickedIndices: [0] },
     },
     {
-      id: 's1-end-turn',
+      id: 's1-pick-third',
       textKey: 'scout1Step5',
-      highlight: { type: 'element', selector: '[data-tutorial-id="end-turn"]' },
-      action: { type: 'click-button', buttonId: 'end-turn' },
+      highlight: { type: 'card', cardIndex: 9 },
+      action: { type: 'click-card', cardIndex: 9 },
       tooltipPosition: 'top',
       boardOverrides: { pickedIndices: [0, 5] },
     },
     {
-      id: 's1-done',
+      id: 's1-end-turn',
       textKey: 'scout1Step6',
+      highlight: { type: 'element', selector: '[data-tutorial-id="end-turn"]' },
+      action: { type: 'click-button', buttonId: 'end-turn' },
+      tooltipPosition: 'top',
+      boardOverrides: { pickedIndices: [0, 5, 9] },
+    },
+    {
+      id: 's1-done',
+      textKey: 'scout1Step7',
       highlight: { type: 'none' },
       action: { type: 'acknowledge' },
       tooltipPosition: 'center',
-      boardOverrides: { pickedIndices: [0, 5], showColors: true },
+      boardOverrides: { pickedIndices: [0, 5, 9], showColors: true },
     },
   ],
 };
@@ -214,7 +222,7 @@ const scout2: TutorialScenario = {
   columns: 5,
   cards: captain2Cards.map(c => ({ ...c })),
   clue: { word: 'МОРОЗ', number: 6 },
-  clueTargetIndices: [0, 5, 7, 10, 12, 15],
+  clueTargetIndices: [0, 5, 7, 10, 12, 22],
   steps: [
     {
       id: 's2-intro',
@@ -278,20 +286,12 @@ const scout2: TutorialScenario = {
       boardOverrides: { pickedIndices: [0, 5, 1, 7, 10] },
     },
     {
-      id: 's2-pick-correct6',
-      textKey: 'scout2Step9',
-      highlight: { type: 'card', cardIndex: 15 },
-      action: { type: 'click-card', cardIndex: 15 },
-      tooltipPosition: 'top',
-      boardOverrides: { pickedIndices: [0, 5, 1, 7, 10, 12] },
-    },
-    {
       id: 's2-explain-rules',
       textKey: 'scout2Step10',
       highlight: { type: 'none' },
       action: { type: 'acknowledge' },
       tooltipPosition: 'center',
-      boardOverrides: { pickedIndices: [0, 5, 1, 7, 10, 12, 15] },
+      boardOverrides: { pickedIndices: [0, 5, 1, 7, 10, 12] },
     },
     {
       id: 's2-end-turn',
@@ -306,7 +306,7 @@ const scout2: TutorialScenario = {
       highlight: { type: 'none' },
       action: { type: 'acknowledge' },
       tooltipPosition: 'center',
-      boardOverrides: { pickedIndices: [0, 5, 1, 7, 10, 12, 15], showColors: true },
+      boardOverrides: { pickedIndices: [0, 5, 1, 7, 10, 12], showColors: true },
     },
   ],
 };
