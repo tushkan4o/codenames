@@ -27,7 +27,8 @@ type Action =
   | { type: 'ACKNOWLEDGE' }
   | { type: 'RESET' }
   | { type: 'GO_BACK' }
-  | { type: 'NEXT_SCENARIO' };
+  | { type: 'NEXT_SCENARIO' }
+  | { type: 'PREV_STEP' };
 
 const initialState: TutorialState = {
   mode: null,
@@ -99,6 +100,17 @@ function resetBoardState(state: TutorialState): TutorialState {
     showColors: false,
     scenarioComplete: false,
   };
+}
+
+function rewindToStep(state: TutorialState, targetIndex: number): TutorialState {
+  const scenario = getScenario(state);
+  if (!scenario || targetIndex < 0) return state;
+  let newState = { ...resetBoardState(state), stepIndex: targetIndex };
+  for (let i = 0; i <= targetIndex; i++) {
+    newState = applyBoardOverrides(newState, scenario.steps[i]);
+  }
+  newState.stepIndex = targetIndex;
+  return newState;
 }
 
 function reducer(state: TutorialState, action: Action): TutorialState {
@@ -194,6 +206,11 @@ function reducer(state: TutorialState, action: Action): TutorialState {
       return applyBoardOverrides(newState, firstStep);
     }
 
+    case 'PREV_STEP': {
+      if (state.stepIndex <= 0) return state;
+      return rewindToStep(state, state.stepIndex - 1);
+    }
+
     case 'GO_BACK':
       if (state.scenarioComplete || state.stepIndex > 0) {
         return { ...initialState, mode: state.mode };
@@ -231,6 +248,7 @@ export function useTutorialMachine() {
     handleButtonClick: useCallback((buttonId: string) => dispatch({ type: 'CLICK_BUTTON', buttonId }), []),
     handleAcknowledge: useCallback(() => dispatch({ type: 'ACKNOWLEDGE' }), []),
     nextScenario: useCallback(() => dispatch({ type: 'NEXT_SCENARIO' }), []),
+    prevStep: useCallback(() => dispatch({ type: 'PREV_STEP' }), []),
     goBack: useCallback(() => dispatch({ type: 'GO_BACK' }), []),
     reset: useCallback(() => dispatch({ type: 'RESET' }), []),
   };

@@ -1,29 +1,16 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n/useTranslation';
 import { useTutorialMachine } from '../tutorial/useTutorialMachine';
 import { BOARD_CONFIGS } from '../types/game';
 import type { CardState } from '../types/game';
+import NavBar from '../components/layout/NavBar';
 import Board from '../components/board/Board';
 import ClueDisplay from '../components/clue/ClueDisplay';
-import TutorialOverlay from '../components/tutorial/TutorialOverlay';
+import TutorialHighlight from '../components/tutorial/TutorialOverlay';
 import ResultsTabs from '../components/game/ResultsTabs';
 
 const REVEAL_DURATION = 800;
-
-function TutorialNav() {
-  const navigate = useNavigate();
-  return (
-    <nav className="flex items-center justify-between px-4 py-3 bg-gray-900/80 border-b border-gray-800/50 backdrop-blur-sm">
-      <button
-        onClick={() => navigate('/')}
-        className="text-lg font-extrabold text-white hover:text-board-blue transition-colors tracking-tight"
-      >
-        CODENAMES
-      </button>
-    </nav>
-  );
-}
 
 export default function TutorialPage() {
   const navigate = useNavigate();
@@ -31,15 +18,6 @@ export default function TutorialPage() {
   const tt = t.tutorial as Record<string, string>;
   const machine = useTutorialMachine();
   const { state, currentScenario, currentStep, currentScenarios, isActive } = machine;
-
-  // Auto-advance for 'auto' steps (delay + click to skip)
-  useEffect(() => {
-    if (!currentStep || currentStep.action.type !== 'auto') return;
-    const timer = setTimeout(() => {
-      machine.handleAcknowledge();
-    }, currentStep.action.delayMs);
-    return () => clearTimeout(timer);
-  }, [currentStep, machine]);
 
   // Border trace animation state (scout mode)
   const [revealingIndices, setRevealingIndices] = useState<Set<number>>(new Set());
@@ -95,31 +73,36 @@ export default function TutorialPage() {
     });
   }, [currentScenario, state.pickedIndices, state.showColors]);
 
+  // Tooltip text for current step
+  const stepText = currentStep ? (tt[currentStep.textKey] || currentStep.textKey) : '';
+  const isAcknowledge = currentStep?.action.type === 'acknowledge';
+  const canGoBack = state.stepIndex > 0;
+
   // ─── Mode selection screen ───────────────────────────────
   if (state.mode === null) {
     return (
       <div className="min-h-screen">
-        <TutorialNav />
+        <NavBar />
         <div className="flex flex-col items-center justify-center px-4 pt-20">
-        <p className="text-gray-400 mb-10">{tt.title}</p>
+          <h1 className="text-5xl font-extrabold text-white mb-2 tracking-tight">{t.app.title}</h1>
+          <p className="text-gray-400 mb-10">{tt.title}</p>
 
-        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-          <button
-            onClick={() => machine.selectMode('captain')}
-            className="flex-1 py-6 rounded-xl bg-board-red/80 hover:bg-board-red text-white font-bold text-lg transition-colors"
-          >
-            <div className="text-2xl mb-1">{tt.captain}</div>
-            <div className="text-sm font-normal opacity-80">{tt.captainDesc}</div>
-          </button>
-          <button
-            onClick={() => machine.selectMode('scout')}
-            className="flex-1 py-6 rounded-xl bg-board-blue/80 hover:bg-board-blue text-white font-bold text-lg transition-colors"
-          >
-            <div className="text-2xl mb-1">{tt.scout}</div>
-            <div className="text-sm font-normal opacity-80">{tt.scoutDesc}</div>
-          </button>
-        </div>
-
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <button
+              onClick={() => machine.selectMode('captain')}
+              className="w-full py-4 rounded-xl bg-board-red/80 hover:bg-board-red text-white font-bold text-lg transition-colors"
+            >
+              <div className="text-xl mb-0.5">{tt.captain}</div>
+              <div className="text-sm font-normal opacity-80">{tt.captainDesc}</div>
+            </button>
+            <button
+              onClick={() => machine.selectMode('scout')}
+              className="w-full py-4 rounded-xl bg-board-blue/80 hover:bg-board-blue text-white font-bold text-lg transition-colors"
+            >
+              <div className="text-xl mb-0.5">{tt.scout}</div>
+              <div className="text-sm font-normal opacity-80">{tt.scoutDesc}</div>
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -130,34 +113,34 @@ export default function TutorialPage() {
     const modeLabel = state.mode === 'captain' ? tt.captain : tt.scout;
     return (
       <div className="min-h-screen">
-        <TutorialNav />
+        <NavBar />
         <div className="flex flex-col items-center justify-center px-4 pt-20">
-        <h1 className="text-3xl font-extrabold text-white mb-2 tracking-tight">{tt.title}</h1>
-        <p className="text-gray-400 mb-8">{modeLabel}</p>
+          <h1 className="text-5xl font-extrabold text-white mb-2 tracking-tight">{t.app.title}</h1>
+          <p className="text-gray-400 mb-10">{tt.title}: {modeLabel}</p>
 
-        <div className="flex flex-col gap-3 w-full max-w-xs">
-          {currentScenarios.map((scenario, idx) => (
-            <button
-              key={scenario.id}
-              onClick={() => machine.selectScenario(idx)}
-              className="w-full py-4 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg transition-colors text-left px-5"
-            >
-              <span className="text-gray-500 mr-2">{idx + 1}.</span>
-              {tt[scenario.titleKey] || scenario.titleKey}
-              <p className="text-sm font-normal text-gray-400 mt-0.5">
-                {tt[scenario.descKey] || scenario.descKey}
-                <span className="ml-2 text-xs text-gray-500">{scenario.columns}x{scenario.columns}</span>
-              </p>
-            </button>
-          ))}
-        </div>
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            {currentScenarios.map((scenario, idx) => (
+              <button
+                key={scenario.id}
+                onClick={() => machine.selectScenario(idx)}
+                className="w-full py-4 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg transition-colors text-left px-5"
+              >
+                <span className="text-gray-500 mr-2">{idx + 1}.</span>
+                {tt[scenario.titleKey] || scenario.titleKey}
+                <p className="text-sm font-normal text-gray-400 mt-0.5">
+                  {tt[scenario.descKey] || scenario.descKey}
+                  <span className="ml-2 text-xs text-gray-500">{scenario.columns}x{scenario.columns}</span>
+                </p>
+              </button>
+            ))}
+          </div>
 
-        <button
-          onClick={() => machine.reset()}
-          className="mt-6 px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold transition-colors"
-        >
-          {tt.back}
-        </button>
+          <button
+            onClick={() => machine.reset()}
+            className="mt-6 px-6 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold transition-colors"
+          >
+            {tt.back}
+          </button>
         </div>
       </div>
     );
@@ -170,33 +153,33 @@ export default function TutorialPage() {
     const otherModeLabel = otherMode === 'captain' ? tt.captain : tt.scout;
     return (
       <div className="min-h-screen">
-        <TutorialNav />
+        <NavBar />
         <div className="flex flex-col items-center justify-center px-4 pt-20">
-        <h2 className="text-3xl font-extrabold text-white mb-2">{tt.complete}</h2>
-        <p className="text-gray-400 mb-8">{tt.scenarioComplete}</p>
+          <h1 className="text-5xl font-extrabold text-white mb-2 tracking-tight">{t.app.title}</h1>
+          <p className="text-gray-400 mb-10">{tt.scenarioComplete}</p>
 
-        <div className="flex flex-col gap-3 w-full max-w-xs">
-          {hasNext && (
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            {hasNext && (
+              <button
+                onClick={() => machine.nextScenario()}
+                className="w-full py-3 rounded-xl bg-board-blue hover:brightness-110 text-white font-bold text-lg transition-colors"
+              >
+                {tt.nextScenario}
+              </button>
+            )}
             <button
-              onClick={() => machine.nextScenario()}
-              className="w-full py-3 rounded-xl bg-board-blue hover:brightness-110 text-white font-bold text-lg transition-colors"
+              onClick={() => machine.selectMode(otherMode)}
+              className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg transition-colors"
             >
-              {tt.nextScenario}
+              {tt.otherMode}: {otherModeLabel}
             </button>
-          )}
-          <button
-            onClick={() => machine.selectMode(otherMode)}
-            className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg transition-colors"
-          >
-            {tt.otherMode}: {otherModeLabel}
-          </button>
-          <button
-            onClick={() => navigate('/')}
-            className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold text-lg transition-colors"
-          >
-            {tt.toHome}
-          </button>
-        </div>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold text-lg transition-colors"
+            >
+              {tt.toHome}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -211,7 +194,7 @@ export default function TutorialPage() {
 
   return (
     <div className="min-h-screen pb-8">
-      <TutorialNav />
+      <NavBar />
 
       {/* Sub-header */}
       <div className="flex items-center justify-center gap-3 pt-3 mb-3">
@@ -253,6 +236,33 @@ export default function TutorialPage() {
           revealDuration={REVEAL_DURATION}
         />
       </div>
+
+      {/* Tutorial tooltip — inline below board */}
+      {currentStep && stepText && (
+        <div className="max-w-md mx-auto mt-3 px-4">
+          <div className="bg-gray-800 border border-gray-600 rounded-xl p-4">
+            <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-line">{stepText}</p>
+            <div className="flex gap-2 mt-3">
+              {canGoBack && (
+                <button
+                  onClick={() => machine.prevStep()}
+                  className="flex-1 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold text-sm transition-colors"
+                >
+                  {tt.prev || tt.back}
+                </button>
+              )}
+              {isAcknowledge && (
+                <button
+                  onClick={() => machine.handleAcknowledge()}
+                  className="flex-1 py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold text-sm transition-colors"
+                >
+                  {tt.next}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Captain mode: clue input area */}
       {isCaptain && (
@@ -325,20 +335,9 @@ export default function TutorialPage() {
         </button>
       </div>
 
-      {/* Click-to-skip overlay for auto-pause steps */}
-      {currentStep && currentStep.action.type === 'auto' && (
-        <div
-          className="fixed inset-0 z-[60] cursor-pointer"
-          onClick={() => machine.handleAcknowledge()}
-        />
-      )}
-
-      {/* Tutorial overlay (skip for auto-pause steps) */}
-      {currentStep && currentStep.action.type !== 'auto' && (
-        <TutorialOverlay
-          step={currentStep}
-          onAcknowledge={() => machine.handleAcknowledge()}
-        />
+      {/* Highlight ring around target element */}
+      {currentStep && (
+        <TutorialHighlight step={currentStep} />
       )}
     </div>
   );

@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { TutorialStep } from '../../tutorial/types';
-import { useTranslation } from '../../i18n/useTranslation';
 
-interface TutorialOverlayProps {
+interface TutorialHighlightProps {
   step: TutorialStep;
-  onAcknowledge: () => void;
 }
 
 interface Rect {
@@ -15,32 +13,9 @@ interface Rect {
 }
 
 const PADDING = 6;
-const GAP = 8;
-const TOOLTIP_WIDTH = 320;
-const MARGIN = 12;
 
-export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlayProps) {
-  const { t } = useTranslation();
+export default function TutorialHighlight({ step }: TutorialHighlightProps) {
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
-  const [tooltipRect, setTooltipRect] = useState<{ width: number; height: number } | null>(null);
-  const [shake, setShake] = useState(false);
-  const tooltipRef = useRef<HTMLDivElement>(null);
-  const prevStepId = useRef(step.id);
-
-  useEffect(() => {
-    if (prevStepId.current !== step.id) {
-      setShake(false);
-      prevStepId.current = step.id;
-    }
-  }, [step.id]);
-
-  // Measure tooltip size after render
-  useEffect(() => {
-    if (tooltipRef.current) {
-      const r = tooltipRef.current.getBoundingClientRect();
-      setTooltipRect({ width: r.width, height: r.height });
-    }
-  }, [step.id, step.textKey]);
 
   const measureTarget = useCallback(() => {
     const hl = step.highlight;
@@ -94,95 +69,17 @@ export default function TutorialOverlay({ step, onAcknowledge }: TutorialOverlay
     };
   }, [measureTarget]);
 
-  const tutorialTexts = t.tutorial as Record<string, string>;
-  const text = tutorialTexts[step.textKey] || step.textKey;
-  const isAcknowledge = step.action.type === 'acknowledge';
-  const preferred = step.tooltipPosition || 'bottom';
-
-  const getTooltipStyle = (): React.CSSProperties => {
-    if (preferred === 'center' || !targetRect) {
-      return {
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-      };
-    }
-
-    const ttH = tooltipRect?.height || 150;
-    const vh = window.innerHeight;
-    const vw = window.innerWidth;
-
-    // Horizontal: center on target, clamp to viewport
-    const centerX = targetRect.left + targetRect.width / 2;
-    let left = centerX - TOOLTIP_WIDTH / 2;
-    left = Math.max(MARGIN, Math.min(left, vw - TOOLTIP_WIDTH - MARGIN));
-
-    // Vertical: try preferred side, fall back to other side, then clamp
-    const spaceAbove = targetRect.top - PADDING - GAP;
-    const spaceBelow = vh - (targetRect.top + targetRect.height + PADDING + GAP);
-
-    let top: number;
-
-    if (preferred === 'top' && spaceAbove >= ttH) {
-      // Fits above
-      top = targetRect.top - PADDING - GAP - ttH;
-    } else if (preferred === 'bottom' && spaceBelow >= ttH) {
-      // Fits below
-      top = targetRect.top + targetRect.height + PADDING + GAP;
-    } else if (spaceBelow >= spaceAbove) {
-      // More room below
-      top = targetRect.top + targetRect.height + PADDING + GAP;
-    } else {
-      // More room above
-      top = targetRect.top - PADDING - GAP - ttH;
-    }
-
-    // Final clamp to keep within viewport
-    top = Math.max(MARGIN, Math.min(top, vh - ttH - MARGIN));
-
-    return {
-      position: 'fixed',
-      top,
-      left,
-      width: TOOLTIP_WIDTH,
-    };
-  };
+  if (!targetRect || step.highlight.type === 'board') return null;
 
   return (
-    <>
-      {/* Highlight ring around target */}
-      {targetRect && step.highlight.type !== 'board' && (
-        <div
-          className="fixed z-[61] rounded-lg pointer-events-none ring-2 ring-board-blue animate-pulse"
-          style={{
-            top: targetRect.top - PADDING,
-            left: targetRect.left - PADDING,
-            width: targetRect.width + PADDING * 2,
-            height: targetRect.height + PADDING * 2,
-          }}
-        />
-      )}
-
-      {/* Tooltip */}
-      <div
-        ref={tooltipRef}
-        className={`z-[62] bg-gray-800 border border-gray-600 rounded-xl p-4 shadow-2xl max-w-[320px] ${
-          shake ? 'animate-shake' : ''
-        }`}
-        style={getTooltipStyle()}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-line">{text}</p>
-        {isAcknowledge && (
-          <button
-            onClick={onAcknowledge}
-            className="mt-3 w-full py-2 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold text-sm transition-colors"
-          >
-            {tutorialTexts.next || 'Далее'}
-          </button>
-        )}
-      </div>
-    </>
+    <div
+      className="fixed z-[61] rounded-lg pointer-events-none ring-2 ring-board-blue animate-pulse"
+      style={{
+        top: targetRect.top - PADDING,
+        left: targetRect.left - PADDING,
+        width: targetRect.width + PADDING * 2,
+        height: targetRect.height + PADDING * 2,
+      }}
+    />
   );
 }
