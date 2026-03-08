@@ -351,6 +351,16 @@ export default function ClueGivingPage() {
       <div className="px-2 sm:px-4 py-4 sm:py-6">
       <GameHeader mode="clue-giving" config={config} ranked={isRanked} colorCounts={{ red: config.redCount, blue: config.blueCount, neutral: config.neutralCount, assassin: config.assassinCount }} />
 
+      {/* Main hint */}
+      <div className={`transition-opacity ${submitting ? 'opacity-30' : ''}`}>
+        <p className="text-center text-gray-400 text-sm mb-1">
+          {t.game.selectTargetsTeam} <span className="text-board-red font-semibold">{t.game.yourTeam}</span> ({selectedTargets.length} {t.game.selected})
+        </p>
+        <p className="text-center text-gray-500 text-xs mb-1">
+          {t.game.clueZeroHint}
+        </p>
+      </div>
+
       {/* Action buttons */}
       <div className={`flex flex-wrap justify-center gap-2 mb-3 transition-opacity ${submitting ? 'opacity-30 pointer-events-none' : ''}`}>
         <button
@@ -458,16 +468,6 @@ export default function ClueGivingPage() {
           </div>
         </div>
       )}
-
-      {/* Main hint */}
-      <div className={`transition-opacity ${submitting ? 'opacity-30' : ''}`}>
-        <p className="text-center text-gray-400 text-sm mb-1">
-          {t.game.selectTargetsTeam} <span className="text-board-red font-semibold">{t.game.yourTeam}</span> ({selectedTargets.length} {t.game.selected})
-        </p>
-        <p className="text-center text-gray-500 text-xs mb-1">
-          {t.game.clueZeroHint}
-        </p>
-      </div>
 
       <Board
         cards={board.cards}
