@@ -583,9 +583,12 @@ async function handleProfileComments(req: VercelRequest, res: VercelResponse, sq
   if (req.method === 'GET') {
     const { profileUserId } = req.query;
     if (!profileUserId || typeof profileUserId !== 'string') return res.status(400).json({ error: 'profileUserId required' });
-    // Check if comments are disabled
-    const userRows = await sql`SELECT comments_disabled FROM users WHERE id = ${profileUserId}`;
-    const commentsDisabled = userRows.length > 0 && !!userRows[0].comments_disabled;
+    // Check if comments are disabled (graceful fallback if column doesn't exist yet)
+    let commentsDisabled = false;
+    try {
+      const userRows = await sql`SELECT comments_disabled FROM users WHERE id = ${profileUserId}`;
+      commentsDisabled = userRows.length > 0 && !!userRows[0].comments_disabled;
+    } catch { /* column may not exist yet */ }
     const rows = await sql`SELECT pc.id, pc.author_id, pc.content, pc.created_at, pc.reply_to_id, u.display_name,
       rpc.author_id as reply_author_id, ru.display_name as reply_display_name, rpc.content as reply_content
       FROM profile_comments pc LEFT JOIN users u ON pc.author_id = u.id
@@ -607,16 +610,24 @@ async function handleProfileComments(req: VercelRequest, res: VercelResponse, sq
     if (action === 'toggle_comments') {
       const { userId, disabled } = req.body;
       if (!userId) return res.status(400).json({ error: 'userId required' });
-      await sql`UPDATE users SET comments_disabled = ${!!disabled} WHERE id = ${userId}`;
+      try {
+        await sql`UPDATE users SET comments_disabled = ${!!disabled} WHERE id = ${userId}`;
+      } catch {
+        // Column may not exist — create it and retry
+        await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS comments_disabled BOOLEAN DEFAULT false`;
+        await sql`UPDATE users SET comments_disabled = ${!!disabled} WHERE id = ${userId}`;
+      }
       return res.json({ ok: true });
     }
     if (!profileUserId || !authorId || !content?.trim()) return res.status(400).json({ error: 'profileUserId, authorId, content required' });
     // Check if comments are disabled (allow profile owner to still comment)
     if (profileUserId !== authorId) {
-      const disabledRows = await sql`SELECT comments_disabled FROM users WHERE id = ${profileUserId}`;
-      if (disabledRows.length > 0 && disabledRows[0].comments_disabled) {
-        return res.status(403).json({ error: 'Comments disabled' });
-      }
+      try {
+        const disabledRows = await sql`SELECT comments_disabled FROM users WHERE id = ${profileUserId}`;
+        if (disabledRows.length > 0 && disabledRows[0].comments_disabled) {
+          return res.status(403).json({ error: 'Comments disabled' });
+        }
+      } catch { /* column may not exist yet — allow comment */ }
     }
     const now = Date.now();
     const trimmed = content.trim();
