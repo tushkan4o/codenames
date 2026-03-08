@@ -227,8 +227,8 @@ export default function LeaderboardPage() {
     } else { setClueSort(field); setClueDir('desc'); }
   }
 
-  const tabBtnClass = (active: boolean, color: string) =>
-    `px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${active ? `${color} text-white` : 'bg-gray-800 text-gray-400 hover:text-white'}`;
+  const tabBtnClass = (active: boolean) =>
+    `px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${active ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`;
 
   const [expandedClueId, setExpandedClueId] = useState<string | null>(null);
 
@@ -254,17 +254,17 @@ export default function LeaderboardPage() {
         <h1 className="text-2xl font-extrabold text-white mb-4 text-center">{t.leaderboard.title}</h1>
 
         <div className="flex justify-center gap-2 mb-4">
-          <button onClick={() => setTab('overall')} className={tabBtnClass(tab === 'overall', 'bg-emerald-600')}>{t.leaderboard.overall}</button>
-          <button onClick={() => setTab('spymasters')} className={tabBtnClass(tab === 'spymasters', 'bg-board-blue')}>{t.leaderboard.spymasters}</button>
-          <button onClick={() => setTab('guessers')} className={tabBtnClass(tab === 'guessers', 'bg-gray-600')}>{t.leaderboard.guessers}</button>
-          <button onClick={() => setTab('clues')} className={tabBtnClass(tab === 'clues', 'bg-board-red')}>{t.leaderboard.clues}</button>
+          <button onClick={() => setTab('overall')} className={tabBtnClass(tab === 'overall')}>{t.leaderboard.overall}</button>
+          <button onClick={() => setTab('spymasters')} className={tabBtnClass(tab === 'spymasters')}>{t.leaderboard.spymasters}</button>
+          <button onClick={() => setTab('guessers')} className={tabBtnClass(tab === 'guessers')}>{t.leaderboard.guessers}</button>
+          <button onClick={() => setTab('clues')} className={tabBtnClass(tab === 'clues')}>{t.leaderboard.clues}</button>
         </div>
 
         {tab === 'overall' && (
           sortedOverall.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
-            <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+            <div className="overflow-y-auto flex-1 min-h-0">
               <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_4.5rem_4.5rem_4.5rem] gap-x-1 pl-2 pr-0 py-1 items-center">
                 <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                 <span className={thAccordion}>{t.leaderboard.player}</span>
@@ -297,7 +297,7 @@ export default function LeaderboardPage() {
           sortedSpymasters.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
-            <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+            <div className="overflow-y-auto flex-1 min-h-0">
               <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 pr-0 py-1 items-center">
                 <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                 <span className={thAccordion}>{t.leaderboard.player}</span>
@@ -330,7 +330,7 @@ export default function LeaderboardPage() {
           sortedGuessers.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
-            <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+            <div className="overflow-y-auto flex-1 min-h-0">
               <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 pr-0 py-1 items-center">
                 <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                 <span className={thAccordion}>{t.leaderboard.player}</span>
@@ -363,7 +363,7 @@ export default function LeaderboardPage() {
           sortedClues.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
-            <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+            <div className="overflow-y-auto flex-1 min-h-0">
               <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_5rem_9rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
                 <span className={thAccordion} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></span>
                 <span className={`${thAccordion} text-left hidden sm:block`}>{t.leaderboard.author}</span>

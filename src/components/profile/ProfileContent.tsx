@@ -572,14 +572,14 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           </button>
           <button
             onClick={() => setTab('solved')}
-            className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'solved' ? 'bg-gray-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+            className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'solved' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.profile.solvedTab}
             {stats && <span className="ml-1 text-xs opacity-70">({stats.cluesSolved})</span>}
           </button>
           <button
             onClick={() => setTab('comments')}
-            className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'comments' ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+            className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'comments' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.profile.commentsTab}
             {profileComments.length > 0 && <span className="ml-1 text-xs opacity-70">({profileComments.length})</span>}
@@ -591,7 +591,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           cluesGiven.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesGiven}</p>
           ) : (
-            <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+            <div className="overflow-y-auto flex-1 min-h-0">
               <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
                 <span className={thClass} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></span>
                 <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleGivenSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={givenSort} dir={givenDir} /></span>
@@ -701,7 +701,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           solvedEntries.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesSolved}</p>
           ) : (
-            <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+            <div className="overflow-y-auto flex-1 min-h-0">
               <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
                 <span className={thClass} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
                 <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={solvedSort} dir={solvedDir} /></span>
@@ -848,7 +848,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             {profileComments.length === 0 ? (
               <p className="text-center text-gray-500">{t.results.noComments}</p>
             ) : (
-              <div className="overflow-y-auto flex-1 min-h-0 space-y-2" style={{ scrollbarGutter: 'stable' }}>
+              <div className="overflow-y-auto flex-1 min-h-0 space-y-2">
                 {profileComments.map((c) => (
                   <div key={c.id} className="text-sm group">
                     <div className="flex items-center gap-2">
