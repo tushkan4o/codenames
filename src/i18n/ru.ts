@@ -211,6 +211,7 @@ export const ru = {
     selectCountry: 'Выбрать страну',
     nameHistory: 'Другие имена:',
     noNameHistory: 'Не было других имён',
+    currentName: 'сейчас',
   },
   rating: {
     rateClue: 'Оцените подсказку:',

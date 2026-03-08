@@ -378,9 +378,9 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const thClass = 'py-2 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
 
   const starIcon = rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>;
-  const checkIcon = solvedFilter === 'all' ? '✓' : solvedFilter === 'solved' ? <span className="text-board-blue">✓</span> : <span className="text-gray-600">✓</span>;
-  const starTitle = rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные';
-  const checkTitle = solvedFilter === 'all' ? 'Все' : solvedFilter === 'solved' ? 'Решённые' : 'Нерешённые';
+  const checkIcon = solvedFilter === 'all' ? '✓' : solvedFilter === 'solved' ? <span className="text-board-blue">✓</span> : <span className="text-gray-600">–</span>;
+  const starTitle = rankedFilter === 'all' ? 'Все подсказки (рейтинговые и обычные)' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные';
+  const checkTitle = solvedFilter === 'all' ? 'Все подсказки (решённые и не решённые)' : solvedFilter === 'solved' ? 'Решённые' : 'Нерешённые';
 
   return (
     <>
@@ -432,7 +432,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             ) : (
               <div className="relative">
                 <h1
-                  className={`text-2xl font-extrabold text-white truncate ${isOwnProfile ? 'cursor-pointer hover:text-board-blue' : 'cursor-pointer hover:text-gray-300'} transition-colors`}
+                  className={`text-2xl font-extrabold text-white break-words ${isOwnProfile ? 'cursor-pointer hover:text-board-blue' : 'cursor-pointer hover:text-gray-300'} transition-colors`}
                   onClick={() => {
                     if (isOwnProfile) {
                       setNickDraft(stats?.displayName || profileId);
@@ -447,22 +447,22 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                 {/* Name history popover (other profiles) */}
                 {showNameHistory && !isOwnProfile && (
                   <div ref={nameHistoryRef} className="absolute top-full left-0 mt-1 z-20 bg-gray-800 border border-gray-600 rounded-lg shadow-xl p-3 min-w-[180px] max-w-[280px]">
-                    <div className="text-xs font-semibold text-gray-400 mb-2">{t.profile.nameHistory || 'Другие имена:'}</div>
-                    {nameHistory && nameHistory.length > 0 ? (
-                      <div className="space-y-1 max-h-40 overflow-y-auto">
-                        {nameHistory.map((entry, i) => (
-                          <div key={i} className="text-sm">
-                            <span className="text-white">{entry.oldName}</span>
-                            <span className="text-gray-500 text-xs ml-2">{formatDate(entry.changedAt)}</span>
-                          </div>
-                        ))}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-semibold text-gray-400">{t.profile.nameHistory || 'Другие имена:'}</div>
+                      <button onClick={() => setShowNameHistory(false)} className="text-gray-500 hover:text-white text-lg leading-none transition-colors ml-2">&times;</button>
+                    </div>
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      <div className="text-sm">
+                        <span className="text-white font-semibold">{stats?.displayName || profileId}</span>
+                        <span className="text-gray-500 text-xs ml-2">{'← ' + (t.profile.currentName || 'сейчас')}</span>
                       </div>
-                    ) : (
-                      <div className="text-sm text-gray-500">{t.profile.noNameHistory || 'Не было других имён'}</div>
-                    )}
-                    <button onClick={() => setShowNameHistory(false)} className="mt-2 text-xs text-gray-500 hover:text-white transition-colors">
-                      {t.results.close || 'Закрыть'}
-                    </button>
+                      {nameHistory && nameHistory.length > 0 && nameHistory.map((entry, i) => (
+                        <div key={i} className="text-sm">
+                          <span className="text-white">{entry.oldName}</span>
+                          <span className="text-gray-500 text-xs ml-2">{formatDate(entry.changedAt)}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
