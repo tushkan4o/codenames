@@ -385,8 +385,8 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   return (
     <>
       <div className="flex flex-col flex-1 min-h-0">
-        {/* Profile header: avatar + info */}
-        <div className="flex items-start gap-4 mb-3 pr-6">
+        {/* Profile header: avatar + info + rating */}
+        <div className="flex items-start gap-4 mb-3">
           {/* Avatar */}
           <div
             className={`w-16 h-16 rounded-lg bg-gray-700 shrink-0 overflow-hidden flex items-center justify-center ${isOwnProfile ? 'cursor-pointer hover:ring-2 hover:ring-board-blue transition-all' : ''}`}
@@ -550,16 +550,15 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
               })()
             )}
           </div>
-        </div>
 
-        {/* Stats row */}
-        {stats && (
-          <div className="flex items-center justify-center gap-4 text-sm mb-3 pb-3 border-b border-gray-700/50">
-            <span className="text-gray-400"><span className="text-white font-bold">{stats.cluesGiven}</span> {t.profile.cluesGivenShort}</span>
-            <span className="text-gray-400"><span className="text-white font-bold">{stats.cluesSolved}</span> {t.profile.cluesSolvedShort}</span>
-            <span className="text-gray-400"><span className="text-white font-bold">{stats.avgScore}</span> {t.profile.avgShort}</span>
-          </div>
-        )}
+          {/* Rating square (top-right, symmetrical to avatar) */}
+          {stats && (
+            <div className="w-16 h-16 rounded-lg bg-gray-700 shrink-0 flex flex-col items-center justify-center">
+              <span className="text-white font-extrabold text-lg leading-none">{Math.round(stats.avgScore * 50)}</span>
+              <span className="text-gray-400 text-[0.6rem] font-semibold mt-0.5">{t.profile.rating}</span>
+            </div>
+          )}
+        </div>
 
         <div className="flex justify-center gap-2 mb-4">
           <button
@@ -567,12 +566,14 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'given' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.profile.givenTab}
+            {stats && <span className="ml-1 text-xs opacity-70">({stats.cluesGiven})</span>}
           </button>
           <button
             onClick={() => setTab('solved')}
             className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'solved' ? 'bg-gray-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.profile.solvedTab}
+            {stats && <span className="ml-1 text-xs opacity-70">({stats.cluesSolved})</span>}
           </button>
           <button
             onClick={() => setTab('comments')}
