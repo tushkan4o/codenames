@@ -349,7 +349,7 @@ export default function ClueGivingPage() {
     <div className="min-h-screen">
       <NavBar />
       <div className="px-2 sm:px-4 py-4 sm:py-6">
-      <GameHeader mode="clue-giving" config={config} ranked={isRanked} />
+      <GameHeader mode="clue-giving" config={config} ranked={isRanked} colorCounts={{ red: config.redCount, blue: config.blueCount, neutral: config.neutralCount, assassin: config.assassinCount }} />
 
       {/* Action buttons */}
       <div className={`flex flex-wrap justify-center gap-2 mb-3 transition-opacity ${submitting ? 'opacity-30 pointer-events-none' : ''}`}>

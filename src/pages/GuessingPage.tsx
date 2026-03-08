@@ -533,23 +533,8 @@ export default function GuessingPage() {
     <div className="min-h-screen">
       <NavBar />
       <div className="px-2 sm:px-4 py-4 sm:py-6">
-      <GameHeader mode="guessing" config={config} ranked={clue.ranked !== false} />
+      <GameHeader mode="guessing" config={config} ranked={clue.ranked !== false} colorCounts={phase === 'picking' ? colorCounts : null} />
       <ClueDisplay word={clue.word} number={clue.number} teamColor="red" />
-
-      {colorCounts && phase === 'picking' && (
-        <div className="flex items-center justify-center gap-1.5 mt-2">
-          {[
-            { key: 'red', bg: 'bg-board-red' },
-            { key: 'blue', bg: 'bg-board-blue' },
-            { key: 'neutral', bg: 'bg-board-neutral' },
-            { key: 'assassin', bg: 'bg-board-assassin border border-gray-600' },
-          ].map(({ key, bg }) => (
-            <div key={key} className={`w-7 h-7 rounded ${bg} flex items-center justify-center text-white font-bold text-xs`}>
-              {colorCounts[key as keyof typeof colorCounts]}
-            </div>
-          ))}
-        </div>
-      )}
 
       <p className="text-center text-gray-400 text-sm mt-3 mb-1">
         {assassinHit
@@ -557,8 +542,8 @@ export default function GuessingPage() {
           : phase === 'done'
             ? t.game.resultsRevealed
             : clue.number === 0
-              ? <>{t.game.avoidHintClue0} — <span className="text-board-red">{redPickedCount} / ? {t.game.redFound}</span></>
-              : `${t.game.selectWords} — ${redPickedCount} / ${effectiveTargetCount} ${t.game.pickedRedCount}`}
+              ? <>{t.game.avoidHintClue0} — <span className="text-board-red">{redPickedCount} / ?</span> {t.game.redFound}</>
+              : <>{t.game.selectWords} — <span className="text-board-red">{redPickedCount} / {effectiveTargetCount}</span> {t.game.pickedRedCount}</>}
       </p>
 
       {isPicking && (
