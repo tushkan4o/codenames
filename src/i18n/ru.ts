@@ -171,6 +171,7 @@ export const ru = {
     avgScore: 'Рейтинг',
     overall: 'Общий',
     overallRating: 'Рейтинг',
+    gamesPlayed: 'Сыграно',
     rankedSolved: 'Решено',
     clues: 'Подсказки',
     clueWord: 'Подсказка',

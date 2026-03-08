@@ -228,7 +228,7 @@ export default function LeaderboardPage() {
   }
 
   const tabBtnClass = (active: boolean) =>
-    `px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${active ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`;
+    `px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold text-[0.65rem] sm:text-sm transition-colors ${active ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`;
 
   const [expandedClueId, setExpandedClueId] = useState<string | null>(null);
 
@@ -269,7 +269,8 @@ export default function LeaderboardPage() {
                 <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 py-1 items-center">
                   <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                   <span className={thAccordion}>{t.leaderboard.player}</span>
-                  <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rankedCluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="rankedCluesGiven" activeField={overallSort} dir={overallDir} /></span>
+                  <span className={`${thAccordion} text-center sm:hidden`}>{t.leaderboard.gamesPlayed}</span>
+                  <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleOverallSort('rankedCluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="rankedCluesGiven" activeField={overallSort} dir={overallDir} /></span>
                   <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleOverallSort('rankedCluesSolved')}>{t.leaderboard.cluesSolved}<SortArrow field="rankedCluesSolved" activeField={overallSort} dir={overallDir} /></span>
                   <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rating')}>{t.leaderboard.overallRating}<SortArrow field="rating" activeField={overallSort} dir={overallDir} /></span>
                 </div>
@@ -285,7 +286,8 @@ export default function LeaderboardPage() {
                       <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 items-center">
                         <span className="text-gray-500 text-sm text-center">{i + 1}</span>
                         <span className="font-semibold text-sm text-white truncate">{o.displayName}</span>
-                        <span className="text-sm text-gray-400 text-center">{o.rankedCluesGiven}</span>
+                        <span className="text-sm text-gray-400 text-center sm:hidden">{o.rankedCluesGiven + o.rankedCluesSolved}</span>
+                        <span className="text-sm text-gray-400 text-center hidden sm:block">{o.rankedCluesGiven}</span>
                         <span className="text-sm text-gray-400 text-center hidden sm:block">{o.rankedCluesSolved}</span>
                         <span className="text-sm text-amber-400 font-bold text-center">{o.rating}</span>
                       </div>

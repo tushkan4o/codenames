@@ -84,17 +84,15 @@ export default function TutorialPage() {
     return (
       <div className="min-h-screen">
         <NavBar />
-        <div className="flex flex-col items-center justify-center px-4 pt-20">
-          <div className="w-full max-w-xs mb-6">
-            <button
-              onClick={() => navigate(-1)}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-          </div>
+        <div className="flex flex-col items-center justify-center px-4 pt-20 relative">
+          <button
+            onClick={() => navigate(-1)}
+            className="absolute left-4 top-12 text-gray-400 hover:text-white transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
           <h1 className="text-5xl font-extrabold text-white mb-2 tracking-tight">{t.app.title}</h1>
           <p className="text-gray-400 mb-10">{tt.title}</p>
 

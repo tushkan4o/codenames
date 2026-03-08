@@ -563,8 +563,8 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
 
           {/* Rating square (top-right, symmetrical to avatar) — ranked only */}
           {stats && (
-            <div className="w-16 h-16 rounded-lg border-2 border-gray-600 shrink-0 flex flex-col items-center justify-center">
-              <span className="text-amber-400 text-2xl leading-none" style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontWeight: 800 }}>{Math.round((stats.rankedAvgScore ?? 0) * 50)}</span>
+            <div className="w-16 h-16 rounded-lg border-2 border-gray-600 shrink-0 flex flex-col items-center justify-center mr-6">
+              <span className="text-amber-400 text-2xl leading-none" style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontWeight: 800 }}>{Math.round((stats.rankedAvgScore ?? 0) * 50) || '–'}</span>
               <span className="text-gray-500 text-[0.55rem] font-semibold mt-1.5">{t.profile.rating}</span>
             </div>
           )}
@@ -575,21 +575,21 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
         <div className="flex justify-center gap-2 mb-4">
           <button
             onClick={() => setTab('given')}
-            className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'given' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+            className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold text-[0.65rem] sm:text-sm transition-colors ${tab === 'given' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.profile.givenTab}
             {stats && <span className="ml-1 text-xs opacity-70">({stats.cluesGiven})</span>}
           </button>
           <button
             onClick={() => setTab('solved')}
-            className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'solved' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+            className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold text-[0.65rem] sm:text-sm transition-colors ${tab === 'solved' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.profile.solvedTab}
             {stats && <span className="ml-1 text-xs opacity-70">({stats.cluesSolved})</span>}
           </button>
           <button
             onClick={() => setTab('comments')}
-            className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${tab === 'comments' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+            className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold text-[0.65rem] sm:text-sm transition-colors ${tab === 'comments' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.profile.commentsTab}
             {profileComments.length > 0 && <span className="ml-1 text-xs opacity-70">({profileComments.length})</span>}
