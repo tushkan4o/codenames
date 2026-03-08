@@ -22,7 +22,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <NavBar />
-      <div className="flex flex-col items-center justify-center px-4 pt-20">
+      <div className="flex flex-col items-center justify-center px-4 pt-10">
         <h1 className="text-5xl font-extrabold text-white mb-2 tracking-tight">{t.app.title}</h1>
         <p className="text-gray-400 mb-10">{t.app.subtitle}</p>
 
