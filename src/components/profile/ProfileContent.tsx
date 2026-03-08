@@ -470,19 +470,29 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
 
             {/* Country */}
             {editingCountry && isOwnProfile ? (
-              <div className="mb-1">
-                <select
-                  autoFocus
-                  value={stats?.country || ''}
-                  onChange={(e) => handleSelectCountry(e.target.value)}
-                  onBlur={() => setEditingCountry(false)}
-                  className="bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-sm text-white focus:border-board-blue focus:outline-none"
+              <div className="mb-1 relative">
+                <div
+                  className="bg-gray-800 border border-gray-600 rounded overflow-y-auto"
+                  style={{ maxHeight: '20rem' }}
                 >
-                  <option value="">—</option>
+                  <div
+                    className="flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-gray-700 transition-colors"
+                    onClick={() => { handleSelectCountry(''); }}
+                  >
+                    <span className="text-sm text-gray-400">—</span>
+                  </div>
                   {COUNTRIES.map((ct) => (
-                    <option key={ct.code} value={ct.code}>{ct.flag} {ct.name}</option>
+                    <div
+                      key={ct.code}
+                      className={`flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-gray-700 transition-colors ${stats?.country === ct.code ? 'bg-board-blue/20' : ''}`}
+                      onClick={() => { handleSelectCountry(ct.code); }}
+                    >
+                      <img src={`https://flagcdn.com/w40/${ct.code.toLowerCase()}.png`} alt={ct.flag} className="w-5 h-3.5 rounded-sm object-cover shrink-0" />
+                      <span className="text-sm text-white">{ct.name}</span>
+                    </div>
                   ))}
-                </select>
+                </div>
+                <div className="fixed inset-0 z-[-1]" onClick={() => setEditingCountry(false)} />
               </div>
             ) : (
               (() => {
@@ -490,10 +500,10 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                 if (c) {
                   return (
                     <div
-                      className={`text-sm text-gray-400 ${isOwnProfile ? 'cursor-pointer hover:text-gray-300' : ''} transition-colors`}
+                      className={`flex items-center text-sm text-gray-400 ${isOwnProfile ? 'cursor-pointer hover:text-gray-300' : ''} transition-colors`}
                       onClick={() => { if (isOwnProfile) setEditingCountry(true); }}
                     >
-                      <img src={`https://flagcdn.com/w40/${c.code.toLowerCase()}.png`} alt={c.flag} className="inline-block w-5 h-3.5 mr-1 align-text-bottom rounded-sm object-cover" /> {c.name}
+                      <img src={`https://flagcdn.com/w40/${c.code.toLowerCase()}.png`} alt={c.flag} className="w-5 h-3.5 mr-1 rounded-sm object-cover" /> {c.name}
                     </div>
                   );
                 } else if (isOwnProfile) {
