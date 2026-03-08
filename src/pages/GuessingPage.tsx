@@ -592,7 +592,7 @@ export default function GuessingPage() {
 
       {showHelp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowHelp(false)}>
-          <div className="bg-gray-800 rounded-xl p-6 max-w-md mx-4 relative max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-gray-800 rounded-xl p-6 max-w-md sm:max-w-[33.6rem] mx-4 relative max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setShowHelp(false)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
             <h3 className="text-white font-bold text-lg mb-3">{t.help.scoutTitle}</h3>
             <p className="text-gray-300 text-sm whitespace-pre-line leading-relaxed">{t.help.scoutRules}</p>
