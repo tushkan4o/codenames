@@ -579,7 +579,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           {/* Rating square (top-right, symmetrical to avatar) — ranked only */}
           {stats && (
             <div className="w-16 h-16 rounded-lg border-2 border-gray-600 shrink-0 flex flex-col items-center justify-center mr-6">
-              <span className="text-amber-400 text-2xl leading-none" style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontWeight: 800 }}>{(stats.rankedAvgScore ?? 0) > 0 ? ((stats.rankedAvgScore ?? 0) * 50).toFixed(1) : '–'}</span>
+              <span className="text-amber-400 text-2xl leading-none" style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontWeight: 800 }}>{(stats.rankedAvgScore ?? 0) > 0 ? Math.round((stats.rankedAvgScore ?? 0) * 50 * 10) / 10 : '–'}</span>
               <span className="text-gray-500 text-[0.55rem] font-semibold mt-1.5">{t.profile.rating}</span>
             </div>
           )}
