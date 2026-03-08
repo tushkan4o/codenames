@@ -92,6 +92,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'profile-comments': return handleProfileComments(req, res, sql);
     case 'leaderboard': return handleLeaderboard(req, res, sql);
     case 'stats': return handleUserStats(req, res, sql);
+    case 'profile': return handleProfile(req, res, sql);
+    case 'nameHistory': return handleNameHistory(req, res, sql);
     case 'claim-session': return handleClaimSession(req, res, sql);
     case 'check-session': return handleCheckSession(req, res, sql);
     case 'save-state': return handleSaveState(req, res, sql);
@@ -746,8 +748,11 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
   const { userId } = req.query;
   if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
 
-  const userRows = await sql`SELECT display_name FROM users WHERE id = ${userId}`;
+  const userRows = await sql`SELECT display_name, avatar_url, bio, country FROM users WHERE id = ${userId}`;
   const displayName = userRows.length > 0 ? (userRows[0].display_name as string) : userId;
+  const avatarUrl = userRows.length > 0 ? (userRows[0].avatar_url as string | null) || undefined : undefined;
+  const bio = userRows.length > 0 ? (userRows[0].bio as string | null) || undefined : undefined;
+  const country = userRows.length > 0 ? (userRows[0].country as string | null) || undefined : undefined;
 
   const clues = await sql`SELECT id, number FROM clues WHERE user_id = ${userId}`;
   const cluesGiven = clues.length;
@@ -774,7 +779,58 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
     displayName, cluesGiven, avgWordsPerClue: Math.round(avgWordsPerClue * 10) / 10,
     avgScoreOnClues: Math.round(avgScoreOnClues * 10) / 10, cluesSolved,
     avgWordsPicked: Math.round(avgWordsPicked * 10) / 10, avgScore: Math.round(avgScore * 10) / 10,
+    ...(avatarUrl ? { avatarUrl } : {}),
+    ...(bio ? { bio } : {}),
+    ...(country ? { country } : {}),
   });
+}
+
+// ==================== PROFILE (bio, country) ====================
+
+async function handleProfile(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+  if (req.method === 'GET') {
+    const { userId } = req.query;
+    if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
+    const rows = await sql`SELECT display_name, avatar_url, bio, country FROM users WHERE id = ${userId}`;
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    const u = rows[0];
+    return res.json({
+      displayName: u.display_name,
+      avatarUrl: u.avatar_url || null,
+      bio: u.bio || '',
+      country: u.country || '',
+    });
+  }
+
+  if (req.method === 'PATCH') {
+    const { userId, bio, country } = req.body || {};
+    if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
+    const existing = await sql`SELECT id FROM users WHERE id = ${userId}`;
+    if (existing.length === 0) return res.status(404).json({ error: 'User not found' });
+    if (typeof bio === 'string') {
+      const trimmedBio = bio.trim().slice(0, 200);
+      await sql`UPDATE users SET bio = ${trimmedBio} WHERE id = ${userId}`;
+    }
+    if (typeof country === 'string') {
+      await sql`UPDATE users SET country = ${country.trim().slice(0, 10)} WHERE id = ${userId}`;
+    }
+    return res.json({ ok: true });
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
+// ==================== NAME HISTORY ====================
+
+async function handleNameHistory(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  const { userId } = req.query;
+  if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
+  const rows = await sql`SELECT old_name, changed_at FROM name_history WHERE user_id = ${userId} ORDER BY changed_at DESC LIMIT 50`;
+  return res.json(rows.map((r: Record<string, unknown>) => ({
+    oldName: r.old_name as string,
+    changedAt: Number(r.changed_at),
+  })));
 }
 
 // ==================== SESSION CLAIM / CHECK ====================
@@ -995,6 +1051,11 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read)`;
     await sql`CREATE TABLE IF NOT EXISTS profile_comments (id SERIAL PRIMARY KEY, profile_user_id TEXT NOT NULL REFERENCES users(id), author_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL, reply_to_id INT)`;
     await sql`ALTER TABLE profile_comments ADD COLUMN IF NOT EXISTS reply_to_id INT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT ''`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS country TEXT DEFAULT ''`;
+    await sql`CREATE TABLE IF NOT EXISTS name_history (id SERIAL PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), old_name TEXT NOT NULL, changed_at BIGINT NOT NULL)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_name_history_user ON name_history(user_id)`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

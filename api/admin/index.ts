@@ -258,8 +258,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (trimmed.length < 2) return res.status(400).json({ error: 'name_too_short' });
       if (trimmed.length > 20) return res.status(400).json({ error: 'name_too_long' });
       if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(trimmed)) return res.status(400).json({ error: 'invalid_chars' });
-      const existing = await sql`SELECT id FROM users WHERE id = ${userId}`;
+      const existing = await sql`SELECT id, display_name FROM users WHERE id = ${userId}`;
       if (existing.length === 0) return res.status(404).json({ error: 'User not found' });
+      // Save old name to history before renaming
+      const oldName = existing[0].display_name as string;
+      if (oldName !== trimmed) {
+        await sql`INSERT INTO name_history (user_id, old_name, changed_at) VALUES (${userId}, ${oldName}, ${Date.now()})`;
+      }
       await sql`UPDATE users SET display_name = ${trimmed} WHERE id = ${userId}`;
       return res.json({ ok: true, displayName: trimmed });
     }
@@ -299,6 +304,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Delete user's own activity on other clues
+      await sql`DELETE FROM name_history WHERE user_id = ${userId}`;
       await sql`DELETE FROM profile_comments WHERE profile_user_id = ${userId} OR author_id = ${userId}`;
       await sql`DELETE FROM notifications WHERE user_id = ${userId}`;
       await sql`DELETE FROM comments WHERE user_id = ${userId}`;

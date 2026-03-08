@@ -240,7 +240,9 @@ async function handleComplete(req: VercelRequest, res: VercelResponse) {
   const existing = await sql`SELECT id FROM users WHERE id = ${id}`;
   if (existing.length > 0) return res.status(409).json({ error: 'name_taken' });
   try {
-    await sql`INSERT INTO users (id, display_name, created_at, preferences) VALUES (${id}, ${trimmed}, ${now}, ${JSON.stringify({})})`;
+    // Auto-detect country from Vercel IP header
+    const ipCountry = (req.headers['x-vercel-ip-country'] as string) || '';
+    await sql`INSERT INTO users (id, display_name, created_at, preferences, country) VALUES (${id}, ${trimmed}, ${now}, ${JSON.stringify({})}, ${ipCountry})`;
     await sql`INSERT INTO oauth_accounts (provider, provider_id, user_id, email, provider_name, linked_at)
       VALUES (${payload.provider as string}, ${payload.providerId as string}, ${id}, ${payload.email as string | null}, ${payload.providerName as string}, ${now})`;
     const newUser = { id, display_name: trimmed, created_at: now, preferences: {}, is_admin: false };
@@ -284,10 +286,15 @@ async function handleRename(req: VercelRequest, res: VercelResponse) {
   if (trimmed.length > 20) return res.status(400).json({ error: 'name_too_long' });
   if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(trimmed)) return res.status(400).json({ error: 'invalid_chars' });
   const sql = neon(process.env.DATABASE_URL!);
-  const existing = await sql`SELECT id FROM users WHERE id = ${userId}`;
+  const existing = await sql`SELECT id, display_name FROM users WHERE id = ${userId}`;
   if (existing.length === 0) return res.status(404).json({ error: 'User not found' });
   const oauthCheck = await sql`SELECT provider FROM oauth_accounts WHERE user_id = ${userId}`;
   if (oauthCheck.length === 0) return res.status(403).json({ error: 'oauth_required' });
+  // Save old name to history before renaming
+  const oldName = existing[0].display_name as string;
+  if (oldName !== trimmed) {
+    await sql`INSERT INTO name_history (user_id, old_name, changed_at) VALUES (${userId}, ${oldName}, ${Date.now()})`;
+  }
   await sql`UPDATE users SET display_name = ${trimmed} WHERE id = ${userId}`;
   res.json({ ok: true, displayName: trimmed });
 }

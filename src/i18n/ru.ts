@@ -202,6 +202,11 @@ export const ru = {
     cluesSolvedShort: 'решено',
     avgShort: 'ср.',
     statsTitle: 'Статистика подсказок',
+    editAvatar: 'Изменить аватар',
+    bioPlaceholder: 'Расскажите о себе...',
+    selectCountry: 'Выбрать страну',
+    nameHistory: 'Другие имена:',
+    noNameHistory: 'Не было других имён',
   },
   rating: {
     rateClue: 'Оцените подсказку:',

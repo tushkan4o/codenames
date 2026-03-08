@@ -1,5 +1,5 @@
 import type { BoardSize, Clue, GuessResult } from '../types/game';
-import type { UserStats } from '../types/user';
+import type { UserStats, NameHistoryEntry } from '../types/user';
 
 async function post<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
@@ -322,5 +322,27 @@ export const api = {
 
   async deleteComment(id: number, adminId: string): Promise<void> {
     await del(`/api/game?route=comments&id=${id}&adminId=${encodeURIComponent(adminId)}`);
+  },
+
+  // Profile
+  async uploadAvatar(userId: string, file: File): Promise<{ avatarUrl: string }> {
+    const res = await fetch(`/api/auth/avatar?userId=${encodeURIComponent(userId)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async updateProfile(userId: string, data: { bio?: string; country?: string }): Promise<void> {
+    await patch('/api/game?route=profile', { userId, ...data });
+  },
+
+  async getNameHistory(userId: string): Promise<NameHistoryEntry[]> {
+    return get(`/api/game?route=nameHistory&userId=${encodeURIComponent(userId)}`);
   },
 };

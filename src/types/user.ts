@@ -41,4 +41,12 @@ export interface UserStats {
   cluesSolved: number;
   avgWordsPicked: number;
   avgScore: number;
+  avatarUrl?: string;
+  bio?: string;
+  country?: string;
+}
+
+export interface NameHistoryEntry {
+  oldName: string;
+  changedAt: number;
 }

@@ -5,9 +5,10 @@ import { useProfileModal } from '../../context/ProfileModalContext';
 import { useTranslation } from '../../i18n/useTranslation';
 import { api } from '../../lib/api';
 import { canPlayRanked, buildRankedLockMessage } from '../../lib/rankedAccess';
+import { COUNTRIES, getCountryByCode } from '../../lib/countries';
 import BoardReviewModal from '../game/BoardReviewModal';
 import type { Clue, GuessResult } from '../../types/game';
-import type { UserStats } from '../../types/user';
+import type { UserStats, NameHistoryEntry } from '../../types/user';
 
 const ACTIVE_GUESS_KEY = 'codenames_active_guess';
 
@@ -61,7 +62,6 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [tab, setTab] = useState<Tab>('given');
   const [modalClue, setModalClue] = useState<Clue | null>(null);
   const [modalResult, setModalResult] = useState<GuessResult | undefined>(undefined);
-  const [confirmDeleteUser, setConfirmDeleteUser] = useState(false);
   const [confirmDeleteClue, setConfirmDeleteClue] = useState<string | null>(null);
   const [clueStatsMap, setClueStatsMap] = useState<Record<string, ClueStats>>({});
   const [rankedFilter, setRankedFilter] = useState<RankedFilter>('all');
@@ -83,8 +83,17 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [commentSending, setCommentSending] = useState(false);
   const [commentReplyTo, setCommentReplyTo] = useState<{ id: number; displayName: string; content: string } | null>(null);
   const commentInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
-
+  // Profile header editing state
+  const [editingNick, setEditingNick] = useState(false);
+  const [nickDraft, setNickDraft] = useState('');
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioDraft, setBioDraft] = useState('');
+  const [editingCountry, setEditingCountry] = useState(false);
+  const [nameHistory, setNameHistory] = useState<NameHistoryEntry[] | null>(null);
+  const [showNameHistory, setShowNameHistory] = useState(false);
+  const nameHistoryRef = useRef<HTMLDivElement>(null);
 
   // Load profile data only when profileId changes (not on user/settings updates)
   useEffect(() => {
@@ -231,10 +240,55 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     return isOwnProfile || mySolvedClueIds.has(clueId) || clueUserId === user?.id;
   }
 
-  async function handleAdminDeleteUser() {
-    if (!user?.isAdmin || !profileId) return;
-    await api.adminDeleteUser(user.id, profileId);
-    navigate('/');
+  async function handleAvatarUpload(file: File) {
+    if (!user || !isOwnProfile) return;
+    try {
+      const result = await api.uploadAvatar(user.id, file);
+      setStats((prev) => prev ? { ...prev, avatarUrl: result.avatarUrl } : prev);
+    } catch (err) {
+      console.error('Failed to upload avatar:', err);
+    }
+  }
+
+  async function handleSaveNick() {
+    if (!user || !isOwnProfile || !nickDraft.trim()) return;
+    try {
+      const result = await api.renameUser(user.id, nickDraft.trim());
+      setStats((prev) => prev ? { ...prev, displayName: result.displayName } : prev);
+      setEditingNick(false);
+    } catch (err) {
+      console.error('Failed to rename:', err);
+    }
+  }
+
+  async function handleSaveBio() {
+    if (!user || !isOwnProfile) return;
+    try {
+      await api.updateProfile(user.id, { bio: bioDraft.trim() });
+      setStats((prev) => prev ? { ...prev, bio: bioDraft.trim() } : prev);
+      setEditingBio(false);
+    } catch (err) {
+      console.error('Failed to update bio:', err);
+    }
+  }
+
+  async function handleSelectCountry(code: string) {
+    if (!user || !isOwnProfile) return;
+    try {
+      await api.updateProfile(user.id, { country: code });
+      setStats((prev) => prev ? { ...prev, country: code } : prev);
+      setEditingCountry(false);
+    } catch (err) {
+      console.error('Failed to update country:', err);
+    }
+  }
+
+  async function handleShowNameHistory() {
+    if (nameHistory === null) {
+      const history = await api.getNameHistory(profileId);
+      setNameHistory(history);
+    }
+    setShowNameHistory((prev) => !prev);
   }
 
   async function handleAdminDeleteClue(clueId: string) {
@@ -331,32 +385,179 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   return (
     <>
       <div className="flex flex-col flex-1 min-h-0">
-        {/* Header: nickname left, stats right */}
-        <div className="flex items-start justify-between mb-3 pr-6">
-          <h1 className="text-xl font-extrabold text-white truncate">{stats?.displayName || profileId}</h1>
-          {stats && (
-            <div className="text-right shrink-0 ml-4">
-              <div className="text-xs font-semibold text-gray-500 uppercase mb-1">{t.profile.statsTitle}</div>
-              <div className="flex items-center gap-3 text-sm">
-                <span className="text-gray-400"><span className="text-white font-bold">{stats.cluesGiven}</span> {t.profile.cluesGivenShort}</span>
-                <span className="text-gray-400"><span className="text-white font-bold">{stats.cluesSolved}</span> {t.profile.cluesSolvedShort}</span>
-                <span className="text-gray-400"><span className="text-white font-bold">{stats.avgScore}</span> {t.profile.avgShort}</span>
-              </div>
-            </div>
+        {/* Profile header: avatar + info */}
+        <div className="flex items-start gap-4 mb-3 pr-6">
+          {/* Avatar */}
+          <div
+            className={`w-16 h-16 rounded-lg bg-gray-700 shrink-0 overflow-hidden flex items-center justify-center ${isOwnProfile ? 'cursor-pointer hover:ring-2 hover:ring-board-blue transition-all' : ''}`}
+            onClick={() => { if (isOwnProfile) avatarInputRef.current?.click(); }}
+            title={isOwnProfile ? (t.profile.editAvatar || 'Изменить аватар') : undefined}
+          >
+            {stats?.avatarUrl ? (
+              <img src={stats.avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <svg className="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            )}
+          </div>
+          {isOwnProfile && (
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleAvatarUpload(file);
+                e.target.value = '';
+              }}
+            />
           )}
-        </div>
 
-        {user?.isAdmin && !isOwnProfile && (
-          <div className="flex justify-center mb-3">
-            {confirmDeleteUser ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-red-400">{t.admin.confirmDeleteUser.replace('{name}', profileId)}</span>
-                <button onClick={handleAdminDeleteUser} className="px-3 py-1 text-sm font-bold text-white bg-board-red/80 hover:bg-board-red rounded transition-colors">{t.admin.confirm}</button>
-                <button onClick={() => setConfirmDeleteUser(false)} className="px-3 py-1 text-sm font-bold text-gray-400 bg-gray-700 hover:bg-gray-600 rounded transition-colors">{t.admin.cancel}</button>
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            {/* Nickname */}
+            {editingNick && isOwnProfile ? (
+              <div className="flex items-center gap-2 mb-1">
+                <input
+                  autoFocus
+                  value={nickDraft}
+                  onChange={(e) => setNickDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveNick(); if (e.key === 'Escape') setEditingNick(false); }}
+                  className="text-2xl font-extrabold bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-white focus:border-board-blue focus:outline-none w-full"
+                  maxLength={20}
+                />
+                <button onClick={handleSaveNick} className="text-board-blue hover:text-blue-300 text-sm font-bold shrink-0">OK</button>
+                <button onClick={() => setEditingNick(false)} className="text-gray-500 hover:text-white text-sm shrink-0">ESC</button>
               </div>
             ) : (
-              <button onClick={() => setConfirmDeleteUser(true)} className="px-4 py-2 text-sm font-bold text-white bg-board-red/80 hover:bg-board-red rounded-lg transition-colors">{t.admin.deleteUser}</button>
+              <div className="relative">
+                <h1
+                  className={`text-2xl font-extrabold text-white truncate ${isOwnProfile ? 'cursor-pointer hover:text-board-blue' : 'cursor-pointer hover:text-gray-300'} transition-colors`}
+                  onClick={() => {
+                    if (isOwnProfile) {
+                      setNickDraft(stats?.displayName || profileId);
+                      setEditingNick(true);
+                    } else {
+                      handleShowNameHistory();
+                    }
+                  }}
+                >
+                  {stats?.displayName || profileId}
+                </h1>
+                {/* Name history popover (other profiles) */}
+                {showNameHistory && !isOwnProfile && (
+                  <div ref={nameHistoryRef} className="absolute top-full left-0 mt-1 z-20 bg-gray-800 border border-gray-600 rounded-lg shadow-xl p-3 min-w-[180px] max-w-[280px]">
+                    <div className="text-xs font-semibold text-gray-400 mb-2">{t.profile.nameHistory || 'Другие имена:'}</div>
+                    {nameHistory && nameHistory.length > 0 ? (
+                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                        {nameHistory.map((entry, i) => (
+                          <div key={i} className="text-sm">
+                            <span className="text-white">{entry.oldName}</span>
+                            <span className="text-gray-500 text-xs ml-2">{formatDate(entry.changedAt)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500">{t.profile.noNameHistory || 'Не было других имён'}</div>
+                    )}
+                    <button onClick={() => setShowNameHistory(false)} className="mt-2 text-xs text-gray-500 hover:text-white transition-colors">
+                      {t.results.close || 'Закрыть'}
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
+
+            {/* Country */}
+            {editingCountry && isOwnProfile ? (
+              <div className="mb-1">
+                <select
+                  autoFocus
+                  value={stats?.country || ''}
+                  onChange={(e) => handleSelectCountry(e.target.value)}
+                  onBlur={() => setEditingCountry(false)}
+                  className="bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-sm text-white focus:border-board-blue focus:outline-none"
+                >
+                  <option value="">—</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              (() => {
+                const c = stats?.country ? getCountryByCode(stats.country) : null;
+                if (c) {
+                  return (
+                    <div
+                      className={`text-sm text-gray-400 ${isOwnProfile ? 'cursor-pointer hover:text-gray-300' : ''} transition-colors`}
+                      onClick={() => { if (isOwnProfile) setEditingCountry(true); }}
+                    >
+                      {c.flag} {c.name}
+                    </div>
+                  );
+                } else if (isOwnProfile) {
+                  return (
+                    <div
+                      className="text-sm text-gray-600 cursor-pointer hover:text-gray-400 transition-colors italic"
+                      onClick={() => setEditingCountry(true)}
+                    >
+                      {t.profile.selectCountry || 'Выбрать страну'}
+                    </div>
+                  );
+                }
+                return null;
+              })()
+            )}
+
+            {/* Bio */}
+            {editingBio && isOwnProfile ? (
+              <div className="flex items-center gap-2 mt-1">
+                <input
+                  autoFocus
+                  value={bioDraft}
+                  onChange={(e) => setBioDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveBio(); if (e.key === 'Escape') setEditingBio(false); }}
+                  placeholder={t.profile.bioPlaceholder || 'Расскажите о себе...'}
+                  className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-sm text-white focus:border-board-blue focus:outline-none"
+                  maxLength={200}
+                />
+                <button onClick={handleSaveBio} className="text-board-blue hover:text-blue-300 text-xs font-bold shrink-0">OK</button>
+              </div>
+            ) : (
+              (() => {
+                const hasBio = stats?.bio && stats.bio.trim().length > 0;
+                if (hasBio) {
+                  return (
+                    <div
+                      className={`text-sm text-gray-400 mt-0.5 ${isOwnProfile ? 'cursor-pointer hover:text-gray-300' : ''} transition-colors`}
+                      onClick={() => { if (isOwnProfile) { setBioDraft(stats?.bio || ''); setEditingBio(true); } }}
+                    >
+                      {stats!.bio}
+                    </div>
+                  );
+                } else if (isOwnProfile) {
+                  return (
+                    <div
+                      className="text-sm text-gray-600 mt-0.5 cursor-pointer hover:text-gray-400 transition-colors italic"
+                      onClick={() => { setBioDraft(''); setEditingBio(true); }}
+                    >
+                      {t.profile.bioPlaceholder || 'Расскажите о себе...'}
+                    </div>
+                  );
+                }
+                return null;
+              })()
+            )}
+          </div>
+        </div>
+
+        {/* Stats row */}
+        {stats && (
+          <div className="flex items-center justify-center gap-4 text-sm mb-3 pb-3 border-b border-gray-700/50">
+            <span className="text-gray-400"><span className="text-white font-bold">{stats.cluesGiven}</span> {t.profile.cluesGivenShort}</span>
+            <span className="text-gray-400"><span className="text-white font-bold">{stats.cluesSolved}</span> {t.profile.cluesSolvedShort}</span>
+            <span className="text-gray-400"><span className="text-white font-bold">{stats.avgScore}</span> {t.profile.avgShort}</span>
           </div>
         )}
 
