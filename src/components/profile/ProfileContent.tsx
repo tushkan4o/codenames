@@ -551,17 +551,13 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             )}
           </div>
 
-          {/* Rating square (top-right, symmetrical to avatar) — ranked only, dash if <5 */}
-          {stats && (() => {
-            const hasEnough = (stats.rankedCluesGiven ?? 0) >= 5 || (stats.rankedCluesSolved ?? 0) >= 5;
-            const rating = hasEnough ? Math.round((stats.rankedAvgScore ?? 0) * 50) : null;
-            return (
-              <div className="w-16 h-16 rounded-lg bg-gray-700 shrink-0 flex flex-col items-center justify-center gap-0.5">
-                <span className="text-amber-400 font-extrabold text-xl leading-none">{rating !== null ? rating : '—'}</span>
-                <span className="text-gray-400 text-[0.6rem] font-semibold">{t.profile.rating}</span>
-              </div>
-            );
-          })()}
+          {/* Rating square (top-right, symmetrical to avatar) — ranked only */}
+          {stats && (
+            <div className="w-16 h-16 rounded-lg bg-gray-700 shrink-0 flex flex-col items-center justify-center gap-0.5">
+              <span className="text-amber-400 font-extrabold text-xl leading-none">{Math.round((stats.rankedAvgScore ?? 0) * 50)}</span>
+              <span className="text-gray-400 text-[0.6rem] font-semibold">{t.profile.rating}</span>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-gray-700/50 mb-3"></div>

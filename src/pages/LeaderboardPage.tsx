@@ -50,6 +50,7 @@ interface ClueStatEntry {
 interface OverallEntry {
   userId: string;
   displayName: string;
+  rankedCluesGiven: number;
   rankedCluesSolved: number;
   rating: number;
 }
@@ -89,7 +90,7 @@ export default function LeaderboardPage() {
   const [spyDir, setSpyDir] = useState<SortDir>('desc');
   const [guesserSort, setGuesserSort] = useState<'avgScore' | 'cluesSolved' | 'avgWordsPicked' | null>('avgScore');
   const [guesserDir, setGuesserDir] = useState<SortDir>('desc');
-  const [overallSort, setOverallSort] = useState<'rating' | 'rankedCluesSolved' | null>('rating');
+  const [overallSort, setOverallSort] = useState<'rating' | 'rankedCluesGiven' | 'rankedCluesSolved' | null>('rating');
   const [overallDir, setOverallDir] = useState<SortDir>('desc');
   const [clueSort, setClueSort] = useState<'number' | 'attempts' | 'avgScore' | 'date' | null>('avgScore');
   const [clueDir, setClueDir] = useState<SortDir>('desc');
@@ -264,10 +265,11 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] gap-x-1 pl-2 pr-0 py-1 items-center">
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_4.5rem_4.5rem_4.5rem] gap-x-1 pl-2 pr-0 py-1 items-center">
                 <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                 <span className={thAccordion}>{t.leaderboard.player}</span>
-                <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rankedCluesSolved')}>{t.leaderboard.rankedSolved}<SortArrow field="rankedCluesSolved" activeField={overallSort} dir={overallDir} /></span>
+                <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rankedCluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="rankedCluesGiven" activeField={overallSort} dir={overallDir} /></span>
+                <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rankedCluesSolved')}>{t.leaderboard.cluesSolved}<SortArrow field="rankedCluesSolved" activeField={overallSort} dir={overallDir} /></span>
                 <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rating')}>{t.leaderboard.overallRating}<SortArrow field="rating" activeField={overallSort} dir={overallDir} /></span>
               </div>
               <div className="space-y-1">
@@ -277,9 +279,10 @@ export default function LeaderboardPage() {
                     onClick={() => openProfile(o.userId)}
                     className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-2.5 cursor-pointer transition-colors hover:border-gray-600"
                   >
-                    <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] gap-x-1 items-center">
+                    <div className="grid grid-cols-[1.5rem_1fr_4.5rem_4.5rem_4.5rem] gap-x-1 items-center">
                       <span className="text-gray-500 text-sm text-center">{i + 1}</span>
                       <span className="font-semibold text-sm text-white truncate">{o.displayName}</span>
+                      <span className="text-sm text-gray-400 text-center">{o.rankedCluesGiven}</span>
                       <span className="text-sm text-gray-400 text-center">{o.rankedCluesSolved}</span>
                       <span className="text-sm text-amber-400 font-bold text-center">{o.rating}</span>
                     </div>

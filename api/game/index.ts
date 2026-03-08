@@ -729,19 +729,25 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   const spymastersWithNames = spymasters.map((s) => ({ ...s, displayName: displayNameMap.get(s.userId) || s.userId }));
   const guessersWithNames = guessers.map((g) => ({ ...g, displayName: displayNameMap.get(g.userId) || g.userId }));
 
-  // Overall rating: ranked avgScore * 50, minimum 5 ranked solves
-  const overall = Array.from(rankedResultsByUser.entries())
-    .filter(([, userResults]) => userResults.length >= 5)
-    .map(([userId, userResults]) => {
-      const avgScore = userResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / userResults.length;
-      return {
-        userId,
-        displayName: displayNameMap.get(userId) || userId,
-        rankedCluesSolved: userResults.length,
-        rating: Math.round(avgScore * 50),
-      };
-    })
-    .sort((a, b) => b.rating - a.rating);
+  // Overall rating: ranked avgScore * 50
+  // Collect all users who have any ranked activity
+  const allRankedUsers = new Set<string>();
+  for (const [uid] of rankedCluesByUser) allRankedUsers.add(uid);
+  for (const [uid] of rankedResultsByUser) allRankedUsers.add(uid);
+
+  const overall = Array.from(allRankedUsers).map((userId) => {
+    const userResults = rankedResultsByUser.get(userId) || [];
+    const userClues = rankedCluesByUser.get(userId) || [];
+    const avgScore = userResults.length > 0
+      ? userResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / userResults.length : 0;
+    return {
+      userId,
+      displayName: displayNameMap.get(userId) || userId,
+      rankedCluesGiven: userClues.length,
+      rankedCluesSolved: userResults.length,
+      rating: Math.round(avgScore * 50),
+    };
+  }).sort((a, b) => b.rating - a.rating);
 
   res.json({ spymasters: spymastersWithNames, guessers: guessersWithNames, clueStats, overall });
 }
