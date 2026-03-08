@@ -787,9 +787,15 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   for (const [uid] of rankedCluesByUser) allRankedUsers.add(uid);
   for (const [uid] of rankedResultsByUser) allRankedUsers.add(uid);
 
-  // Build avgScoreOnClues map from spymasters data
+  // Build raw avgScoreOnClues map (unrounded, for accurate rating calc)
   const spyAvgScoreMap = new Map<string, number>();
-  for (const s of spymasters) spyAvgScoreMap.set(s.userId, s.avgScoreOnClues);
+  for (const [userId, userClues] of rankedCluesByUser) {
+    const clueIds = new Set(userClues.map((c) => c.id as string));
+    const othersResults = results.filter((r) => clueIds.has(r.clue_id as string) && r.user_id !== userId);
+    const avg = othersResults.length > 0
+      ? othersResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / othersResults.length : 0;
+    spyAvgScoreMap.set(userId, avg);
+  }
 
   const overall = Array.from(allRankedUsers).map((userId) => {
     const userResults = rankedResultsByUser.get(userId) || [];
