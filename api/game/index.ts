@@ -290,7 +290,7 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
       const hi = Math.ceil(idx);
       p75 = lo === hi ? sortedScores[lo] : sortedScores[lo] + (sortedScores[hi] - sortedScores[lo]) * (idx - lo);
     }
-    const clueRating = Math.round(p75 * 20 * 10) / 10;
+    const clueRating = Math.round(p75 * 20);
     return res.json({
       attempts: rows.length, avgScore: Math.round((totalScore / rows.length) * 10) / 10,
       scores, pickCounts, details, createdAt, ratingsCount, avgRating, clueRating,
@@ -712,6 +712,14 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
     rankedCluesByUser.get(uid)!.push(c);
   }
 
+  // Build resultsByClue map first (needed for clueRatingMap)
+  const resultsByClue = new Map<string, typeof results>();
+  for (const r of results) {
+    const cid = r.clue_id as string;
+    if (!resultsByClue.has(cid)) resultsByClue.set(cid, []);
+    resultsByClue.get(cid)!.push(r);
+  }
+
   // Helper: percentile (linear interpolation)
   function percentile(arr: number[], p: number): number {
     if (arr.length === 0) return 0;
@@ -728,7 +736,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   for (const [clueId, clueResults] of resultsByClue) {
     const scores = clueResults.map((r) => Number(r.score) || 0);
     const p75 = percentile(scores, 75);
-    clueRatingMap.set(clueId, Math.round(p75 * 20 * 10) / 10);
+    clueRatingMap.set(clueId, Math.round(p75 * 20));
   }
 
   const spymasters = Array.from(rankedCluesByUser.entries()).map(([userId, userClues]) => {
@@ -782,13 +790,6 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
       scoutRating,
     };
   }).sort((a, b) => b.scoutRating - a.scoutRating);
-
-  const resultsByClue = new Map<string, typeof results>();
-  for (const r of results) {
-    const cid = r.clue_id as string;
-    if (!resultsByClue.has(cid)) resultsByClue.set(cid, []);
-    resultsByClue.get(cid)!.push(r);
-  }
 
   const ratings: Record<string, unknown>[] = await sql`SELECT clue_id, rating FROM ratings`;
   const ratingsByClue = new Map<string, number[]>();

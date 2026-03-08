@@ -410,7 +410,7 @@ export default function LeaderboardPage() {
                         </span>
                         <button onClick={(e) => { e.stopPropagation(); openProfile(c.userId); }} className="text-sm text-board-blue hover:text-blue-300 transition-colors font-semibold truncate text-left hidden sm:block">{c.displayName}</button>
                         <span className="text-xs text-gray-500 text-center hidden sm:block">{c.createdAt > 0 ? formatDate(c.createdAt) : '—'}</span>
-                        <span className="text-sm text-gray-400 text-center">{c.attempts > 0 ? c.clueRating.toFixed(1) : '—'}</span>
+                        <span className="text-sm text-gray-400 text-center">{c.attempts > 0 ? c.clueRating : '—'}</span>
                         <span className="text-sm text-center">{c.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
                           {user && (
@@ -433,7 +433,7 @@ export default function LeaderboardPage() {
                             <button onClick={() => openProfile(c.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{c.displayName}</button>
                           </span>
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{c.attempts}</span></span>
-                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{c.attempts > 0 ? c.clueRating.toFixed(1) : '—'}</span></span>
+                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{c.attempts > 0 ? c.clueRating : '—'}</span></span>
                           <span><span className="text-gray-400">{t.results.ratingsCount}:</span> <span className="text-white font-semibold">{c.ratingsCount ?? 0}</span></span>
                           <span><span className="text-gray-400">{t.admin.avgRating}:</span> <span className="text-white font-semibold">{c.ratingsCount > 0 ? c.avgRating.toFixed(1) : '—'}</span></span>
                           <div className="col-span-2 flex items-center gap-2 justify-end mt-1">

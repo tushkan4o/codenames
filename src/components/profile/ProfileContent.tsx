@@ -647,7 +647,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                         </span>
                         <span className="text-xs text-gray-500 text-center hidden sm:block">{clue.createdAt > 0 ? formatDate(clue.createdAt) : '—'}</span>
-                        <span className="text-sm text-gray-400 text-center">{cStats && cStats.attempts > 0 ? cStats.clueRating.toFixed(1) : '—'}</span>
+                        <span className="text-sm text-gray-400 text-center">{cStats && cStats.attempts > 0 ? cStats.clueRating : '—'}</span>
                         <span className="text-sm text-center">{clue.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
                           {isOwnProfile ? (
@@ -676,7 +676,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                             <button onClick={() => openProfile(clue.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{clue.userDisplayName || clue.userId}</button>
                           </span>
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>
-                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{cStats && cStats.attempts > 0 ? cStats.clueRating.toFixed(1) : '—'}</span></span>
+                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{cStats && cStats.attempts > 0 ? cStats.clueRating : '—'}</span></span>
                           <span><span className="text-gray-400">{t.results.ratingsCount}:</span> <span className="text-white font-semibold">{cStats?.ratingsCount ?? '—'}</span></span>
                           <span><span className="text-gray-400">{t.admin.avgRating}:</span> <span className="text-white font-semibold">{cStats && cStats.ratingsCount > 0 ? cStats.avgRating.toFixed(1) : '—'}</span></span>
                           <div className="col-span-2 flex items-center gap-2 justify-end mt-1">
@@ -765,7 +765,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           {entry.result.score ?? 0}
                           <span className="text-gray-500 font-normal ml-0.5 text-xs">({entry.result.correctCount}/{entry.result.totalTargets})</span>
                         </span>
-                        <span className="text-sm text-gray-400 text-center hidden sm:block">{cStats && cStats.attempts > 0 ? cStats.clueRating.toFixed(1) : '—'}</span>
+                        <span className="text-sm text-gray-400 text-center hidden sm:block">{cStats && cStats.attempts > 0 ? cStats.clueRating : '—'}</span>
                         <span className="text-sm text-center">{entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
                           {canView ? (
@@ -788,7 +788,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                             </span>
                           ) : <span />}
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>
-                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{cStats && cStats.attempts > 0 ? cStats.clueRating.toFixed(1) : '—'}</span></span>
+                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{cStats && cStats.attempts > 0 ? cStats.clueRating : '—'}</span></span>
                           <span><span className="text-gray-400">{t.results.ratingsCount}:</span> <span className="text-white font-semibold">{cStats?.ratingsCount ?? '—'}</span></span>
                           <span><span className="text-gray-400">{t.admin.avgRating}:</span> <span className="text-white font-semibold">{cStats && cStats.ratingsCount > 0 ? cStats.avgRating.toFixed(1) : '—'}</span></span>
                           <div className="col-span-2 flex items-center gap-2 justify-end mt-1">
