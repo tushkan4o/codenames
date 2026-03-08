@@ -295,7 +295,7 @@ export const api = {
   },
 
   // Profile comments (wall)
-  async getProfileComments(profileUserId: string): Promise<{ id: number; authorId: string; displayName: string; content: string; createdAt: number; replyToId: number | null; replyToDisplayName: string | null; replyToContent: string | null }[]> {
+  async getProfileComments(profileUserId: string): Promise<{ commentsDisabled: boolean; comments: { id: number; authorId: string; displayName: string; content: string; createdAt: number; replyToId: number | null; replyToDisplayName: string | null; replyToContent: string | null }[] }> {
     return get(`/api/game?route=profile-comments&profileUserId=${encodeURIComponent(profileUserId)}`);
   },
 
@@ -303,8 +303,12 @@ export const api = {
     return post('/api/game?route=profile-comments', { profileUserId, authorId, content, replyToId: replyToId || null });
   },
 
-  async deleteProfileComment(id: number, adminId: string): Promise<void> {
-    await del(`/api/game?route=profile-comments&id=${id}&adminId=${encodeURIComponent(adminId)}`);
+  async deleteProfileComment(id: number, userId: string): Promise<void> {
+    await del(`/api/game?route=profile-comments&id=${id}&userId=${encodeURIComponent(userId)}`);
+  },
+
+  async toggleProfileComments(userId: string, disabled: boolean): Promise<void> {
+    await post('/api/game?route=profile-comments', { action: 'toggle_comments', userId, disabled });
   },
 
   // Comments
@@ -320,8 +324,12 @@ export const api = {
     return post('/api/game?route=comments', { clueId, userId, content, replyToId: replyToId || null });
   },
 
-  async deleteComment(id: number, adminId: string): Promise<void> {
-    await del(`/api/game?route=comments&id=${id}&adminId=${encodeURIComponent(adminId)}`);
+  async deleteComment(id: number, userId: string, isAdmin?: boolean): Promise<void> {
+    if (isAdmin) {
+      await del(`/api/game?route=comments&id=${id}&adminId=${encodeURIComponent(userId)}`);
+    } else {
+      await del(`/api/game?route=comments&id=${id}&userId=${encodeURIComponent(userId)}`);
+    }
   },
 
   // Profile

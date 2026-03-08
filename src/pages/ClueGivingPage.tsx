@@ -495,6 +495,7 @@ export default function ClueGivingPage() {
         onPointerUp={submitting ? undefined : onBoardPointerUp}
         registerCardRef={submitting ? undefined : registerCardRef}
         cardFontSize={user?.preferences.cardFontSize}
+        cardHeightPercent={user?.preferences.cardHeightPercent}
       />
 
       {/* Clue input */}

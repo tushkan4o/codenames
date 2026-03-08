@@ -518,12 +518,22 @@ async function handleComments(req: VercelRequest, res: VercelResponse, sql: Retu
   }
 
   if (req.method === 'DELETE') {
-    const { id, adminId } = req.query;
-    if (!id || !adminId || typeof adminId !== 'string') return res.status(400).json({ error: 'id and adminId required' });
-    const adminRows = await sql`SELECT is_admin FROM users WHERE id = ${adminId}`;
-    if (adminRows.length === 0 || !adminRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
-    await sql`DELETE FROM comments WHERE id = ${Number(id)}`;
-    return res.json({ ok: true });
+    const { id, adminId, userId } = req.query;
+    if (!id) return res.status(400).json({ error: 'id required' });
+    // Admin can delete any comment
+    if (adminId && typeof adminId === 'string') {
+      const adminRows = await sql`SELECT is_admin FROM users WHERE id = ${adminId}`;
+      if (adminRows.length === 0 || !adminRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
+      await sql`DELETE FROM comments WHERE id = ${Number(id)}`;
+      return res.json({ ok: true });
+    }
+    // Author can delete own comment
+    if (userId && typeof userId === 'string') {
+      const result = await sql`DELETE FROM comments WHERE id = ${Number(id)} AND user_id = ${userId}`;
+      if (result.length === 0 && (result as unknown as { count?: number }).count === 0) return res.status(403).json({ error: 'Not your comment' });
+      return res.json({ ok: true });
+    }
+    return res.status(400).json({ error: 'adminId or userId required' });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
@@ -573,24 +583,41 @@ async function handleProfileComments(req: VercelRequest, res: VercelResponse, sq
   if (req.method === 'GET') {
     const { profileUserId } = req.query;
     if (!profileUserId || typeof profileUserId !== 'string') return res.status(400).json({ error: 'profileUserId required' });
+    // Check if comments are disabled
+    const userRows = await sql`SELECT comments_disabled FROM users WHERE id = ${profileUserId}`;
+    const commentsDisabled = userRows.length > 0 && !!userRows[0].comments_disabled;
     const rows = await sql`SELECT pc.id, pc.author_id, pc.content, pc.created_at, pc.reply_to_id, u.display_name,
       rpc.author_id as reply_author_id, ru.display_name as reply_display_name, rpc.content as reply_content
       FROM profile_comments pc LEFT JOIN users u ON pc.author_id = u.id
       LEFT JOIN profile_comments rpc ON pc.reply_to_id = rpc.id
       LEFT JOIN users ru ON rpc.author_id = ru.id
       WHERE pc.profile_user_id = ${profileUserId} ORDER BY pc.created_at DESC`;
-    return res.json(rows.map((r: Record<string, unknown>) => ({
+    return res.json({ commentsDisabled, comments: rows.map((r: Record<string, unknown>) => ({
       id: Number(r.id), authorId: r.author_id as string, displayName: (r.display_name as string) || (r.author_id as string),
       content: r.content as string, createdAt: Number(r.created_at),
       replyToId: r.reply_to_id ? Number(r.reply_to_id) : null,
       replyToDisplayName: (r.reply_display_name as string) || null,
       replyToContent: (r.reply_content as string) || null,
-    })));
+    })) });
   }
 
   if (req.method === 'POST') {
-    const { profileUserId, authorId, content, replyToId } = req.body;
+    const { profileUserId, authorId, content, replyToId, action } = req.body;
+    // Toggle comments on/off
+    if (action === 'toggle_comments') {
+      const { userId, disabled } = req.body;
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      await sql`UPDATE users SET comments_disabled = ${!!disabled} WHERE id = ${userId}`;
+      return res.json({ ok: true });
+    }
     if (!profileUserId || !authorId || !content?.trim()) return res.status(400).json({ error: 'profileUserId, authorId, content required' });
+    // Check if comments are disabled (allow profile owner to still comment)
+    if (profileUserId !== authorId) {
+      const disabledRows = await sql`SELECT comments_disabled FROM users WHERE id = ${profileUserId}`;
+      if (disabledRows.length > 0 && disabledRows[0].comments_disabled) {
+        return res.status(403).json({ error: 'Comments disabled' });
+      }
+    }
     const now = Date.now();
     const trimmed = content.trim();
     const replyId = replyToId ? Number(replyToId) : null;
@@ -606,12 +633,26 @@ async function handleProfileComments(req: VercelRequest, res: VercelResponse, sq
   }
 
   if (req.method === 'DELETE') {
-    const { id, adminId } = req.query;
-    if (!id || !adminId || typeof adminId !== 'string') return res.status(400).json({ error: 'id and adminId required' });
-    const adminRows = await sql`SELECT is_admin FROM users WHERE id = ${adminId}`;
-    if (adminRows.length === 0 || !adminRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
-    await sql`DELETE FROM profile_comments WHERE id = ${Number(id)}`;
-    return res.json({ ok: true });
+    const { id, adminId, userId } = req.query;
+    if (!id) return res.status(400).json({ error: 'id required' });
+    // Admin can delete any
+    if (adminId && typeof adminId === 'string') {
+      const adminRows = await sql`SELECT is_admin FROM users WHERE id = ${adminId}`;
+      if (adminRows.length === 0 || !adminRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
+      await sql`DELETE FROM profile_comments WHERE id = ${Number(id)}`;
+      return res.json({ ok: true });
+    }
+    // Author can delete own, or profile owner can delete any on their profile
+    if (userId && typeof userId === 'string') {
+      // Try delete own comment first
+      const own = await sql`DELETE FROM profile_comments WHERE id = ${Number(id)} AND author_id = ${userId} RETURNING id`;
+      if (own.length > 0) return res.json({ ok: true });
+      // Try delete as profile owner
+      const asOwner = await sql`DELETE FROM profile_comments WHERE id = ${Number(id)} AND profile_user_id = ${userId} RETURNING id`;
+      if (asOwner.length > 0) return res.json({ ok: true });
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    return res.status(400).json({ error: 'adminId or userId required' });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
@@ -1122,6 +1163,7 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS country TEXT DEFAULT ''`;
     await sql`CREATE TABLE IF NOT EXISTS name_history (id SERIAL PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), old_name TEXT NOT NULL, changed_at BIGINT NOT NULL)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_name_history_user ON name_history(user_id)`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS comments_disabled BOOLEAN DEFAULT false`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

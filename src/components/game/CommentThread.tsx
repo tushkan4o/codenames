@@ -217,9 +217,9 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
   }
 
   async function handleDelete(commentId: number) {
-    if (!user?.isAdmin) return;
+    if (!user) return;
     try {
-      await api.deleteComment(commentId, user.id);
+      await api.deleteComment(commentId, user.id, user.isAdmin);
       setComments((prev) => prev.filter((c) => c.id !== commentId));
     } catch (err) {
       console.error('Failed to delete comment:', err);
@@ -294,7 +294,7 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
                     {t.results.reply}
                   </button>
                 )}
-                {user?.isAdmin && (
+                {(user?.isAdmin || c.userId === user?.id) && (
                   <button
                     onClick={() => handleDelete(c.id)}
                     className="text-gray-600 hover:text-board-red text-xs font-bold sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"

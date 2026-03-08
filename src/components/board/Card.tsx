@@ -20,6 +20,7 @@ interface CardProps {
   revealing?: boolean;
   revealDuration?: number;
   cardIndex?: number;
+  heightPercent?: number;
 }
 
 const fontSizeMap: Record<CardFontSize, string> = {
@@ -77,6 +78,7 @@ export default function Card({
   revealing,
   revealDuration,
   cardIndex,
+  heightPercent,
 }: CardProps) {
   // During border trace animation, don't show color yet
   const shouldShowColor = (showColor || revealed) && !revealing;
@@ -110,9 +112,11 @@ export default function Card({
   // No border on dimmed cards
   const borderClass = dimmed ? 'border border-transparent' : shouldShowColor ? 'border border-white/5' : 'border border-gray-400/20';
 
+  const hp = heightPercent ?? 100;
   const style: React.CSSProperties = {
     ...(revealDelay !== undefined ? { transitionDelay: `${revealDelay}ms` } : {}),
     ...(revealing && revealDuration ? { '--reveal-duration': `${revealDuration}ms` } as React.CSSProperties : {}),
+    ...(hp !== 100 ? { '--card-h-scale': hp / 100 } as React.CSSProperties : {}),
   };
 
   // Show null × marker whenever nullMarked (clue-giving + reveal modes)
@@ -125,7 +129,7 @@ export default function Card({
     <button
       className={`
         card-reveal relative flex items-center justify-center overflow-hidden w-full
-        h-[3.2rem] sm:h-[3.8rem] lg:h-[5.6rem] rounded-lg font-card font-bold uppercase tracking-wide select-none
+        h-[calc(3.2rem*var(--card-h-scale,1))] sm:h-[calc(3.8rem*var(--card-h-scale,1))] lg:h-[calc(5.6rem*var(--card-h-scale,1))] rounded-lg font-card font-bold uppercase tracking-wide select-none
         ${fontSizeMap[fontSize || 'md']} p-1 sm:p-2 ${borderClass}
         transition-all duration-300
         ${bgClass} ${textClass} ${glowClass} ${interactiveClass}

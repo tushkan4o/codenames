@@ -601,6 +601,7 @@ export default function GuessingPage() {
         revealingIndices={revealingIndices.size > 0 ? revealingIndices : undefined}
         revealDuration={revealDuration}
         cardFontSize={user?.preferences.cardFontSize}
+        cardHeightPercent={user?.preferences.cardHeightPercent}
       />
 
       {/* End turn button below board */}

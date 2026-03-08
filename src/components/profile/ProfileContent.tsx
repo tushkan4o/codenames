@@ -82,6 +82,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [commentText, setCommentText] = useState('');
   const [commentSending, setCommentSending] = useState(false);
   const [commentReplyTo, setCommentReplyTo] = useState<{ id: number; displayName: string; content: string } | null>(null);
+  const [commentsDisabled, setCommentsDisabled] = useState(false);
   const commentInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -111,7 +112,10 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     setProfileComments([]);
 
     api.getUserStats(profileId).then(setStats);
-    api.getProfileComments(profileId).then(setProfileComments).catch(() => {});
+    api.getProfileComments(profileId).then((data) => {
+      setProfileComments(data.comments);
+      setCommentsDisabled(data.commentsDisabled);
+    }).catch(() => {});
     api.getCluesByUser(profileId).then((clues) => {
       setCluesGiven(clues);
       clues.forEach((clue) => {
@@ -351,12 +355,23 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   }
 
   async function handleDeleteProfileComment(commentId: number) {
-    if (!user?.isAdmin) return;
+    if (!user) return;
     try {
       await api.deleteProfileComment(commentId, user.id);
       setProfileComments((prev) => prev.filter((c) => c.id !== commentId));
     } catch (err) {
       console.error('Failed to delete profile comment:', err);
+    }
+  }
+
+  async function handleToggleComments() {
+    if (!user || !isOwnProfile) return;
+    const newVal = !commentsDisabled;
+    try {
+      await api.toggleProfileComments(user.id, newVal);
+      setCommentsDisabled(newVal);
+    } catch (err) {
+      console.error('Failed to toggle comments:', err);
     }
   }
 
@@ -824,7 +839,24 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
         {/* ===== COMMENTS TAB ===== */}
         {tab === 'comments' && (
           <div className="flex-1 min-h-0 flex flex-col">
-            {user && (
+            {/* Toggle comments for own profile */}
+            {isOwnProfile && user && (
+              <div className="flex items-center justify-end mb-2">
+                <button
+                  onClick={handleToggleComments}
+                  className={`text-xs px-2 py-1 rounded transition-colors ${commentsDisabled ? 'bg-board-red/20 text-board-red hover:bg-board-red/30' : 'bg-gray-700 text-gray-400 hover:text-white'}`}
+                  title={t.profile.toggleComments || 'Вкл/выкл комментарии'}
+                >
+                  {commentsDisabled ? '🔒 ' + (t.profile.commentsDisabled || 'Комментарии отключены') : '🔓 ' + (t.profile.commentsEnabled || 'Комментарии включены')}
+                </button>
+              </div>
+            )}
+            {/* Comments disabled message for others */}
+            {commentsDisabled && !isOwnProfile ? (
+              <p className="text-center text-gray-500">{t.profile.commentsDisabled || 'Комментарии отключены'}</p>
+            ) : (
+              <>
+            {user && !commentsDisabled && (
               <div className="mb-3">
                 {commentReplyTo && (
                   <div className="flex items-center gap-2 mb-1 px-3 py-1 bg-gray-700/40 border-l-2 border-board-blue rounded text-xs">
@@ -871,7 +903,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   <div key={c.id} className="text-sm group">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500 text-xs">{formatDate(c.createdAt)}</span>
-                      {user && (
+                      {user && !commentsDisabled && (
                         <button
                           onClick={() => { setCommentReplyTo({ id: c.id, displayName: c.displayName, content: c.content }); commentInputRef.current?.focus(); }}
                           className="text-gray-600 hover:text-board-blue text-[0.65rem] font-semibold sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
@@ -879,7 +911,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           {t.results.reply}
                         </button>
                       )}
-                      {user?.isAdmin && (
+                      {(user?.isAdmin || c.authorId === user?.id || isOwnProfile) && (
                         <button
                           onClick={() => handleDeleteProfileComment(c.id)}
                           className="text-gray-600 hover:text-board-red text-xs font-bold sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
@@ -906,6 +938,8 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   </div>
                 ))}
               </div>
+            )}
+              </>
             )}
           </div>
         )}

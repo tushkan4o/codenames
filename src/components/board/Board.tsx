@@ -16,6 +16,7 @@ interface BoardProps {
   highlightTargets?: boolean;
   pickPercents?: Record<number, number>;
   cardFontSize?: CardFontSize;
+  cardHeightPercent?: number;
   revealingIndices?: Set<number>;
   revealDuration?: number;
   // Drag-and-drop support
@@ -46,6 +47,7 @@ export default function Board({
   highlightTargets,
   pickPercents,
   cardFontSize,
+  cardHeightPercent,
   revealingIndices,
   revealDuration,
   displayOrder,
@@ -103,6 +105,7 @@ export default function Board({
               revealing={revealingIndices?.has(originalIndex)}
               revealDuration={revealDuration}
               cardIndex={originalIndex}
+              heightPercent={cardHeightPercent}
             />
           );
         }
@@ -134,6 +137,7 @@ export default function Board({
               revealing={revealingIndices?.has(originalIndex)}
               revealDuration={revealDuration}
               cardIndex={originalIndex}
+              heightPercent={cardHeightPercent}
             />
           </div>
         );

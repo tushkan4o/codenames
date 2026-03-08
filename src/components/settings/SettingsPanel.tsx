@@ -8,6 +8,8 @@ interface SettingsPanelProps {
   mode: 'clue-giving' | 'guessing';
 }
 
+const HEIGHT_STEPS = [50, 60, 70, 80, 90, 100, 110, 120];
+
 const REVEAL_STEPS = [500, 1000, 1500, 2000];
 const REVEAL_LABELS: Record<number, string> = { 500: '0.5', 1000: '1', 1500: '1.5', 2000: '2' };
 
@@ -109,6 +111,36 @@ export default function SettingsPanel({ mode }: SettingsPanelProps) {
                   {opt.icon}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Card height — both modes */}
+          <div className="mb-3">
+            <label className="text-gray-400 text-xs mb-1.5 block">{t.settings.cardHeight}</label>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const idx = HEIGHT_STEPS.indexOf(prefs.cardHeightPercent ?? 100);
+                  if (idx > 0) updatePref('cardHeightPercent', HEIGHT_STEPS[idx - 1]);
+                }}
+                disabled={HEIGHT_STEPS.indexOf(prefs.cardHeightPercent ?? 100) <= 0}
+                className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white disabled:opacity-30 disabled:hover:bg-gray-700 transition-colors text-sm font-bold flex items-center justify-center"
+              >
+                ▼
+              </button>
+              <span className="text-white text-sm font-semibold min-w-[3.5rem] text-center">
+                {prefs.cardHeightPercent ?? 100}%
+              </span>
+              <button
+                onClick={() => {
+                  const idx = HEIGHT_STEPS.indexOf(prefs.cardHeightPercent ?? 100);
+                  if (idx < HEIGHT_STEPS.length - 1) updatePref('cardHeightPercent', HEIGHT_STEPS[idx + 1]);
+                }}
+                disabled={HEIGHT_STEPS.indexOf(prefs.cardHeightPercent ?? 100) >= HEIGHT_STEPS.length - 1}
+                className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white disabled:opacity-30 disabled:hover:bg-gray-700 transition-colors text-sm font-bold flex items-center justify-center"
+              >
+                ▲
+              </button>
             </div>
           </div>
 

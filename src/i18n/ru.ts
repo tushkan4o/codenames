@@ -212,6 +212,9 @@ export const ru = {
     nameHistory: 'Другие имена:',
     noNameHistory: 'Не было других имён',
     currentName: 'сейчас',
+    commentsDisabled: 'Комментарии отключены',
+    commentsEnabled: 'Комментарии включены',
+    toggleComments: 'Вкл/выкл комментарии',
   },
   rating: {
     rateClue: 'Оцените подсказку:',
@@ -318,6 +321,7 @@ export const ru = {
     sortRows: 'Строки',
     sortColumns: 'Столбцы',
     submitDelay: 'Задержка отправки',
+    cardHeight: 'Высота карточек',
     general: 'Общие',
     gameModes: 'Игровые режимы',
     game: 'Игра',

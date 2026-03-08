@@ -22,6 +22,7 @@ export interface UserPreferences {
   submitDelay: number;
   cardFontSize: CardFontSize;
   colorSortMode: ColorSortMode;
+  cardHeightPercent: number;
 }
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
@@ -31,6 +32,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   submitDelay: 2000,
   cardFontSize: 'md',
   colorSortMode: 'rows',
+  cardHeightPercent: 100,
 };
 
 export interface UserStats {
