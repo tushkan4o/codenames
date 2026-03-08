@@ -479,8 +479,8 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   className="bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-sm text-white focus:border-board-blue focus:outline-none"
                 >
                   <option value="">—</option>
-                  {COUNTRIES.map((c) => (
-                    <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+                  {COUNTRIES.map((ct) => (
+                    <option key={ct.code} value={ct.code}>{ct.flag} {ct.name}</option>
                   ))}
                 </select>
               </div>
@@ -493,7 +493,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       className={`text-sm text-gray-400 ${isOwnProfile ? 'cursor-pointer hover:text-gray-300' : ''} transition-colors`}
                       onClick={() => { if (isOwnProfile) setEditingCountry(true); }}
                     >
-                      {c.flag} {c.name}
+                      <img src={`https://flagcdn.com/20x15/${c.code.toLowerCase()}.png`} alt={c.flag} className="inline-block w-5 h-[15px] mr-1 align-text-bottom" /> {c.name}
                     </div>
                   );
                 } else if (isOwnProfile) {
