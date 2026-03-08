@@ -77,6 +77,8 @@ export default function GuessingPage() {
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
   const [showNoClues, setShowNoClues] = useState(false);
+  // Track seen clue IDs in session for deterministic cycle (no repeats until all seen)
+  const [seenClueIds, setSeenClueIds] = useState<string[]>([]);
   const [revealDelays, setRevealDelays] = useState<Record<number, number>>({});
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [showHomeConfirm, setShowHomeConfirm] = useState(false);
@@ -111,6 +113,8 @@ export default function GuessingPage() {
       setLoading(true);
       const found = await api.getClueById(clueId, false, user?.id);
       setClue(found);
+      // Track this clue in session for deterministic cycle
+      if (found) setSeenClueIds(prev => prev.includes(clueId) ? prev : [...prev, clueId]);
 
       // Save URL for roaming session state
       if (found) saveSessionState(`/guess/${clueId}`, null);
@@ -263,11 +267,19 @@ export default function GuessingPage() {
   async function handleAnotherClue() {
     if (!user) return;
     try {
-      const newClue = await api.getRandomClue(user.id, clue ? [clue.id] : [], undefined, undefined, clue?.ranked);
+      // Pass all seen clue IDs so seeded shuffle picks the next unseen one
+      const newClue = await api.getRandomClue(user.id, seenClueIds, undefined, undefined, clue?.ranked);
       if (newClue) {
         navigate(`/guess/${newClue.id}`);
       } else {
-        setShowNoClues(true);
+        // All puzzles seen in this cycle — reset and retry
+        setSeenClueIds([]);
+        const retryClue = await api.getRandomClue(user.id, clue ? [clue.id] : [], undefined, undefined, clue?.ranked);
+        if (retryClue) {
+          navigate(`/guess/${retryClue.id}`);
+        } else {
+          setShowNoClues(true);
+        }
       }
     } catch {
       setShowNoClues(true);

@@ -185,23 +185,35 @@ async function handleRandom(req: VercelRequest, res: VercelResponse, sql: Return
     }
 
     const excludeIds: string[] = exclude ? (typeof exclude === 'string' ? exclude.split(',') : exclude).filter(Boolean) : [];
-    const allExcluded = [...new Set([...excludeIds, ...solvedIds])];
+    const excludeSet = new Set([...excludeIds, ...solvedIds]);
 
-    let rows;
+    // Fetch all candidate IDs (lightweight query, no full rows)
+    let idRows;
     if (wordPack && boardSize) {
-      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked} ORDER BY RANDOM() LIMIT 20`;
+      idRows = await sql`SELECT id FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
     } else if (wordPack) {
-      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked} ORDER BY RANDOM() LIMIT 20`;
+      idRows = await sql`SELECT id FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
     } else if (boardSize) {
-      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked} ORDER BY RANDOM() LIMIT 20`;
+      idRows = await sql`SELECT id FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
     } else {
-      rows = await sql`SELECT * FROM clues WHERE user_id != ${userId as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked} ORDER BY RANDOM() LIMIT 20`;
+      idRows = await sql`SELECT id FROM clues WHERE user_id != ${userId as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
     }
 
-    const excludeSet = new Set(allExcluded);
-    const candidates = rows.filter((r: Record<string, unknown>) => !excludeSet.has(r.id as string));
+    // Filter out excluded + solved, then shuffle deterministically per user
+    const candidates = idRows.map((r: Record<string, unknown>) => r.id as string).filter(id => !excludeSet.has(id));
     if (candidates.length === 0) return res.json(null);
-    const row = candidates[0];
+
+    // Deterministic shuffle seeded by userId — each user gets a stable personal order
+    const rng = createSeededRandom(hashString(userId as string));
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+
+    const pickedId = candidates[0];
+    const rows = await sql`SELECT * FROM clues WHERE id = ${pickedId}`;
+    if (rows.length === 0) return res.json(null);
+    const row = rows[0];
     const authorRows = await sql`SELECT display_name FROM users WHERE id = ${row.user_id as string}`;
     const userDisplayName = authorRows.length > 0 ? (authorRows[0].display_name as string) : (row.user_id as string);
     const boardData = generateBoardData(
