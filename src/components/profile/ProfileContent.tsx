@@ -563,9 +563,9 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
 
           {/* Rating square (top-right, symmetrical to avatar) — ranked only */}
           {stats && (
-            <div className="w-16 h-16 rounded-lg bg-gray-700 shrink-0 flex flex-col items-center justify-center gap-0.5">
-              <span className="text-amber-400 font-extrabold text-xl leading-none">{Math.round((stats.rankedAvgScore ?? 0) * 50)}</span>
-              <span className="text-gray-400 text-[0.6rem] font-semibold">{t.profile.rating}</span>
+            <div className="w-16 h-16 rounded-lg border-2 border-gray-600 shrink-0 flex flex-col items-center justify-center">
+              <span className="text-amber-400 text-2xl leading-none" style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontWeight: 800 }}>{Math.round((stats.rankedAvgScore ?? 0) * 50)}</span>
+              <span className="text-gray-500 text-[0.55rem] font-semibold mt-1.5">{t.profile.rating}</span>
             </div>
           )}
         </div>

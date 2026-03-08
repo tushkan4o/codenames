@@ -729,23 +729,33 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   const spymastersWithNames = spymasters.map((s) => ({ ...s, displayName: displayNameMap.get(s.userId) || s.userId }));
   const guessersWithNames = guessers.map((g) => ({ ...g, displayName: displayNameMap.get(g.userId) || g.userId }));
 
-  // Overall rating: ranked avgScore * 50
-  // Collect all users who have any ranked activity
+  // Overall rating: weighted avg of clue-giving and solving scores * 50
+  // Weight: clues x3, solutions x1
   const allRankedUsers = new Set<string>();
   for (const [uid] of rankedCluesByUser) allRankedUsers.add(uid);
   for (const [uid] of rankedResultsByUser) allRankedUsers.add(uid);
 
+  // Build avgScoreOnClues map from spymasters data
+  const spyAvgScoreMap = new Map<string, number>();
+  for (const s of spymasters) spyAvgScoreMap.set(s.userId, s.avgScoreOnClues);
+
   const overall = Array.from(allRankedUsers).map((userId) => {
     const userResults = rankedResultsByUser.get(userId) || [];
     const userClues = rankedCluesByUser.get(userId) || [];
-    const avgScore = userResults.length > 0
-      ? userResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / userResults.length : 0;
+    const nClues = userClues.length;
+    const nSolved = userResults.length;
+    const clueAvg = spyAvgScoreMap.get(userId) || 0;
+    const solveAvg = nSolved > 0
+      ? userResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / nSolved : 0;
+    const totalWeight = nClues * 3 + nSolved;
+    const rankedAvgScore = totalWeight > 0
+      ? (nClues * clueAvg * 3 + nSolved * solveAvg) / totalWeight : 0;
     return {
       userId,
       displayName: displayNameMap.get(userId) || userId,
-      rankedCluesGiven: userClues.length,
-      rankedCluesSolved: userResults.length,
-      rating: Math.round(avgScore * 50),
+      rankedCluesGiven: nClues,
+      rankedCluesSolved: nSolved,
+      rating: Math.round(rankedAvgScore * 50),
     };
   }).sort((a, b) => b.rating - a.rating);
 
@@ -796,8 +806,18 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
     ? myResults.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / cluesSolved : 0;
 
   // Ranked-only stats for profile rating
-  const rankedClueIds = new Set(clues.filter((c: Record<string, unknown>) => c.ranked !== false).map((c: Record<string, unknown>) => c.id as string));
+  const rankedClueIdArr = clues.filter((c: Record<string, unknown>) => c.ranked !== false).map((c: Record<string, unknown>) => c.id as string);
+  const rankedClueIds = new Set(rankedClueIdArr);
   const rankedCluesGiven = rankedClueIds.size;
+
+  // Avg score others got on this user's ranked clues (spymaster quality)
+  let rankedAvgScoreOnClues = 0;
+  if (rankedClueIdArr.length > 0) {
+    const rankedOthersResults = await sql`SELECT score FROM results WHERE clue_id = ANY(${rankedClueIdArr}) AND user_id != ${userId}`;
+    if (rankedOthersResults.length > 0) {
+      rankedAvgScoreOnClues = rankedOthersResults.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / rankedOthersResults.length;
+    }
+  }
 
   // Get ranked clue IDs that this user solved (need to check clue's ranked flag)
   let rankedSolvedClueIds: string[] = [];
@@ -811,8 +831,13 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
   const rankedSolvedSet = new Set(rankedSolvedClueIds);
   const rankedMyResults = myResults.filter((r: Record<string, unknown>) => rankedSolvedSet.has(r.clue_id as string));
   const rankedCluesSolved = rankedMyResults.length;
-  const rankedAvgScore = rankedCluesSolved > 0
+  const rankedSolveAvg = rankedCluesSolved > 0
     ? rankedMyResults.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / rankedCluesSolved : 0;
+
+  // Weighted rating: clues x3, solutions x1
+  const totalWeight = rankedCluesGiven * 3 + rankedCluesSolved;
+  const rankedAvgScore = totalWeight > 0
+    ? (rankedCluesGiven * rankedAvgScoreOnClues * 3 + rankedCluesSolved * rankedSolveAvg) / totalWeight : 0;
 
   res.json({
     displayName, cluesGiven, avgWordsPerClue: Math.round(avgWordsPerClue * 10) / 10,
