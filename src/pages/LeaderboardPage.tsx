@@ -264,14 +264,15 @@ export default function LeaderboardPage() {
           sortedOverall.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
+            <>
+            <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_5.5rem_5.5rem] gap-x-1 pl-2 pr-1.5 py-1 items-center">
+              <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
+              <span className={thAccordion}>{t.leaderboard.player}</span>
+              <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rankedCluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="rankedCluesGiven" activeField={overallSort} dir={overallDir} /></span>
+              <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleOverallSort('rankedCluesSolved')}>{t.leaderboard.cluesSolved}<SortArrow field="rankedCluesSolved" activeField={overallSort} dir={overallDir} /></span>
+              <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rating')}>{t.leaderboard.overallRating}<SortArrow field="rating" activeField={overallSort} dir={overallDir} /></span>
+            </div>
             <div className="overflow-y-auto flex-1 min-h-0">
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_5.5rem_5.5rem] gap-x-1 pl-2 pr-0 py-1 items-center">
-                <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
-                <span className={thAccordion}>{t.leaderboard.player}</span>
-                <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rankedCluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="rankedCluesGiven" activeField={overallSort} dir={overallDir} /></span>
-                <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleOverallSort('rankedCluesSolved')}>{t.leaderboard.cluesSolved}<SortArrow field="rankedCluesSolved" activeField={overallSort} dir={overallDir} /></span>
-                <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rating')}>{t.leaderboard.overallRating}<SortArrow field="rating" activeField={overallSort} dir={overallDir} /></span>
-              </div>
               <div className="space-y-1">
                 {sortedOverall.map((o, i) => (
                   <div
@@ -290,6 +291,7 @@ export default function LeaderboardPage() {
                 ))}
               </div>
             </div>
+            </>
           )
         )}
 
@@ -297,14 +299,15 @@ export default function LeaderboardPage() {
           sortedSpymasters.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
+            <>
+            <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 pr-1.5 py-1 items-center">
+              <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
+              <span className={thAccordion}>{t.leaderboard.player}</span>
+              <span className={`${thAccordion} text-center`} onClick={() => toggleSpySort('cluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="cluesGiven" activeField={spySort} dir={spyDir} /></span>
+              <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleSpySort('avgWordsPerClue')}>{t.leaderboard.avgWordsPerClue}<SortArrow field="avgWordsPerClue" activeField={spySort} dir={spyDir} /></span>
+              <span className={`${thAccordion} text-center`} onClick={() => toggleSpySort('avgScoreOnClues')}>{t.leaderboard.avgScoreOnClues}<SortArrow field="avgScoreOnClues" activeField={spySort} dir={spyDir} /></span>
+            </div>
             <div className="overflow-y-auto flex-1 min-h-0">
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 pr-0 py-1 items-center">
-                <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
-                <span className={thAccordion}>{t.leaderboard.player}</span>
-                <span className={`${thAccordion} text-center`} onClick={() => toggleSpySort('cluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="cluesGiven" activeField={spySort} dir={spyDir} /></span>
-                <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleSpySort('avgWordsPerClue')}>{t.leaderboard.avgWordsPerClue}<SortArrow field="avgWordsPerClue" activeField={spySort} dir={spyDir} /></span>
-                <span className={`${thAccordion} text-center`} onClick={() => toggleSpySort('avgScoreOnClues')}>{t.leaderboard.avgScoreOnClues}<SortArrow field="avgScoreOnClues" activeField={spySort} dir={spyDir} /></span>
-              </div>
               <div className="space-y-1">
                 {sortedSpymasters.map((s, i) => (
                   <div
@@ -323,6 +326,7 @@ export default function LeaderboardPage() {
                 ))}
               </div>
             </div>
+            </>
           )
         )}
 
@@ -330,14 +334,15 @@ export default function LeaderboardPage() {
           sortedGuessers.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
+            <>
+            <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 pr-1.5 py-1 items-center">
+              <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
+              <span className={thAccordion}>{t.leaderboard.player}</span>
+              <span className={`${thAccordion} text-center`} onClick={() => toggleGuesserSort('cluesSolved')}>{t.leaderboard.cluesSolved}<SortArrow field="cluesSolved" activeField={guesserSort} dir={guesserDir} /></span>
+              <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleGuesserSort('avgWordsPicked')}>{t.leaderboard.avgWordsPicked}<SortArrow field="avgWordsPicked" activeField={guesserSort} dir={guesserDir} /></span>
+              <span className={`${thAccordion} text-center`} onClick={() => toggleGuesserSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={guesserSort} dir={guesserDir} /></span>
+            </div>
             <div className="overflow-y-auto flex-1 min-h-0">
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 pr-0 py-1 items-center">
-                <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
-                <span className={thAccordion}>{t.leaderboard.player}</span>
-                <span className={`${thAccordion} text-center`} onClick={() => toggleGuesserSort('cluesSolved')}>{t.leaderboard.cluesSolved}<SortArrow field="cluesSolved" activeField={guesserSort} dir={guesserDir} /></span>
-                <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleGuesserSort('avgWordsPicked')}>{t.leaderboard.avgWordsPicked}<SortArrow field="avgWordsPicked" activeField={guesserSort} dir={guesserDir} /></span>
-                <span className={`${thAccordion} text-center`} onClick={() => toggleGuesserSort('avgScore')}>{t.leaderboard.avgScore}<SortArrow field="avgScore" activeField={guesserSort} dir={guesserDir} /></span>
-              </div>
               <div className="space-y-1">
                 {sortedGuessers.map((g, i) => (
                   <div
@@ -356,6 +361,7 @@ export default function LeaderboardPage() {
                 ))}
               </div>
             </div>
+            </>
           )
         )}
 
@@ -363,15 +369,16 @@ export default function LeaderboardPage() {
           sortedClues.length === 0 ? (
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
+            <>
+            <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_5rem_9rem_3.5rem_2rem_2rem] gap-x-2 px-4 pr-[22px] sm:pr-[22px] py-1 items-center">
+              <span className={thAccordion} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></span>
+              <span className={`${thAccordion} text-left hidden sm:block`}>{t.leaderboard.author}</span>
+              <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleClueSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={clueSort} dir={clueDir} /></span>
+              <span className={`${thAccordion} text-center`} onClick={() => toggleClueSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></span>
+              <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
+              <span className={`${thAccordion} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
+            </div>
             <div className="overflow-y-auto flex-1 min-h-0">
-              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_5rem_9rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
-                <span className={thAccordion} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></span>
-                <span className={`${thAccordion} text-left hidden sm:block`}>{t.leaderboard.author}</span>
-                <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleClueSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={clueSort} dir={clueDir} /></span>
-                <span className={`${thAccordion} text-center`} onClick={() => toggleClueSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={clueSort} dir={clueDir} /></span>
-                <span className={`${thAccordion} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
-                <span className={`${thAccordion} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
-              </div>
               <div className="space-y-1">
               {sortedClues.map((c, i) => {
                 const isOwn = c.userId === user?.id;
@@ -459,6 +466,7 @@ export default function LeaderboardPage() {
               })}
               </div>
             </div>
+            </>
           )
         )}
       </div>
