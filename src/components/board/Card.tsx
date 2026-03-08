@@ -125,7 +125,7 @@ export default function Card({
     <button
       className={`
         card-reveal relative flex items-center justify-center overflow-hidden w-full
-        h-[3.2rem] sm:h-[3.8rem] lg:h-[4.6rem] rounded-lg font-card font-bold uppercase tracking-wide select-none
+        h-[3.2rem] sm:h-[3.8rem] lg:h-[5.6rem] rounded-lg font-card font-bold uppercase tracking-wide select-none
         ${fontSizeMap[fontSize || 'md']} p-1 sm:p-2 ${borderClass}
         transition-all duration-300
         ${bgClass} ${textClass} ${glowClass} ${interactiveClass}
