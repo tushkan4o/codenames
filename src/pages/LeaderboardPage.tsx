@@ -11,7 +11,7 @@ import type { BoardSize, Clue, GuessResult } from '../types/game';
 
 const ACTIVE_GUESS_KEY = 'codenames_active_guess';
 
-type Tab = 'spymasters' | 'guessers' | 'clues';
+type Tab = 'overall' | 'spymasters' | 'guessers' | 'clues';
 type SizeFilter = 'all' | BoardSize;
 type SortDir = 'asc' | 'desc';
 type RankedFilter = 'all' | 'ranked' | 'casual';
@@ -47,6 +47,13 @@ interface ClueStatEntry {
   avgRating: number;
 }
 
+interface OverallEntry {
+  userId: string;
+  displayName: string;
+  rankedCluesSolved: number;
+  rating: number;
+}
+
 function formatDate(ts: number): string {
   const d = new Date(ts);
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -63,11 +70,12 @@ export default function LeaderboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { openProfile, closeProfile } = useProfileModal();
-  const [tab, setTab] = useState<Tab>('spymasters');
+  const [tab, setTab] = useState<Tab>('overall');
   const sizeFilter: SizeFilter = 'all';
   const [spymasters, setSpymasters] = useState<SpymasterEntry[]>([]);
   const [guessers, setGuessers] = useState<GuesserEntry[]>([]);
   const [clueStats, setClueStats] = useState<ClueStatEntry[]>([]);
+  const [overall, setOverall] = useState<OverallEntry[]>([]);
   const [mySolvedClueIds, setMySolvedClueIds] = useState<Set<string>>(new Set());
   const [myResults, setMyResults] = useState<Map<string, GuessResult>>(new Map());
   const [modalClue, setModalClue] = useState<Clue | null>(null);
@@ -81,6 +89,8 @@ export default function LeaderboardPage() {
   const [spyDir, setSpyDir] = useState<SortDir>('desc');
   const [guesserSort, setGuesserSort] = useState<'avgScore' | 'cluesSolved' | 'avgWordsPicked' | null>('avgScore');
   const [guesserDir, setGuesserDir] = useState<SortDir>('desc');
+  const [overallSort, setOverallSort] = useState<'rating' | 'rankedCluesSolved' | null>('rating');
+  const [overallDir, setOverallDir] = useState<SortDir>('desc');
   const [clueSort, setClueSort] = useState<'number' | 'attempts' | 'avgScore' | 'date' | null>('avgScore');
   const [clueDir, setClueDir] = useState<SortDir>('desc');
 
@@ -90,6 +100,7 @@ export default function LeaderboardPage() {
     setSpymasters(data.spymasters);
     setGuessers(data.guessers);
     setClueStats((data as { clueStats?: ClueStatEntry[] }).clueStats || []);
+    setOverall((data as { overall?: OverallEntry[] }).overall || []);
   }, []);
 
   useEffect(() => {
@@ -192,6 +203,22 @@ export default function LeaderboardPage() {
     } else { setGuesserSort(field); setGuesserDir('desc'); }
   }
 
+  function toggleOverallSort(field: NonNullable<typeof overallSort>) {
+    if (overallSort === field) {
+      if (overallDir === 'desc') setOverallDir('asc');
+      else { setOverallSort(null); setOverallDir('desc'); }
+    } else { setOverallSort(field); setOverallDir('desc'); }
+  }
+
+  const sortedOverall = useMemo(() => {
+    if (!overallSort) return [...overall];
+    const key = overallSort;
+    return [...overall].sort((a, b) => {
+      const diff = (b[key] as number) - (a[key] as number);
+      return overallDir === 'desc' ? diff : -diff;
+    });
+  }, [overall, overallSort, overallDir]);
+
   function toggleClueSort(field: NonNullable<typeof clueSort>) {
     if (clueSort === field) {
       if (clueDir === 'desc') setClueDir('asc');
@@ -226,10 +253,42 @@ export default function LeaderboardPage() {
         <h1 className="text-2xl font-extrabold text-white mb-4 text-center">{t.leaderboard.title}</h1>
 
         <div className="flex justify-center gap-2 mb-4">
+          <button onClick={() => setTab('overall')} className={tabBtnClass(tab === 'overall', 'bg-emerald-600')}>{t.leaderboard.overall}</button>
           <button onClick={() => setTab('spymasters')} className={tabBtnClass(tab === 'spymasters', 'bg-board-blue')}>{t.leaderboard.spymasters}</button>
           <button onClick={() => setTab('guessers')} className={tabBtnClass(tab === 'guessers', 'bg-gray-600')}>{t.leaderboard.guessers}</button>
           <button onClick={() => setTab('clues')} className={tabBtnClass(tab === 'clues', 'bg-board-red')}>{t.leaderboard.clues}</button>
         </div>
+
+        {tab === 'overall' && (
+          sortedOverall.length === 0 ? (
+            <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
+          ) : (
+            <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] gap-x-1 pl-2 pr-0 py-1 items-center">
+                <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
+                <span className={thAccordion}>{t.leaderboard.player}</span>
+                <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rankedCluesSolved')}>{t.leaderboard.rankedSolved}<SortArrow field="rankedCluesSolved" activeField={overallSort} dir={overallDir} /></span>
+                <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rating')}>{t.leaderboard.overallRating}<SortArrow field="rating" activeField={overallSort} dir={overallDir} /></span>
+              </div>
+              <div className="space-y-1">
+                {sortedOverall.map((o, i) => (
+                  <div
+                    key={o.userId}
+                    onClick={() => openProfile(o.userId)}
+                    className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-2.5 cursor-pointer transition-colors hover:border-gray-600"
+                  >
+                    <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] gap-x-1 items-center">
+                      <span className="text-gray-500 text-sm text-center">{i + 1}</span>
+                      <span className="font-semibold text-sm text-white truncate">{o.displayName}</span>
+                      <span className="text-sm text-gray-400 text-center">{o.rankedCluesSolved}</span>
+                      <span className="text-sm text-amber-400 font-bold text-center">{o.rating}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        )}
 
         {tab === 'spymasters' && (
           sortedSpymasters.length === 0 ? (

@@ -729,7 +729,21 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   const spymastersWithNames = spymasters.map((s) => ({ ...s, displayName: displayNameMap.get(s.userId) || s.userId }));
   const guessersWithNames = guessers.map((g) => ({ ...g, displayName: displayNameMap.get(g.userId) || g.userId }));
 
-  res.json({ spymasters: spymastersWithNames, guessers: guessersWithNames, clueStats });
+  // Overall rating: ranked avgScore * 50, minimum 5 ranked solves
+  const overall = Array.from(rankedResultsByUser.entries())
+    .filter(([, userResults]) => userResults.length >= 5)
+    .map(([userId, userResults]) => {
+      const avgScore = userResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / userResults.length;
+      return {
+        userId,
+        displayName: displayNameMap.get(userId) || userId,
+        rankedCluesSolved: userResults.length,
+        rating: Math.round(avgScore * 50),
+      };
+    })
+    .sort((a, b) => b.rating - a.rating);
+
+  res.json({ spymasters: spymastersWithNames, guessers: guessersWithNames, clueStats, overall });
 }
 
 // ==================== USER STATS ====================
@@ -754,7 +768,7 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
   const bio = userRows.length > 0 ? (userRows[0].bio as string | null) || undefined : undefined;
   const country = userRows.length > 0 ? (userRows[0].country as string | null) || undefined : undefined;
 
-  const clues = await sql`SELECT id, number FROM clues WHERE user_id = ${userId}`;
+  const clues = await sql`SELECT id, number, ranked FROM clues WHERE user_id = ${userId}`;
   const cluesGiven = clues.length;
   const avgWordsPerClue = cluesGiven > 0
     ? clues.reduce((s: number, c: Record<string, unknown>) => s + (Number(c.number) || 0), 0) / cluesGiven : 0;
@@ -768,17 +782,38 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
     }
   }
 
-  const myResults = await sql`SELECT score, guessed_indices FROM results WHERE user_id = ${userId}`;
+  const myResults = await sql`SELECT r.score, r.guessed_indices, r.clue_id FROM results r WHERE r.user_id = ${userId}`;
   const cluesSolved = myResults.length;
   const avgWordsPicked = cluesSolved > 0
     ? myResults.reduce((s: number, r: Record<string, unknown>) => s + ((r.guessed_indices as number[])?.length || 0), 0) / cluesSolved : 0;
   const avgScore = cluesSolved > 0
     ? myResults.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / cluesSolved : 0;
 
+  // Ranked-only stats for profile rating
+  const rankedClueIds = new Set(clues.filter((c: Record<string, unknown>) => c.ranked !== false).map((c: Record<string, unknown>) => c.id as string));
+  const rankedCluesGiven = rankedClueIds.size;
+
+  // Get ranked clue IDs that this user solved (need to check clue's ranked flag)
+  let rankedSolvedClueIds: string[] = [];
+  if (myResults.length > 0) {
+    const solvedClueIds = [...new Set(myResults.map((r: Record<string, unknown>) => r.clue_id as string))];
+    if (solvedClueIds.length > 0) {
+      const solvedClueRows = await sql`SELECT id, ranked FROM clues WHERE id = ANY(${solvedClueIds})`;
+      rankedSolvedClueIds = solvedClueRows.filter((c: Record<string, unknown>) => c.ranked !== false).map((c: Record<string, unknown>) => c.id as string);
+    }
+  }
+  const rankedSolvedSet = new Set(rankedSolvedClueIds);
+  const rankedMyResults = myResults.filter((r: Record<string, unknown>) => rankedSolvedSet.has(r.clue_id as string));
+  const rankedCluesSolved = rankedMyResults.length;
+  const rankedAvgScore = rankedCluesSolved > 0
+    ? rankedMyResults.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / rankedCluesSolved : 0;
+
   res.json({
     displayName, cluesGiven, avgWordsPerClue: Math.round(avgWordsPerClue * 10) / 10,
     avgScoreOnClues: Math.round(avgScoreOnClues * 10) / 10, cluesSolved,
     avgWordsPicked: Math.round(avgWordsPicked * 10) / 10, avgScore: Math.round(avgScore * 10) / 10,
+    rankedCluesGiven, rankedCluesSolved,
+    rankedAvgScore: Math.round(rankedAvgScore * 10) / 10,
     ...(avatarUrl ? { avatarUrl } : {}),
     ...(bio ? { bio } : {}),
     ...(country ? { country } : {}),

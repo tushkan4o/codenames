@@ -41,6 +41,9 @@ export interface UserStats {
   cluesSolved: number;
   avgWordsPicked: number;
   avgScore: number;
+  rankedCluesGiven: number;
+  rankedCluesSolved: number;
+  rankedAvgScore: number;
   avatarUrl?: string;
   bio?: string;
   country?: string;

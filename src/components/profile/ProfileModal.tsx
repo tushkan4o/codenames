@@ -19,7 +19,7 @@ export default function ProfileModal() {
         {/* X close button */}
         <button
           onClick={closeProfile}
-          className="absolute -top-1 -right-1 sm:right-0 text-gray-500 hover:text-white text-2xl leading-none transition-colors z-10 p-1"
+          className="absolute top-1 right-1 text-gray-500 hover:text-white text-2xl leading-none transition-colors z-20 p-1"
         >
           &times;
         </button>

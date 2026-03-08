@@ -493,7 +493,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       className={`text-sm text-gray-400 ${isOwnProfile ? 'cursor-pointer hover:text-gray-300' : ''} transition-colors`}
                       onClick={() => { if (isOwnProfile) setEditingCountry(true); }}
                     >
-                      <img src={`https://flagcdn.com/20x15/${c.code.toLowerCase()}.png`} alt={c.flag} className="inline-block w-5 h-[15px] mr-1 align-text-bottom" /> {c.name}
+                      <img src={`https://flagcdn.com/16x12/${c.code.toLowerCase()}.png`} alt={c.flag} className="inline-block w-4 h-3 mr-1 align-text-bottom" /> {c.name}
                     </div>
                   );
                 } else if (isOwnProfile) {
@@ -551,13 +551,17 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             )}
           </div>
 
-          {/* Rating square (top-right, symmetrical to avatar) */}
-          {stats && (
-            <div className="w-16 h-16 rounded-lg bg-gray-700 shrink-0 flex flex-col items-center justify-center">
-              <span className="text-white font-extrabold text-lg leading-none">{Math.round(stats.avgScore * 50)}</span>
-              <span className="text-gray-400 text-[0.6rem] font-semibold mt-0.5">{t.profile.rating}</span>
-            </div>
-          )}
+          {/* Rating square (top-right, symmetrical to avatar) — ranked only, dash if <5 */}
+          {stats && (() => {
+            const hasEnough = (stats.rankedCluesGiven ?? 0) >= 5 || (stats.rankedCluesSolved ?? 0) >= 5;
+            const rating = hasEnough ? Math.round((stats.rankedAvgScore ?? 0) * 50) : null;
+            return (
+              <div className="w-16 h-16 rounded-lg bg-gray-700 shrink-0 flex flex-col items-center justify-center gap-0.5">
+                <span className="text-amber-400 font-extrabold text-xl leading-none">{rating !== null ? rating : '—'}</span>
+                <span className="text-gray-400 text-[0.6rem] font-semibold">{t.profile.rating}</span>
+              </div>
+            );
+          })()}
         </div>
 
         <div className="border-t border-gray-700/50 mb-3"></div>
@@ -591,15 +595,14 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           cluesGiven.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesGiven}</p>
           ) : (
-            <>
-            <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
-              <span className={thClass} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></span>
-              <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleGivenSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={givenSort} dir={givenDir} /></span>
-              <span className={`${thClass} text-center`} onClick={() => toggleGivenSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={givenSort} dir={givenDir} /></span>
-              <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
-              <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
-            </div>
             <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
+                <span className={thClass} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></span>
+                <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleGivenSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={givenSort} dir={givenDir} /></span>
+                <span className={`${thClass} text-center`} onClick={() => toggleGivenSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={givenSort} dir={givenDir} /></span>
+                <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
+                <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
+              </div>
               <div className="space-y-1">
               {sortedGiven.map((clue) => {
                 const isOwn = clue.userId === user?.id;
@@ -694,7 +697,6 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
               })}
               </div>
             </div>
-            </>
           )
         )}
 
@@ -703,16 +705,15 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           solvedEntries.length === 0 ? (
             <p className="text-center text-gray-500">{t.profile.noCluesSolved}</p>
           ) : (
-            <>
-            <div className="grid grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
-              <span className={thClass} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
-              <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={solvedSort} dir={solvedDir} /></span>
-              <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></span>
-              <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></span>
-              <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
-              <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
-            </div>
             <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+              <div className="sticky top-0 z-10 bg-board-bg grid grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
+                <span className={thClass} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
+                <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={solvedSort} dir={solvedDir} /></span>
+                <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></span>
+                <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></span>
+                <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
+                <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
+              </div>
               <div className="space-y-1">
               {sortedSolved.map((entry, i) => {
                 const solvedKey = `${entry.result.clueId}-${entry.result.timestamp}`;
@@ -804,7 +805,6 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
               })}
               </div>
             </div>
-            </>
           )
         )}
         {/* ===== COMMENTS TAB ===== */}
