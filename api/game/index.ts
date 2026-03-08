@@ -807,7 +807,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
       displayName: displayNameMap.get(userId) || userId,
       rankedCluesGiven: nClues,
       rankedCluesSolved: nSolved,
-      rating: Math.round(rankedAvgScore * 50),
+      rating: Math.round(rankedAvgScore * 50 * 10) / 10,
     };
   }).sort((a, b) => b.rating - a.rating);
 
