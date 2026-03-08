@@ -676,7 +676,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                             <button onClick={() => openProfile(clue.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{clue.userDisplayName || clue.userId}</button>
                           </span>
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>
-                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{cStats && cStats.attempts > 0 ? cStats.clueRating : '—'}</span></span>
+                          <span><span className="text-gray-400">{t.results.avgScoreLabel}:</span> <span className="text-white font-semibold">{cStats && cStats.attempts > 0 ? cStats.avgScore.toFixed(1) : '—'}</span></span>
                           <span><span className="text-gray-400">{t.results.ratingsCount}:</span> <span className="text-white font-semibold">{cStats?.ratingsCount ?? '—'}</span></span>
                           <span><span className="text-gray-400">{t.admin.avgRating}:</span> <span className="text-white font-semibold">{cStats && cStats.ratingsCount > 0 ? cStats.avgRating.toFixed(1) : '—'}</span></span>
                           <div className="col-span-2 flex items-center gap-2 justify-end mt-1">
@@ -788,7 +788,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                             </span>
                           ) : <span />}
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>
-                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{cStats && cStats.attempts > 0 ? cStats.clueRating : '—'}</span></span>
+                          <span><span className="text-gray-400">{t.results.avgScoreLabel}:</span> <span className="text-white font-semibold">{cStats && cStats.attempts > 0 ? cStats.avgScore.toFixed(1) : '—'}</span></span>
                           <span><span className="text-gray-400">{t.results.ratingsCount}:</span> <span className="text-white font-semibold">{cStats?.ratingsCount ?? '—'}</span></span>
                           <span><span className="text-gray-400">{t.admin.avgRating}:</span> <span className="text-white font-semibold">{cStats && cStats.ratingsCount > 0 ? cStats.avgRating.toFixed(1) : '—'}</span></span>
                           <div className="col-span-2 flex items-center gap-2 justify-end mt-1">
