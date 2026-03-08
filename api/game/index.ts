@@ -281,9 +281,19 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
     const ratingRows = await sql`SELECT COUNT(*)::int as count, COALESCE(AVG(rating), 0) as avg FROM ratings WHERE clue_id = ${id}`;
     const ratingsCount = ratingRows.length > 0 ? Number(ratingRows[0].count) : 0;
     const avgRating = ratingRows.length > 0 ? Math.round(Number(ratingRows[0].avg) * 10) / 10 : 0;
+    // Compute clue rating: P75 of scores * 20
+    const sortedScores = [...scores].sort((a, b) => a - b);
+    let p75 = 0;
+    if (sortedScores.length > 0) {
+      const idx = 0.75 * (sortedScores.length - 1);
+      const lo = Math.floor(idx);
+      const hi = Math.ceil(idx);
+      p75 = lo === hi ? sortedScores[lo] : sortedScores[lo] + (sortedScores[hi] - sortedScores[lo]) * (idx - lo);
+    }
+    const clueRating = Math.round(p75 * 20 * 10) / 10;
     return res.json({
       attempts: rows.length, avgScore: Math.round((totalScore / rows.length) * 10) / 10,
-      scores, pickCounts, details, createdAt, ratingsCount, avgRating,
+      scores, pickCounts, details, createdAt, ratingsCount, avgRating, clueRating,
     });
   }
 
@@ -702,6 +712,25 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
     rankedCluesByUser.get(uid)!.push(c);
   }
 
+  // Helper: percentile (linear interpolation)
+  function percentile(arr: number[], p: number): number {
+    if (arr.length === 0) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const idx = (p / 100) * (sorted.length - 1);
+    const lo = Math.floor(idx);
+    const hi = Math.ceil(idx);
+    if (lo === hi) return sorted[lo];
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+  }
+
+  // Clue rating per clue: P75 of all solve scores * 20
+  const clueRatingMap = new Map<string, number>();
+  for (const [clueId, clueResults] of resultsByClue) {
+    const scores = clueResults.map((r) => Number(r.score) || 0);
+    const p75 = percentile(scores, 75);
+    clueRatingMap.set(clueId, Math.round(p75 * 20 * 10) / 10);
+  }
+
   const spymasters = Array.from(rankedCluesByUser.entries()).map(([userId, userClues]) => {
     const nonZeroClues = userClues.filter((c) => Number(c.number) > 0);
     const avgWordsPerClue = nonZeroClues.length > 0
@@ -710,12 +739,17 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
     const othersResults = results.filter((r) => clueIds.has(r.clue_id as string) && r.user_id !== userId);
     const avgScoreOnClues = othersResults.length > 0
       ? othersResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / othersResults.length : 0;
+    // Captain rating = avg(clue ratings) * 2.5
+    const userClueRatings = userClues.map((c) => clueRatingMap.get(c.id as string) || 0);
+    const avgClueRating = userClueRatings.length > 0 ? userClueRatings.reduce((s, v) => s + v, 0) / userClueRatings.length : 0;
+    const captainRating = Math.round(avgClueRating * 2.5);
     return {
       userId, cluesGiven: userClues.length,
       avgWordsPerClue: Math.round(avgWordsPerClue * 10) / 10,
       avgScoreOnClues: Math.round(avgScoreOnClues * 10) / 10,
+      captainRating,
     };
-  }).sort((a, b) => b.avgScoreOnClues - a.avgScoreOnClues);
+  }).sort((a, b) => b.captainRating - a.captainRating);
 
   const rankedResultsByUser = new Map<string, typeof results>();
   for (const r of results) {
@@ -728,12 +762,26 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   const guessers = Array.from(rankedResultsByUser.entries()).map(([userId, userResults]) => {
     const avgWordsPicked = userResults.reduce((s, r) => s + ((r.guessed_indices as number[])?.length || 0), 0) / userResults.length;
     const avgScore = userResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / userResults.length;
+    // Scout rating = avgScore*50 - avgClueRatingOfSolved*2.5 + 100
+    // Only count clues by OTHER users
+    const solvedOthersResults = userResults.filter((r) => {
+      const clueUser = clues.find((c) => (c.id as string) === (r.clue_id as string));
+      return clueUser && (clueUser.user_id as string) !== userId;
+    });
+    const solvedAvg = solvedOthersResults.length > 0
+      ? solvedOthersResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / solvedOthersResults.length : 0;
+    const solvedClueRatings = solvedOthersResults.map((r) => clueRatingMap.get(r.clue_id as string) || 0);
+    const avgSolvedClueRating = solvedClueRatings.length > 0
+      ? solvedClueRatings.reduce((s, v) => s + v, 0) / solvedClueRatings.length : 0;
+    const scoutRating = solvedOthersResults.length > 0
+      ? Math.round(solvedAvg * 50 - avgSolvedClueRating * 2.5 + 100) : 0;
     return {
       userId, cluesSolved: userResults.length,
       avgWordsPicked: Math.round(avgWordsPicked * 10) / 10,
       avgScore: Math.round(avgScore * 10) / 10,
+      scoutRating,
     };
-  }).sort((a, b) => b.avgScore - a.avgScore);
+  }).sort((a, b) => b.scoutRating - a.scoutRating);
 
   const resultsByClue = new Map<string, typeof results>();
   for (const r of results) {
@@ -770,50 +818,49 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
     const ratingsCount = clueRatings.length;
     const avgRating = ratingsCount > 0
       ? Math.round(clueRatings.reduce((s, v) => s + v, 0) / ratingsCount * 10) / 10 : 0;
+    const clueRating = clueRatingMap.get(c.id as string) || 0;
     return {
       id: c.id as string, word: c.word as string, number: Number(c.number),
       userId: c.user_id as string, displayName: displayNameMap.get(c.user_id as string) || c.user_id as string,
       ranked: c.ranked ?? true,
-      attempts, avgScore, createdAt: Number(c.created_at) || 0, ratingsCount, avgRating,
+      attempts, avgScore, createdAt: Number(c.created_at) || 0, ratingsCount, avgRating, clueRating,
     };
   }).sort((a, b) => b.attempts - a.attempts);
 
   const spymastersWithNames = spymasters.map((s) => ({ ...s, displayName: displayNameMap.get(s.userId) || s.userId }));
   const guessersWithNames = guessers.map((g) => ({ ...g, displayName: displayNameMap.get(g.userId) || g.userId }));
 
-  // Overall rating: weighted avg of clue-giving and solving scores * 50
-  // Weight: clues x3, solutions x1
+  // Overall rating: captain*0.6 + scout*0.4
+  const captainRatingMap = new Map<string, number>();
+  for (const s of spymasters) captainRatingMap.set(s.userId, s.captainRating);
+  const scoutRatingMap = new Map<string, number>();
+  for (const g of guessers) scoutRatingMap.set(g.userId, g.scoutRating);
+
   const allRankedUsers = new Set<string>();
   for (const [uid] of rankedCluesByUser) allRankedUsers.add(uid);
   for (const [uid] of rankedResultsByUser) allRankedUsers.add(uid);
 
-  // Build raw avgScoreOnClues map (unrounded, for accurate rating calc)
-  const spyAvgScoreMap = new Map<string, number>();
-  for (const [userId, userClues] of rankedCluesByUser) {
-    const clueIds = new Set(userClues.map((c) => c.id as string));
-    const othersResults = results.filter((r) => clueIds.has(r.clue_id as string) && r.user_id !== userId);
-    const avg = othersResults.length > 0
-      ? othersResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / othersResults.length : 0;
-    spyAvgScoreMap.set(userId, avg);
-  }
-
   const overall = Array.from(allRankedUsers).map((userId) => {
-    const userResults = rankedResultsByUser.get(userId) || [];
     const userClues = rankedCluesByUser.get(userId) || [];
-    const nClues = userClues.length;
-    const nSolved = userResults.length;
-    const clueAvg = spyAvgScoreMap.get(userId) || 0;
-    const solveAvg = nSolved > 0
-      ? userResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / nSolved : 0;
-    const totalWeight = nClues * 3 + nSolved;
-    const rankedAvgScore = totalWeight > 0
-      ? (nClues * clueAvg * 3 + nSolved * solveAvg) / totalWeight : 0;
+    const userResults = rankedResultsByUser.get(userId) || [];
+    const capRating = captainRatingMap.get(userId) || 0;
+    const scRating = scoutRatingMap.get(userId) || 0;
+    const hasCaptain = userClues.length > 0;
+    const hasScout = userResults.length > 0;
+    let rating: number;
+    if (hasCaptain && hasScout) {
+      rating = Math.round(capRating * 0.6 + scRating * 0.4);
+    } else if (hasCaptain) {
+      rating = capRating;
+    } else {
+      rating = scRating;
+    }
     return {
       userId,
       displayName: displayNameMap.get(userId) || userId,
-      rankedCluesGiven: nClues,
-      rankedCluesSolved: nSolved,
-      rating: Math.round(rankedAvgScore * 50 * 10) / 10,
+      rankedCluesGiven: userClues.length,
+      rankedCluesSolved: userResults.length,
+      rating,
     };
   }).sort((a, b) => b.rating - a.rating);
 
@@ -865,44 +912,91 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
 
   // Ranked-only stats for profile rating
   const rankedClueIdArr = clues.filter((c: Record<string, unknown>) => c.ranked !== false).map((c: Record<string, unknown>) => c.id as string);
-  const rankedClueIds = new Set(rankedClueIdArr);
-  const rankedCluesGiven = rankedClueIds.size;
+  const rankedCluesGiven = rankedClueIdArr.length;
 
-  // Avg score others got on this user's ranked clues (spymaster quality)
-  let rankedAvgScoreOnClues = 0;
-  if (rankedClueIdArr.length > 0) {
-    const rankedOthersResults = await sql`SELECT score FROM results WHERE clue_id = ANY(${rankedClueIdArr}) AND user_id != ${userId}`;
-    if (rankedOthersResults.length > 0) {
-      rankedAvgScoreOnClues = rankedOthersResults.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / rankedOthersResults.length;
-    }
+  // Percentile helper
+  function p75(arr: number[]): number {
+    if (arr.length === 0) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const idx = 0.75 * (sorted.length - 1);
+    const lo = Math.floor(idx);
+    const hi = Math.ceil(idx);
+    if (lo === hi) return sorted[lo];
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
   }
 
-  // Get ranked clue IDs that this user solved (need to check clue's ranked flag)
-  let rankedSolvedClueIds: string[] = [];
+  // Captain rating: avg(clue ratings) * 2.5
+  let captainRating = 0;
+  if (rankedClueIdArr.length > 0) {
+    const rankedClueResults = await sql`SELECT clue_id, score FROM results WHERE clue_id = ANY(${rankedClueIdArr})`;
+    const resultsByClue = new Map<string, number[]>();
+    for (const r of rankedClueResults) {
+      const cid = r.clue_id as string;
+      if (!resultsByClue.has(cid)) resultsByClue.set(cid, []);
+      resultsByClue.get(cid)!.push(Number(r.score) || 0);
+    }
+    const clueRatings = rankedClueIdArr.map((cid) => {
+      const scores = resultsByClue.get(cid) || [];
+      return Math.round(p75(scores) * 20 * 10) / 10;
+    });
+    const avgClueRating = clueRatings.reduce((s, v) => s + v, 0) / clueRatings.length;
+    captainRating = Math.round(avgClueRating * 2.5);
+  }
+
+  // Scout rating: avgSolveScore*50 - avgClueRatingOfSolved*2.5 + 100
+  // Only count ranked clues by OTHER users
+  let scoutRating = 0;
+  let rankedCluesSolved = 0;
   if (myResults.length > 0) {
     const solvedClueIds = [...new Set(myResults.map((r: Record<string, unknown>) => r.clue_id as string))];
     if (solvedClueIds.length > 0) {
-      const solvedClueRows = await sql`SELECT id, ranked FROM clues WHERE id = ANY(${solvedClueIds})`;
-      rankedSolvedClueIds = solvedClueRows.filter((c: Record<string, unknown>) => c.ranked !== false).map((c: Record<string, unknown>) => c.id as string);
+      const solvedClueRows = await sql`SELECT id, ranked, user_id FROM clues WHERE id = ANY(${solvedClueIds})`;
+      const rankedOtherClueIds = new Set(
+        solvedClueRows
+          .filter((c: Record<string, unknown>) => c.ranked !== false && (c.user_id as string) !== userId)
+          .map((c: Record<string, unknown>) => c.id as string)
+      );
+      const rankedOtherResults = myResults.filter((r: Record<string, unknown>) => rankedOtherClueIds.has(r.clue_id as string));
+      rankedCluesSolved = rankedOtherResults.length;
+      if (rankedCluesSolved > 0) {
+        const solveAvg = rankedOtherResults.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / rankedCluesSolved;
+        // Get clue ratings for solved clues
+        const solvedRankedClueIdArr = [...rankedOtherClueIds];
+        const solvedClueResultRows = await sql`SELECT clue_id, score FROM results WHERE clue_id = ANY(${solvedRankedClueIdArr})`;
+        const solvedResultsByClue = new Map<string, number[]>();
+        for (const r of solvedClueResultRows) {
+          const cid = r.clue_id as string;
+          if (!solvedResultsByClue.has(cid)) solvedResultsByClue.set(cid, []);
+          solvedResultsByClue.get(cid)!.push(Number(r.score) || 0);
+        }
+        const solvedClueRatings = rankedOtherResults.map((r: Record<string, unknown>) => {
+          const scores = solvedResultsByClue.get(r.clue_id as string) || [];
+          return Math.round(p75(scores) * 20 * 10) / 10;
+        });
+        const avgSolvedClueRating = solvedClueRatings.reduce((s, v) => s + v, 0) / solvedClueRatings.length;
+        scoutRating = Math.round(solveAvg * 50 - avgSolvedClueRating * 2.5 + 100);
+      }
     }
   }
-  const rankedSolvedSet = new Set(rankedSolvedClueIds);
-  const rankedMyResults = myResults.filter((r: Record<string, unknown>) => rankedSolvedSet.has(r.clue_id as string));
-  const rankedCluesSolved = rankedMyResults.length;
-  const rankedSolveAvg = rankedCluesSolved > 0
-    ? rankedMyResults.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / rankedCluesSolved : 0;
 
-  // Weighted rating: clues x3, solutions x1
-  const totalWeight = rankedCluesGiven * 3 + rankedCluesSolved;
-  const rankedAvgScore = totalWeight > 0
-    ? (rankedCluesGiven * rankedAvgScoreOnClues * 3 + rankedCluesSolved * rankedSolveAvg) / totalWeight : 0;
+  // Overall: captain*0.6 + scout*0.4
+  const hasCaptain = rankedCluesGiven > 0;
+  const hasScout = rankedCluesSolved > 0;
+  let overallRating: number;
+  if (hasCaptain && hasScout) {
+    overallRating = Math.round(captainRating * 0.6 + scoutRating * 0.4);
+  } else if (hasCaptain) {
+    overallRating = captainRating;
+  } else {
+    overallRating = scoutRating;
+  }
 
   res.json({
     displayName, cluesGiven, avgWordsPerClue: Math.round(avgWordsPerClue * 10) / 10,
     avgScoreOnClues: Math.round(avgScoreOnClues * 10) / 10, cluesSolved,
     avgWordsPicked: Math.round(avgWordsPicked * 10) / 10, avgScore: Math.round(avgScore * 10) / 10,
     rankedCluesGiven, rankedCluesSolved,
-    rankedAvgScore: Math.round(rankedAvgScore * 10) / 10,
+    overallRating, captainRating, scoutRating,
     ...(avatarUrl ? { avatarUrl } : {}),
     ...(bio ? { bio } : {}),
     ...(country ? { country } : {}),

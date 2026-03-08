@@ -16,8 +16,8 @@ const ACTIVE_GUESS_KEY = 'codenames_active_guess';
 
 type Tab = 'given' | 'solved' | 'comments';
 type SortDir = 'asc' | 'desc';
-type GivenSortField = 'number' | 'attempts' | 'avgScore' | 'date';
-type SolvedSortField = 'number' | 'attempts' | 'avgScore' | 'myScore' | 'date';
+type GivenSortField = 'number' | 'attempts' | 'clueRating' | 'date';
+type SolvedSortField = 'number' | 'attempts' | 'clueRating' | 'myScore' | 'date';
 type RankedFilter = 'all' | 'ranked' | 'casual';
 type SolvedFilter = 'all' | 'solved' | 'unsolved';
 
@@ -31,6 +31,7 @@ interface ClueStats {
   avgScore: number;
   ratingsCount: number;
   avgRating: number;
+  clueRating: number;
 }
 
 function formatDate(ts: number): string {
@@ -120,7 +121,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       setCluesGiven(clues);
       clues.forEach((clue) => {
         api.getClueStats(clue.id).then((s) => {
-          setClueStatsMap((prev) => ({ ...prev, [clue.id]: { attempts: s.attempts, avgScore: s.avgScore, ratingsCount: s.ratingsCount ?? 0, avgRating: s.avgRating ?? 0 } }));
+          setClueStatsMap((prev) => ({ ...prev, [clue.id]: { attempts: s.attempts, avgScore: s.avgScore, ratingsCount: s.ratingsCount ?? 0, avgRating: s.avgRating ?? 0, clueRating: s.clueRating ?? 0 } }));
         });
       });
     });
@@ -135,7 +136,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       entries.forEach((entry) => {
         if (entry.clue) {
           api.getClueStats(entry.clue.id).then((s) => {
-            setClueStatsMap((prev) => ({ ...prev, [entry.clue!.id]: { attempts: s.attempts, avgScore: s.avgScore, ratingsCount: s.ratingsCount ?? 0, avgRating: s.avgRating ?? 0 } }));
+            setClueStatsMap((prev) => ({ ...prev, [entry.clue!.id]: { attempts: s.attempts, avgScore: s.avgScore, ratingsCount: s.ratingsCount ?? 0, avgRating: s.avgRating ?? 0, clueRating: s.clueRating ?? 0 } }));
           });
         }
       });
@@ -163,7 +164,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       if (!givenSort || givenSort === 'date') diff = b.createdAt - a.createdAt;
       else if (givenSort === 'number') diff = b.number - a.number;
       else if (givenSort === 'attempts') diff = (clueStatsMap[b.id]?.attempts ?? 0) - (clueStatsMap[a.id]?.attempts ?? 0);
-      else if (givenSort === 'avgScore') diff = (clueStatsMap[b.id]?.avgScore ?? 0) - (clueStatsMap[a.id]?.avgScore ?? 0);
+      else if (givenSort === 'clueRating') diff = (clueStatsMap[b.id]?.clueRating ?? 0) - (clueStatsMap[a.id]?.clueRating ?? 0);
       return givenDir === 'desc' ? diff : -diff;
     });
     return sorted;
@@ -184,9 +185,9 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
         const aAttempts = a.clue ? (clueStatsMap[a.clue.id]?.attempts ?? 0) : 0;
         const bAttempts = b.clue ? (clueStatsMap[b.clue.id]?.attempts ?? 0) : 0;
         diff = bAttempts - aAttempts;
-      } else if (solvedSort === 'avgScore') {
-        const aScore = a.clue ? (clueStatsMap[a.clue.id]?.avgScore ?? 0) : 0;
-        const bScore = b.clue ? (clueStatsMap[b.clue.id]?.avgScore ?? 0) : 0;
+      } else if (solvedSort === 'clueRating') {
+        const aScore = a.clue ? (clueStatsMap[a.clue.id]?.clueRating ?? 0) : 0;
+        const bScore = b.clue ? (clueStatsMap[b.clue.id]?.clueRating ?? 0) : 0;
         diff = bScore - aScore;
       } else if (solvedSort === 'myScore') diff = (b.result.score ?? 0) - (a.result.score ?? 0);
       return solvedDir === 'desc' ? diff : -diff;
@@ -579,7 +580,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           {/* Rating square (top-right, symmetrical to avatar) — ranked only */}
           {stats && (
             <div className="w-16 h-16 rounded-lg border-2 border-gray-600 shrink-0 flex flex-col items-center justify-center mr-6">
-              <span className="text-amber-400 text-2xl leading-none" style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontWeight: 800 }}>{(stats.rankedAvgScore ?? 0) > 0 ? Math.round((stats.rankedAvgScore ?? 0) * 50 * 10) / 10 : '–'}</span>
+              <span className="text-amber-400 text-2xl leading-none" style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontWeight: 800 }}>{(stats.overallRating ?? 0) > 0 ? stats.overallRating : '–'}</span>
               <span className="text-gray-500 text-[0.55rem] font-semibold mt-1.5">{t.profile.rating}</span>
             </div>
           )}
@@ -621,7 +622,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                 <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
                   <span className={thClass} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></span>
                   <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleGivenSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={givenSort} dir={givenDir} /></span>
-                  <span className={`${thClass} text-center`} onClick={() => toggleGivenSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={givenSort} dir={givenDir} /></span>
+                  <span className={`${thClass} text-center`} onClick={() => toggleGivenSort('clueRating')}>{t.profile.rating}<SortArrow field="clueRating" activeField={givenSort} dir={givenDir} /></span>
                   <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
                   <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
                 </div>
@@ -646,7 +647,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                         </span>
                         <span className="text-xs text-gray-500 text-center hidden sm:block">{clue.createdAt > 0 ? formatDate(clue.createdAt) : '—'}</span>
-                        <span className="text-sm text-gray-400 text-center">{cStats && cStats.attempts > 0 ? cStats.avgScore.toFixed(1) : '—'}</span>
+                        <span className="text-sm text-gray-400 text-center">{cStats && cStats.attempts > 0 ? cStats.clueRating.toFixed(1) : '—'}</span>
                         <span className="text-sm text-center">{clue.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
                           {isOwnProfile ? (
@@ -675,7 +676,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                             <button onClick={() => openProfile(clue.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{clue.userDisplayName || clue.userId}</button>
                           </span>
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>
-                          <span><span className="text-gray-400">{t.results.avgScoreLabel}:</span> <span className="text-white font-semibold">{cStats && cStats.attempts > 0 ? cStats.avgScore.toFixed(1) : '—'}</span></span>
+                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{cStats && cStats.attempts > 0 ? cStats.clueRating.toFixed(1) : '—'}</span></span>
                           <span><span className="text-gray-400">{t.results.ratingsCount}:</span> <span className="text-white font-semibold">{cStats?.ratingsCount ?? '—'}</span></span>
                           <span><span className="text-gray-400">{t.admin.avgRating}:</span> <span className="text-white font-semibold">{cStats && cStats.ratingsCount > 0 ? cStats.avgRating.toFixed(1) : '—'}</span></span>
                           <div className="col-span-2 flex items-center gap-2 justify-end mt-1">
@@ -736,7 +737,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   <span className={thClass} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
                   <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={solvedSort} dir={solvedDir} /></span>
                   <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></span>
-                  <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('avgScore')}>{t.profile.rating}<SortArrow field="avgScore" activeField={solvedSort} dir={solvedDir} /></span>
+                  <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('clueRating')}>{t.profile.rating}<SortArrow field="clueRating" activeField={solvedSort} dir={solvedDir} /></span>
                   <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
                   <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
                 </div>
@@ -764,7 +765,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           {entry.result.score ?? 0}
                           <span className="text-gray-500 font-normal ml-0.5 text-xs">({entry.result.correctCount}/{entry.result.totalTargets})</span>
                         </span>
-                        <span className="text-sm text-gray-400 text-center hidden sm:block">{cStats && cStats.attempts > 0 ? cStats.avgScore.toFixed(1) : '—'}</span>
+                        <span className="text-sm text-gray-400 text-center hidden sm:block">{cStats && cStats.attempts > 0 ? cStats.clueRating.toFixed(1) : '—'}</span>
                         <span className="text-sm text-center">{entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
                           {canView ? (
@@ -787,7 +788,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                             </span>
                           ) : <span />}
                           <span><span className="text-gray-400">{t.profile.solveCount}:</span> <span className="text-white font-semibold">{cStats?.attempts ?? '—'}</span></span>
-                          <span><span className="text-gray-400">{t.results.avgScoreLabel}:</span> <span className="text-white font-semibold">{cStats && cStats.attempts > 0 ? cStats.avgScore.toFixed(1) : '—'}</span></span>
+                          <span><span className="text-gray-400">{t.profile.rating}:</span> <span className="text-white font-semibold">{cStats && cStats.attempts > 0 ? cStats.clueRating.toFixed(1) : '—'}</span></span>
                           <span><span className="text-gray-400">{t.results.ratingsCount}:</span> <span className="text-white font-semibold">{cStats?.ratingsCount ?? '—'}</span></span>
                           <span><span className="text-gray-400">{t.admin.avgRating}:</span> <span className="text-white font-semibold">{cStats && cStats.ratingsCount > 0 ? cStats.avgRating.toFixed(1) : '—'}</span></span>
                           <div className="col-span-2 flex items-center gap-2 justify-end mt-1">

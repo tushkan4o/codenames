@@ -166,6 +166,7 @@ export const api = {
     createdAt?: number;
     ratingsCount?: number;
     avgRating?: number;
+    clueRating?: number;
   }> {
     return get(`/api/game?route=clue&id=${encodeURIComponent(clueId)}&stats=true`);
   },
@@ -191,8 +192,8 @@ export const api = {
   },
 
   async getLeaderboard(boardSize?: BoardSize): Promise<{
-    spymasters: { userId: string; displayName: string; cluesGiven: number; avgWordsPerClue: number; avgScoreOnClues: number }[];
-    guessers: { userId: string; displayName: string; cluesSolved: number; avgWordsPicked: number; avgScore: number }[];
+    spymasters: { userId: string; displayName: string; cluesGiven: number; avgWordsPerClue: number; avgScoreOnClues: number; captainRating: number }[];
+    guessers: { userId: string; displayName: string; cluesSolved: number; avgWordsPicked: number; avgScore: number; scoutRating: number }[];
   }> {
     const params = new URLSearchParams({ route: 'leaderboard' });
     if (boardSize) params.set('boardSize', boardSize);

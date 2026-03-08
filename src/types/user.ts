@@ -45,7 +45,9 @@ export interface UserStats {
   avgScore: number;
   rankedCluesGiven: number;
   rankedCluesSolved: number;
-  rankedAvgScore: number;
+  overallRating: number;
+  captainRating: number;
+  scoutRating: number;
   avatarUrl?: string;
   bio?: string;
   country?: string;
