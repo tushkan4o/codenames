@@ -236,8 +236,8 @@ export default function LeaderboardPage() {
 
   const starIcon = rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>;
   const checkIcon = solvedFilter === 'all' ? '✓' : solvedFilter === 'solved' ? <span className="text-board-blue">✓</span> : <span className="text-gray-600">✓</span>;
-  const starTitle = rankedFilter === 'all' ? 'Все' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные';
-  const checkTitle = solvedFilter === 'all' ? 'Все' : solvedFilter === 'solved' ? 'Решённые' : 'Нерешённые';
+  const starTitle = rankedFilter === 'all' ? 'Все подсказки (рейтинговые и обычные)' : rankedFilter === 'ranked' ? 'Рейтинговые' : 'Обычные';
+  const checkTitle = solvedFilter === 'all' ? 'Все подсказки (решённые и не решённые)' : solvedFilter === 'solved' ? 'Решённые' : 'Нерешённые';
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">

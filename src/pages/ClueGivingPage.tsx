@@ -143,15 +143,8 @@ export default function ClueGivingPage() {
     resetOrder();
   }
 
-  function handleSortByColor() {
+  const applySort = useCallback((sortMode: string) => {
     if (!board) return;
-    if (isSorted) {
-      setIsSorted(false);
-      resetOrder();
-      return;
-    }
-    const sortMode = user?.preferences.colorSortMode || 'rows';
-    // Sort: red → neutral → assassin → blue
     const colorPriority: Record<string, number> = { red: 0, neutral: 1, assassin: 2, blue: 3 };
     const sorted = board.cards.map((_, i) => i);
     sorted.sort((a, b) => {
@@ -161,7 +154,6 @@ export default function ClueGivingPage() {
     });
 
     if (sortMode === 'columns') {
-      // Transpose: fill columns instead of rows
       const cols = config.cols;
       const rows = Math.ceil(sorted.length / cols);
       const transposed: number[] = new Array(sorted.length);
@@ -175,8 +167,26 @@ export default function ClueGivingPage() {
     } else {
       setOrder(sorted);
     }
+  }, [board, config.cols, setOrder]);
+
+  function handleSortByColor() {
+    if (!board) return;
+    if (isSorted) {
+      setIsSorted(false);
+      resetOrder();
+      return;
+    }
+    applySort(user?.preferences.colorSortMode || 'rows');
     setIsSorted(true);
   }
+
+  // Re-apply sort when sort mode changes in settings
+  const colorSortMode = user?.preferences.colorSortMode || 'rows';
+  useEffect(() => {
+    if (isSorted) {
+      applySort(colorSortMode);
+    }
+  }, [colorSortMode, isSorted, applySort]);
 
   function handleCardClick(index: number) {
     if (!board || submitting) return;
