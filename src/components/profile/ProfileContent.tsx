@@ -493,7 +493,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       className={`text-sm text-gray-400 ${isOwnProfile ? 'cursor-pointer hover:text-gray-300' : ''} transition-colors`}
                       onClick={() => { if (isOwnProfile) setEditingCountry(true); }}
                     >
-                      <img src={`https://flagcdn.com/16x12/${c.code.toLowerCase()}.png`} alt={c.flag} className="inline-block w-4 h-3 mr-1 align-text-bottom" /> {c.name}
+                      <img src={`https://flagcdn.com/w40/${c.code.toLowerCase()}.png`} alt={c.flag} className="inline-block w-5 h-3.5 mr-1 align-text-bottom rounded-sm object-cover" /> {c.name}
                     </div>
                   );
                 } else if (isOwnProfile) {

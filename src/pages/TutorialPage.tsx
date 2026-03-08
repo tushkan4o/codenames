@@ -198,7 +198,15 @@ export default function TutorialPage() {
       <NavBar />
 
       {/* Sub-header */}
-      <div className="flex items-center justify-center gap-3 pt-3 mb-3">
+      <div className="flex items-center justify-center gap-3 pt-3 mb-3 relative">
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute left-4 text-gray-400 hover:text-white transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
         <span className={`text-sm font-semibold ${isCaptain ? 'text-board-blue' : 'text-gray-400'}`}>
           {tt.title}: {isCaptain ? tt.captain : tt.scout}
         </span>

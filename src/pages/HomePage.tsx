@@ -29,7 +29,7 @@ export default function HomePage() {
         <div className="flex flex-col gap-3 w-full max-w-xs mb-8">
           <button
             onClick={() => navigate('/setup')}
-            className="w-full py-4 rounded-xl bg-board-blue hover:brightness-110 text-white font-bold text-xl transition-colors"
+            className="w-full py-3 rounded-xl bg-board-blue hover:brightness-110 text-white font-bold text-lg transition-colors"
           >
             {t.home.startGame}
           </button>
