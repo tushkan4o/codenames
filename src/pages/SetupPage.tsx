@@ -83,14 +83,16 @@ export default function SetupPage() {
 
   function canAdjust(key: string, delta: number): boolean {
     if (ranked || mode === 'guessing') return false;
+    const minRed = Math.ceil(totalCards * 0.25);   // 25% of board (7 for 5x5, 4 for 4x4)
+    const maxRed = Math.floor(totalCards * 0.5);    // 50% of board (12 for 5x5, 8 for 4x4)
     if (key === 'red') {
       const newVal = redCount + delta;
-      if (newVal < 1) return false;
+      if (newVal < minRed || newVal > maxRed) return false;
       return totalCards - newVal - blueCount - assassinCount >= 0;
     }
     if (key === 'blue') {
       const newVal = blueCount + delta;
-      if (newVal < 1) return false;
+      if (newVal < 0 || newVal > redCount) return false; // 0 allowed, but not more than red
       return totalCards - redCount - newVal - assassinCount >= 0;
     }
     if (key === 'assassin') {
@@ -103,7 +105,12 @@ export default function SetupPage() {
 
   function adjust(key: string, delta: number) {
     if (!canAdjust(key, delta)) return;
-    if (key === 'red') setRedCount((v) => v + delta);
+    if (key === 'red') {
+      const newRed = redCount + delta;
+      setRedCount(newRed);
+      // Clamp blue to not exceed red
+      if (blueCount > newRed) setBlueCount(newRed);
+    }
     if (key === 'blue') setBlueCount((v) => v + delta);
     if (key === 'assassin') setAssassinCount((v) => v + delta);
   }

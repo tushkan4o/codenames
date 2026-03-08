@@ -138,7 +138,7 @@ async function handleClues(req: VercelRequest, res: VercelResponse, sql: ReturnT
         VALUES (${clue.userId}, ${clue.userId}, ${clue.createdAt})
         ON CONFLICT (id) DO NOTHING`;
       await sql`INSERT INTO clues (id, word, number, board_seed, target_indices, null_indices, created_at, user_id, word_pack, board_size, reshuffle_count, ranked, red_count, blue_count, assassin_count)
-        VALUES (${clue.id}, ${clue.word}, ${clue.number}, ${clue.boardSeed}, ${clue.targetIndices}, ${clue.nullIndices || []}, ${clue.createdAt}, ${clue.userId}, ${clue.wordPack || 'ru'}, ${clue.boardSize}, ${clue.reshuffleCount || 0}, ${clue.ranked ?? true}, ${clue.redCount || null}, ${clue.blueCount || null}, ${clue.assassinCount || null})
+        VALUES (${clue.id}, ${clue.word}, ${clue.number}, ${clue.boardSeed}, ${clue.targetIndices}, ${clue.nullIndices || []}, ${clue.createdAt}, ${clue.userId}, ${clue.wordPack || 'ru'}, ${clue.boardSize}, ${clue.reshuffleCount || 0}, ${clue.ranked ?? true}, ${clue.redCount ?? null}, ${clue.blueCount ?? null}, ${clue.assassinCount ?? null})
         ON CONFLICT (id) DO NOTHING`;
       // Clear captain game for this mode after successful submit
       if (clue.ranked) {
