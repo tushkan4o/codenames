@@ -130,9 +130,15 @@ function computeCaptainRating(clueRatings: number[]): number {
   return Math.round(avg * 2);
 }
 
-/** Scout rating = avgSolveScore*20 - avgClueRating + 120, rounded to integer */
-function computeScoutRating(solveAvg: number, avgSolvedClueRating: number): number {
-  return Math.round(solveAvg * 20 - avgSolvedClueRating + 120);
+/** Solve rating for a single solve = 120 + score*20 - clueRating */
+function computeSolveRating(score: number, clueRating: number): number {
+  return Math.round(120 + score * 20 - clueRating);
+}
+
+/** Scout rating = avg(solveRatings), rounded to integer */
+function computeScoutRating(solveRatings: number[]): number {
+  if (solveRatings.length === 0) return 0;
+  return Math.round(solveRatings.reduce((s, v) => s + v, 0) / solveRatings.length);
 }
 
 /** Overall = captain*0.5 + scout*0.5, or solo rating if only one role */
@@ -792,10 +798,10 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
     });
     let scoutRating = 0;
     if (solvedOthersResults.length > 0) {
-      const solveAvg = solvedOthersResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / solvedOthersResults.length;
-      const solvedClueRatings = solvedOthersResults.map((r) => clueRatingMap.get(r.clue_id as string) || 0);
-      const avgSolvedClueRating = solvedClueRatings.reduce((s, v) => s + v, 0) / solvedClueRatings.length;
-      scoutRating = computeScoutRating(solveAvg, avgSolvedClueRating);
+      const solveRatings = solvedOthersResults.map((r) =>
+        computeSolveRating(Number(r.score) || 0, clueRatingMap.get(r.clue_id as string) || 0)
+      );
+      scoutRating = computeScoutRating(solveRatings);
     }
     return {
       userId, cluesSolved: userResults.length,
@@ -948,7 +954,6 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
       const rankedOtherResults = myResults.filter((r: Record<string, unknown>) => rankedOtherClueIds.has(r.clue_id as string));
       rankedCluesSolved = rankedOtherResults.length;
       if (rankedCluesSolved > 0) {
-        const solveAvg = rankedOtherResults.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / rankedCluesSolved;
         const solvedRankedClueIdArr = [...rankedOtherClueIds];
         const solvedClueResultRows = await sql`SELECT clue_id, score FROM results WHERE clue_id = ANY(${solvedRankedClueIdArr})`;
         const solvedResultsByClue = new Map<string, number[]>();
@@ -957,9 +962,11 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
           if (!solvedResultsByClue.has(cid)) solvedResultsByClue.set(cid, []);
           solvedResultsByClue.get(cid)!.push(Number(r.score) || 0);
         }
-        const solvedClueRatings = rankedOtherResults.map((r: Record<string, unknown>) => computeClueRating(solvedResultsByClue.get(r.clue_id as string) || []));
-        const avgSolvedClueRating = solvedClueRatings.reduce((s, v) => s + v, 0) / solvedClueRatings.length;
-        scoutRating = computeScoutRating(solveAvg, avgSolvedClueRating);
+        const solveRatings = rankedOtherResults.map((r: Record<string, unknown>) => {
+          const clueRating = computeClueRating(solvedResultsByClue.get(r.clue_id as string) || []);
+          return computeSolveRating(Number(r.score) || 0, clueRating);
+        });
+        scoutRating = computeScoutRating(solveRatings);
       }
     }
   }
