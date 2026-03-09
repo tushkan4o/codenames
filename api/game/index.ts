@@ -855,9 +855,9 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   for (const [uid] of rankedResultsByUser) allRankedUsers.add(uid);
 
   const overall = Array.from(allRankedUsers).map((userId) => {
-    const hasCaptain = (rankedCluesByUser.get(userId) || []).length > 0;
-    const hasScout = (rankedResultsByUser.get(userId) || []).length > 0;
-    const rating = computeOverallRating(captainRatingLookup.get(userId) || 0, scoutRatingLookup.get(userId) || 0, hasCaptain, hasScout);
+    const capRating = captainRatingLookup.get(userId) || 0;
+    const scRating = scoutRatingLookup.get(userId) || 0;
+    const rating = computeOverallRating(capRating, scRating, capRating > 0, scRating > 0);
     return {
       userId,
       displayName: displayNameMap.get(userId) || userId,
@@ -964,7 +964,7 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
     }
   }
 
-  const overallRating = computeOverallRating(captainRating, scoutRating, rankedCluesGiven > 0, rankedCluesSolved > 0);
+  const overallRating = computeOverallRating(captainRating, scoutRating, captainRating > 0, scoutRating > 0);
 
   res.json({
     displayName, cluesGiven, avgWordsPerClue: Math.round(avgWordsPerClue * 10) / 10,

@@ -329,7 +329,7 @@ export default function LeaderboardPage() {
                         <span className="font-semibold text-sm text-white truncate">{s.displayName}</span>
                         <span className="text-sm text-gray-400 text-center">{s.cluesGiven}</span>
                         <span className="text-sm text-gray-400 text-center hidden sm:block">{s.avgWordsPerClue.toFixed(1)}</span>
-                        <span className="text-sm text-amber-400 font-bold text-center">{s.captainRating}</span>
+                        <span className="text-sm text-amber-400 font-bold text-center">{s.captainRating || '—'}</span>
                       </div>
                     </div>
                   ))}
