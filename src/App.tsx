@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { GameProvider } from './context/GameContext';
 import { useAuth } from './context/AuthContext';
 import { api } from './lib/api';
@@ -95,6 +96,7 @@ function OAuthHandler() {
 export default function App() {
   return (
     <BrowserRouter>
+      <Analytics />
       <GameProvider>
         <EvictionBanner />
         <ProfileModal />
