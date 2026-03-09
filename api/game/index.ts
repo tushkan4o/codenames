@@ -762,7 +762,9 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
     const othersResults = results.filter((r) => clueIds.has(r.clue_id as string) && r.user_id !== userId);
     const avgScoreOnClues = othersResults.length > 0
       ? othersResults.reduce((s, r) => s + (Number(r.score) || 0), 0) / othersResults.length : 0;
-    const userClueRatings = userClues.map((c) => clueRatingMap.get(c.id as string) || 0);
+    const userClueRatings = userClues
+      .filter((c) => resultsByClue.has(c.id as string))
+      .map((c) => clueRatingMap.get(c.id as string) || 0);
     const captainRating = computeCaptainRating(userClueRatings);
     return {
       userId, cluesGiven: userClues.length,
@@ -925,7 +927,9 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
       if (!resultsByClue.has(cid)) resultsByClue.set(cid, []);
       resultsByClue.get(cid)!.push(Number(r.score) || 0);
     }
-    const clueRatings = rankedClueIdArr.map((cid) => computeClueRating(resultsByClue.get(cid) || []));
+    const clueRatings = rankedClueIdArr
+      .filter((cid: string) => resultsByClue.has(cid))
+      .map((cid: string) => computeClueRating(resultsByClue.get(cid)!));
     captainRating = computeCaptainRating(clueRatings);
   }
 
