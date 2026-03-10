@@ -188,8 +188,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore refresh failures */ }
   }
 
-  // BroadcastChannel: instant same-browser eviction
+  // BroadcastChannel: instant same-browser eviction (not supported in older Safari)
   useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
     const channel = new BroadcastChannel(SESSION_CHANNEL);
     channelRef.current = channel;
     channel.onmessage = (e) => {
