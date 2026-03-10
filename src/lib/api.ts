@@ -60,12 +60,16 @@ export interface AdminClue {
   ranked: boolean;
   attempts: number;
   avgScore: number;
+  redCount: number | null;
+  blueCount: number | null;
+  assassinCount: number | null;
 }
 
 export interface RatingStats {
   counts: Record<number, number>;
   total: number;
   avg: number;
+  items?: { userId: string; displayName: string; rating: number }[];
 }
 
 export interface AdminUser {

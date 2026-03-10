@@ -32,9 +32,16 @@ function SortArrow({ field, activeField, dir }: { field: string; activeField: st
 }
 
 function AdminBoard({ clue, pickPercents, viewingAttemptPicks }: { clue: AdminClue; pickPercents?: Record<number, number>; viewingAttemptPicks?: number[] | null }) {
-  const config = clue.boardSize && BOARD_CONFIGS[clue.boardSize as BoardSize]
+  const baseConfig = clue.boardSize && BOARD_CONFIGS[clue.boardSize as BoardSize]
     ? BOARD_CONFIGS[clue.boardSize as BoardSize]
     : BOARD_CONFIG_LEGACY_5x5;
+  const config = useMemo(() => {
+    if (clue.redCount != null && clue.blueCount != null && clue.assassinCount != null) {
+      const neutralCount = baseConfig.totalCards - clue.redCount - clue.blueCount - clue.assassinCount;
+      return { ...baseConfig, redCount: clue.redCount, blueCount: clue.blueCount, assassinCount: clue.assassinCount, neutralCount };
+    }
+    return baseConfig;
+  }, [baseConfig, clue.redCount, clue.blueCount, clue.assassinCount]);
   const board = useMemo(
     () => generateBoard(clue.boardSeed, config, clue.wordPack || 'ru'),
     [clue.boardSeed, config, clue.wordPack],
@@ -369,6 +376,11 @@ export default function AdminPage() {
                   <span className="font-bold text-white uppercase text-sm">
                     {clue.word} <span className="text-gray-500 font-semibold">{clue.number}</span>
                     {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
+                    {clue.redCount != null && (
+                      <span className="ml-1 text-[0.6rem] text-purple-400 font-bold" title={`${clue.redCount}/${clue.blueCount}/${clue.assassinCount}`}>
+                        {clue.redCount}/{clue.blueCount}/{clue.assassinCount}
+                      </span>
+                    )}
                   </span>
                   <span className="text-gray-400 text-sm truncate">
                     {clue.userId}
@@ -432,10 +444,31 @@ export default function AdminPage() {
                                   </div>
                                 ))}
                               </div>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-gray-400 mb-2">
                                 {t.admin.avgRating}: <span className="text-white font-bold">{ratings[clue.id].avg}</span>
                                 {' '}({ratings[clue.id].total})
                               </p>
+                              {ratings[clue.id].items && ratings[clue.id].items!.length > 0 && (
+                                <div className="max-h-[150px] overflow-y-auto">
+                                  <table className="w-full text-xs">
+                                    <tbody>
+                                      {ratings[clue.id].items!.map((item) => (
+                                        <tr key={item.userId} className="border-t border-gray-700/30">
+                                          <td className="py-1 pr-2 text-gray-300 truncate max-w-[10rem]">
+                                            <button
+                                              onClick={() => openProfile(item.userId)}
+                                              className="text-board-blue hover:text-blue-300 transition-colors"
+                                            >
+                                              {item.displayName}
+                                            </button>
+                                          </td>
+                                          <td className="py-1 text-center text-amber-400 font-semibold">{item.rating}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
                             </div>
                           )
                         ) : (

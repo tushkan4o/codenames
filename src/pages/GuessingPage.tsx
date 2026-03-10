@@ -664,12 +664,6 @@ export default function GuessingPage() {
                 {t.game.continueExisting}
               </button>
               <button
-                onClick={() => { clearActiveGuess(); setConflictingGuess(null); setRetryKey((k) => k + 1); }}
-                className="px-5 py-2 rounded-lg bg-board-red/80 hover:bg-board-red text-white font-semibold transition-colors"
-              >
-                {t.game.startNew}
-              </button>
-              <button
                 onClick={() => navigate('/')}
                 className="px-5 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold transition-colors"
               >

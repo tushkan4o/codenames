@@ -73,6 +73,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ranked: row.ranked ?? true,
         attempts: Number(row.attempt_count) || 0,
         avgScore: Number(row.avg_score) || 0,
+        redCount: row.red_count != null ? Number(row.red_count) : null,
+        blueCount: row.blue_count != null ? Number(row.blue_count) : null,
+        assassinCount: row.assassin_count != null ? Number(row.assassin_count) : null,
       })));
     }
 
@@ -87,10 +90,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const totalRows = await sql`
         SELECT COUNT(*)::int as total, COALESCE(AVG(rating), 0) as avg FROM ratings WHERE clue_id = ${clueId}
       `;
+      const individualRows = await sql`
+        SELECT r.user_id, r.rating, u.display_name
+        FROM ratings r
+        LEFT JOIN users u ON u.id = r.user_id
+        WHERE r.clue_id = ${clueId}
+        ORDER BY r.rating DESC
+      `;
       return res.json({
         counts: Object.fromEntries(rows.map((r: Record<string, unknown>) => [Number(r.rating), Number(r.cnt)])),
         total: Number(totalRows[0]?.total) || 0,
         avg: Math.round((Number(totalRows[0]?.avg) || 0) * 10) / 10,
+        items: individualRows.map((r: Record<string, unknown>) => ({
+          userId: r.user_id,
+          displayName: r.display_name || r.user_id,
+          rating: Number(r.rating),
+        })),
       });
     }
 

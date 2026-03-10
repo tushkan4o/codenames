@@ -142,7 +142,7 @@ export default function Card({
       style={style}
       data-card-index={cardIndex}
     >
-      <span className="text-center leading-tight hyphens-auto" lang="ru" style={{ overflowWrap: 'break-word' }}>{word}</span>
+      <span className="text-center leading-tight hyphens-auto" lang="ru" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>{word}</span>
 
       {/* Dim overlay — dims card but corners stay bright above it */}
       {dimmed && (
