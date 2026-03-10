@@ -231,7 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!active) setEvicted(true);
     };
 
-    const interval = setInterval(pollServer, 5000);
+    const interval = setInterval(pollServer, 30000);
     return () => clearInterval(interval);
   }, [user?.id, evicted]);
 
