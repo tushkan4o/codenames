@@ -95,7 +95,6 @@ export default function GuessingPage() {
 
   // Smart link: conflict with active guess on different clue
   const [conflictingGuess, setConflictingGuess] = useState<ActiveGuessState | null>(null);
-  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     async function loadClue() {
@@ -206,7 +205,7 @@ export default function GuessingPage() {
       setLoading(false);
     }
     loadClue();
-  }, [clueId, retryKey]);
+  }, [clueId]);
 
   const config = useMemo(() => {
     if (!clue) return BOARD_CONFIGS['5x5'];
