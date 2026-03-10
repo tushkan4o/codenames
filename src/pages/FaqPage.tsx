@@ -5,6 +5,7 @@ import NavBar from '../components/layout/NavBar';
 interface FaqItem {
   question: string;
   answer: string;
+  image?: string; // path relative to public/, e.g. '/faq/example.png'
 }
 
 const FAQ_ITEMS: FaqItem[] = [
@@ -76,6 +77,9 @@ export default function FaqPage() {
               {expandedIdx === idx && (
                 <div className="px-5 pb-4 text-gray-300 text-sm leading-relaxed">
                   {item.answer}
+                  {item.image && (
+                    <img src={item.image} alt="" className="mt-3 rounded-lg border border-gray-700 max-w-full" />
+                  )}
                 </div>
               )}
             </div>
