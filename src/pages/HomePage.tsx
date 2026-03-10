@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { api } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
+import FeedbackModal from '../components/shared/FeedbackModal';
 import type { UserStats } from '../types/user';
 
 export default function HomePage() {
@@ -11,6 +12,7 @@ export default function HomePage() {
   const { user, saveSessionState } = useAuth();
   const { t } = useTranslation();
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -51,6 +53,18 @@ export default function HomePage() {
           >
             {t.tutorial.title}
           </button>
+          <button
+            onClick={() => navigate('/faq')}
+            className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg transition-colors"
+          >
+            {t.home.faq}
+          </button>
+          <button
+            onClick={() => setShowFeedback(true)}
+            className="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-lg transition-colors"
+          >
+            {t.home.feedback}
+          </button>
         </div>
 
         {stats && (stats.cluesGiven > 0 || stats.cluesSolved > 0) && (
@@ -66,6 +80,8 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
     </div>
   );
 }

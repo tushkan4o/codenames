@@ -40,6 +40,8 @@ export const ru = {
     startGame: 'Начать игру',
     cluesGiven: 'Подсказок дано',
     cluesSolved: 'Подсказок решено',
+    faq: 'FAQ',
+    feedback: 'Обратная связь',
   },
   setup: {
     title: 'Настройка игры',
@@ -272,6 +274,9 @@ export const ru = {
     allResults: 'Все отгадывания',
     searchResults: 'Поиск по игроку или подсказке...',
     viewProfile: 'Профиль',
+    feedbackTab: 'Отзывы',
+    noFeedback: 'Отзывов пока нет',
+    feedbackFrom: 'От',
   },
   help: {
     title: 'Помощь',

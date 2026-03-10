@@ -96,6 +96,15 @@ export interface Report {
   createdAt: number;
 }
 
+export interface AdminFeedback {
+  id: number;
+  userId: string;
+  displayName: string;
+  message: string;
+  screenshots: string[];
+  createdAt: number;
+}
+
 export interface AdminResult {
   clueId: string;
   userId: string;
@@ -357,5 +366,27 @@ export const api = {
 
   async getNameHistory(userId: string): Promise<NameHistoryEntry[]> {
     return get(`/api/game?route=nameHistory&userId=${encodeURIComponent(userId)}`);
+  },
+
+  // Feedback
+  async uploadFeedbackScreenshot(userId: string, file: File): Promise<{ url: string }> {
+    const res = await fetch(`/api/feedback?action=upload&userId=${encodeURIComponent(userId)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async submitFeedback(userId: string, message: string, screenshots: string[]): Promise<void> {
+    await post('/api/feedback?action=submit', { userId, message, screenshots });
+  },
+
+  async adminGetFeedback(adminId: string): Promise<AdminFeedback[]> {
+    return get(`/api/feedback?action=list&adminId=${encodeURIComponent(adminId)}`);
   },
 };

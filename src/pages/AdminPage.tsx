@@ -6,7 +6,7 @@ import { useProfileModal } from '../context/ProfileModalContext';
 import { api } from '../lib/api';
 import { generateBoard } from '../lib/boardGenerator';
 import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../types/game';
-import type { AdminClue, AdminUser, AdminResult, Report, RatingStats } from '../lib/api';
+import type { AdminClue, AdminUser, AdminResult, AdminFeedback, Report, RatingStats } from '../lib/api';
 import type { BoardSize } from '../types/game';
 import NavBar from '../components/layout/NavBar';
 import Board from '../components/board/Board';
@@ -14,7 +14,7 @@ import ClueStatsPanel from '../components/game/ClueStatsPanel';
 import BoardReviewModal from '../components/game/BoardReviewModal';
 import type { Clue, GuessResult } from '../types/game';
 
-type AdminTab = 'clues' | 'users' | 'results';
+type AdminTab = 'clues' | 'users' | 'results' | 'feedback';
 type SortField = 'createdAt' | 'reportCount' | 'word' | 'userId' | 'attempts' | 'avgScore';
 type UserSortField = 'lastActivity' | 'createdAt' | 'cluesGiven' | 'cluesSolved' | 'avgScore' | 'displayName';
 type ResultSortField = 'timestamp' | 'score' | 'userId' | 'clueWord';
@@ -76,6 +76,7 @@ export default function AdminPage() {
   const [clues, setClues] = useState<AdminClue[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [results, setResults] = useState<AdminResult[]>([]);
+  const [feedbackItems, setFeedbackItems] = useState<AdminFeedback[]>([]);
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [ratings, setRatings] = useState<Record<string, RatingStats>>({});
@@ -116,6 +117,7 @@ export default function AdminPage() {
     api.adminGetAllClues(user.id).then(setClues);
     api.adminGetUsers(user.id).then(setUsers);
     api.adminGetAllResults(user.id).then(setResults);
+    api.adminGetFeedback(user.id).then(setFeedbackItems);
   }, [user, navigate]);
 
   if (!user?.isAdmin) return null;
@@ -323,6 +325,12 @@ export default function AdminPage() {
             className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${adminTab === 'users' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.admin.usersTab} ({users.length})
+          </button>
+          <button
+            onClick={() => setAdminTab('feedback')}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${adminTab === 'feedback' ? 'bg-green-700 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+          >
+            {t.admin.feedbackTab} ({feedbackItems.length})
           </button>
         </div>
 
@@ -723,6 +731,44 @@ export default function AdminPage() {
                 </div>
               );
             })}
+          </div>
+        </div>)}
+
+        {/* ======== FEEDBACK TAB ======== */}
+        {adminTab === 'feedback' && (<div className="flex flex-col flex-1 min-h-0">
+          <div className="text-sm text-gray-400 mb-2">
+            {t.admin.feedbackTab} ({feedbackItems.length})
+          </div>
+          <div className="space-y-3 overflow-y-auto flex-1 min-h-0">
+            {feedbackItems.length === 0 && (
+              <p className="text-gray-500 text-sm">{t.admin.noFeedback}</p>
+            )}
+            {feedbackItems.map((item) => (
+              <div key={item.id} className="bg-gray-800/60 border border-gray-700/30 rounded-lg p-4">
+                <div className="flex justify-between text-xs text-gray-500 mb-2">
+                  <span>
+                    {t.admin.feedbackFrom}:{' '}
+                    <button
+                      onClick={() => openProfile(item.userId)}
+                      className="text-board-blue hover:text-blue-300 transition-colors"
+                    >
+                      {item.displayName}
+                    </button>
+                  </span>
+                  <span>{formatDateTime(item.createdAt)}</span>
+                </div>
+                <p className="text-gray-200 text-sm whitespace-pre-wrap mb-2">{item.message}</p>
+                {item.screenshots && item.screenshots.length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {item.screenshots.map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                        <img src={url} alt="" className="w-24 h-24 object-cover rounded border border-gray-600 hover:border-gray-400 transition-colors" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>)}
       </div>
