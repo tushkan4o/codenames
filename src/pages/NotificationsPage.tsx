@@ -157,14 +157,19 @@ export default function NotificationsPage() {
     }
   }
 
-  function getResultText(n: NotificationItem): string {
+  function renderResult(n: NotificationItem): React.ReactNode {
     if (n.type === 'new_solve' && n.scoreInfo) {
-      return `${n.scoreInfo.score}(${n.scoreInfo.correctCount}/${n.scoreInfo.totalTargets})`;
+      return (
+        <>
+          <span className="text-white font-bold">{n.scoreInfo.score}</span>
+          <span className="text-gray-500 font-normal ml-0.5 text-[0.65rem]">({n.scoreInfo.correctCount}/{n.scoreInfo.totalTargets})</span>
+        </>
+      );
     }
     if ((n.type === 'new_comment' || n.type === 'mention' || n.type === 'profile_comment') && n.message) {
-      return n.message;
+      return <span className="text-gray-400">{n.message}</span>;
     }
-    return '';
+    return null;
   }
 
   const hasMore = offset + PAGE_SIZE < total;
@@ -283,7 +288,7 @@ export default function NotificationsPage() {
                 ) : (
                   <span className="text-gray-500">—</span>
                 )}
-                <span className={`truncate ${n.type === 'new_solve' ? 'text-white font-bold text-center' : 'text-gray-400 text-left'}`}>{getResultText(n)}</span>
+                <span className={`truncate ${n.type === 'new_solve' ? 'text-center' : 'text-left'}`}>{renderResult(n)}</span>
               </div>
             ))
           )}

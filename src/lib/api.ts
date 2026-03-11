@@ -304,11 +304,11 @@ export const api = {
   },
 
   // Notifications
-  async getNotifications(userId: string): Promise<{ id: number; type: string; actorId: string; actorName: string; clueId: string; clueWord: string; scoreInfo: { score: number; correctCount: number; totalTargets: number } | null; message: string | null; createdAt: number; read: boolean }[]> {
+  async getNotifications(userId: string): Promise<{ id: number; type: string; actorId: string; actorName: string; clueId: string; clueWord: string; clueNumber: number | null; scoreInfo: { score: number; correctCount: number; totalTargets: number } | null; message: string | null; createdAt: number; read: boolean }[]> {
     return get(`/api/game?route=notifications&userId=${encodeURIComponent(userId)}`);
   },
 
-  async getAllNotifications(userId: string, opts?: { offset?: number; limit?: number; typeFilter?: string; actorFilter?: string }): Promise<{ notifications: { id: number; type: string; actorId: string; actorName: string; clueId: string; clueWord: string; scoreInfo: { score: number; correctCount: number; totalTargets: number } | null; message: string | null; createdAt: number; read: boolean }[]; total: number }> {
+  async getAllNotifications(userId: string, opts?: { offset?: number; limit?: number; typeFilter?: string; actorFilter?: string }): Promise<{ notifications: { id: number; type: string; actorId: string; actorName: string; clueId: string; clueWord: string; clueNumber: number | null; scoreInfo: { score: number; correctCount: number; totalTargets: number } | null; message: string | null; createdAt: number; read: boolean }[]; total: number }> {
     const params = new URLSearchParams({ route: 'notifications', userId, all: 'true' });
     if (opts?.offset) params.set('offset', String(opts.offset));
     if (opts?.limit) params.set('limit', String(opts.limit));
