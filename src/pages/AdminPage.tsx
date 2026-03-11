@@ -1,16 +1,11 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { useProfileModal } from '../context/ProfileModalContext';
 import { api } from '../lib/api';
-import { generateBoard } from '../lib/boardGenerator';
-import { BOARD_CONFIGS, BOARD_CONFIG_LEGACY_5x5 } from '../types/game';
-import type { AdminClue, AdminUser, AdminResult, AdminFeedback, Report, RatingStats } from '../lib/api';
-import type { BoardSize } from '../types/game';
+import type { AdminClue, AdminUser, AdminResult, AdminFeedback } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
-import Board from '../components/board/Board';
-import ClueStatsPanel from '../components/game/ClueStatsPanel';
 import BoardReviewModal from '../components/game/BoardReviewModal';
 import type { Clue, GuessResult } from '../types/game';
 
@@ -31,41 +26,6 @@ function SortArrow({ field, activeField, dir }: { field: string; activeField: st
   return <span className="ml-0.5 text-gray-400 text-[0.5em]">{dir === 'desc' ? '\u25BC' : '\u25B2'}</span>;
 }
 
-function AdminBoard({ clue, pickPercents, viewingAttemptPicks }: { clue: AdminClue; pickPercents?: Record<number, number>; viewingAttemptPicks?: number[] | null }) {
-  const baseConfig = clue.boardSize && BOARD_CONFIGS[clue.boardSize as BoardSize]
-    ? BOARD_CONFIGS[clue.boardSize as BoardSize]
-    : BOARD_CONFIG_LEGACY_5x5;
-  const config = useMemo(() => {
-    if (clue.redCount != null && clue.blueCount != null && clue.assassinCount != null) {
-      const neutralCount = baseConfig.totalCards - clue.redCount - clue.blueCount - clue.assassinCount;
-      return { ...baseConfig, redCount: clue.redCount, blueCount: clue.blueCount, assassinCount: clue.assassinCount, neutralCount };
-    }
-    return baseConfig;
-  }, [baseConfig, clue.redCount, clue.blueCount, clue.assassinCount]);
-  const board = useMemo(
-    () => generateBoard(clue.boardSeed, config, clue.wordPack || 'ru'),
-    [clue.boardSeed, config, clue.wordPack],
-  );
-
-  const displayCards = board.cards.map((card) => ({ ...card, revealed: true }));
-  const hasAttemptPicks = viewingAttemptPicks && viewingAttemptPicks.length > 0;
-
-  return (
-    <Board
-      cards={displayCards}
-      columns={config.cols}
-      showColors={true}
-      selectedIndices={clue.targetIndices}
-      targetIndices={clue.targetIndices}
-      nullIndices={clue.nullIndices || []}
-      disabled={true}
-      pickOrder={hasAttemptPicks ? viewingAttemptPicks : undefined}
-      highlightTargets={true}
-      pickPercents={!hasAttemptPicks ? pickPercents : undefined}
-    />
-  );
-}
-
 export default function AdminPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -78,11 +38,6 @@ export default function AdminPage() {
   const [results, setResults] = useState<AdminResult[]>([]);
   const [feedbackItems, setFeedbackItems] = useState<AdminFeedback[]>([]);
   const [search, setSearch] = useState('');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [ratings, setRatings] = useState<Record<string, RatingStats>>({});
-  const [reports, setReports] = useState<Record<string, Report[]>>({});
-  const [pickPercentsMap, setPickPercentsMap] = useState<Record<string, Record<number, number>>>({});
-  const [viewingAttemptPicks, setViewingAttemptPicks] = useState<Record<string, number[] | null>>({});
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmDeleteResult, setConfirmDeleteResult] = useState<{ clueId: string; userId: string; timestamp: number } | null>(null);
   const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null);
@@ -104,21 +59,51 @@ export default function AdminPage() {
   const [resultDir, setResultDir] = useState<SortDir>('desc');
   const [resultSearch, setResultSearch] = useState('');
 
-  // Track stats refresh key per clue to force ClueStatsPanel reload
-  const [statsRefreshKey, setStatsRefreshKey] = useState<Record<string, number>>({});
   const [resultModalClue, setResultModalClue] = useState<Clue | null>(null);
   const [resultModalResult, setResultModalResult] = useState<GuessResult | undefined>(undefined);
+
+  // Lazy loading: track which tabs have been loaded
+  const [loadedTabs, setLoadedTabs] = useState<Set<AdminTab>>(new Set());
+  const [recalcLoading, setRecalcLoading] = useState(false);
+  const [recalcStatus, setRecalcStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.isAdmin) {
       navigate('/');
       return;
     }
-    api.adminGetAllClues(user.id).then(setClues);
-    api.adminGetUsers(user.id).then(setUsers);
-    api.adminGetAllResults(user.id).then(setResults);
-    api.adminGetFeedback(user.id).then(setFeedbackItems);
+    // Load initial tab
+    loadTabData('clues');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (user?.isAdmin) loadTabData(adminTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminTab]);
+
+  function loadTabData(tab: AdminTab) {
+    if (!user?.isAdmin || loadedTabs.has(tab)) return;
+    setLoadedTabs((prev) => new Set(prev).add(tab));
+    if (tab === 'clues') api.adminGetAllClues(user.id).then(setClues);
+    else if (tab === 'users') api.adminGetUsers(user.id).then(setUsers);
+    else if (tab === 'results') api.adminGetAllResults(user.id).then(setResults);
+    else if (tab === 'feedback') api.adminGetFeedback(user.id).then(setFeedbackItems);
+  }
+
+  async function handleRecalcAll() {
+    setRecalcLoading(true);
+    setRecalcStatus(null);
+    try {
+      await api.recalcAll();
+      setRecalcStatus('ok');
+    } catch {
+      setRecalcStatus('error');
+    } finally {
+      setRecalcLoading(false);
+      setTimeout(() => setRecalcStatus(null), 3000);
+    }
+  }
 
   if (!user?.isAdmin) return null;
 
@@ -137,34 +122,31 @@ export default function AdminPage() {
     else { setResultSort(field); setResultDir('desc'); }
   }
 
-  async function toggleExpand(clueId: string) {
-    if (expandedId === clueId) {
-      setExpandedId(null);
-      return;
-    }
-    setExpandedId(clueId);
+  async function handleViewClue(clue: AdminClue) {
+    const fullClue = await api.getClueById(clue.id, true);
+    if (!fullClue) return;
+    setResultModalClue(fullClue);
+    setResultModalResult(undefined);
+  }
 
-    if (!pickPercentsMap[clueId]) {
-      api.getClueStats(clueId).then((s) => {
-        if (s.attempts > 0) {
-          const pcts: Record<number, number> = {};
-          const counts = (s as { pickCounts?: Record<number, number> }).pickCounts || {};
-          for (const [idx, cnt] of Object.entries(counts)) {
-            pcts[Number(idx)] = Math.round((cnt as number / s.attempts) * 100);
-          }
-          setPickPercentsMap((prev) => ({ ...prev, [clueId]: pcts }));
-        }
-      });
-    }
-    if (!ratings[clueId]) {
-      api.adminGetRatings(user!.id, clueId).then((r) => {
-        setRatings((prev) => ({ ...prev, [clueId]: r }));
-      });
-    }
-    if (!reports[clueId]) {
-      const clueReports = await api.adminGetReports(user!.id, clueId);
-      setReports((prev) => ({ ...prev, [clueId]: clueReports }));
-    }
+  async function handleToggleClueDisabled(clueId: string, currentDisabled: boolean) {
+    if (!user) return;
+    try {
+      await api.toggleClueDisabled(clueId, user.id, !currentDisabled);
+      setClues((prev) => prev.map((c) => c.id === clueId ? { ...c, disabled: !currentDisabled } : c));
+    } catch (err) { console.error('Failed to toggle clue disabled:', err); }
+  }
+
+  async function handleToggleResultDisabled(r: AdminResult) {
+    if (!user) return;
+    const newDisabled = !r.disabled;
+    try {
+      await api.toggleResultDisabled(r.clueId, r.userId, r.timestamp, newDisabled, user.id);
+      setResults((prev) => prev.map((res) =>
+        res.clueId === r.clueId && res.userId === r.userId && res.timestamp === r.timestamp
+          ? { ...res, disabled: newDisabled } : res
+      ));
+    } catch (err) { console.error('Failed to toggle result disabled:', err); }
   }
 
   async function handleDeleteClue(clueId: string) {
@@ -172,7 +154,6 @@ export default function AdminPage() {
     setClues((prev) => prev.filter((c) => c.id !== clueId));
     setResults((prev) => prev.filter((r) => r.clueId !== clueId));
     setConfirmDeleteId(null);
-    setExpandedId(null);
     showDeleted();
   }
 
@@ -180,19 +161,6 @@ export default function AdminPage() {
     await api.adminDeleteResult(user!.id, clueId, userId, timestamp);
     setResults((prev) => prev.filter((r) => !(r.clueId === clueId && r.userId === userId && r.timestamp === timestamp)));
     setConfirmDeleteResult(null);
-    // Refresh pick percents and stats for the affected clue
-    setPickPercentsMap((prev) => { const next = { ...prev }; delete next[clueId]; return next; });
-    setStatsRefreshKey((prev) => ({ ...prev, [clueId]: (prev[clueId] || 0) + 1 }));
-    api.getClueStats(clueId).then((s) => {
-      if (s.attempts > 0) {
-        const pcts: Record<number, number> = {};
-        const counts = (s as { pickCounts?: Record<number, number> }).pickCounts || {};
-        for (const [idx, cnt] of Object.entries(counts)) {
-          pcts[Number(idx)] = Math.round((cnt as number / s.attempts) * 100);
-        }
-        setPickPercentsMap((prev) => ({ ...prev, [clueId]: pcts }));
-      }
-    });
     showDeleted();
   }
 
@@ -309,6 +277,18 @@ export default function AdminPage() {
         <div className="flex items-center justify-center gap-3 mb-4">
           <span className="text-lg font-extrabold text-white">{t.admin.title}</span>
           <button
+            onClick={handleRecalcAll}
+            disabled={recalcLoading}
+            className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-colors ${
+              recalcStatus === 'ok' ? 'bg-green-700 text-white' :
+              recalcStatus === 'error' ? 'bg-board-red text-white' :
+              recalcLoading ? 'bg-gray-700 text-gray-400' :
+              'bg-purple-700 hover:bg-purple-600 text-white'
+            }`}
+          >
+            {recalcLoading ? '...' : recalcStatus === 'ok' ? 'OK' : recalcStatus === 'error' ? 'ERR' : 'Recalc'}
+          </button>
+          <button
             onClick={() => setAdminTab('clues')}
             className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${adminTab === 'clues' ? 'bg-board-red text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
@@ -357,7 +337,7 @@ export default function AdminPage() {
         </div>
 
         {/* Table header */}
-        <div className="hidden md:grid grid-cols-[1.5fr_1fr_2rem_4.5rem_4rem_1fr_3rem_2rem] gap-2 px-4 py-1 items-center">
+        <div className="hidden md:grid grid-cols-[1.5fr_1fr_2rem_4.5rem_4rem_1fr_3rem_2rem_2rem] gap-2 px-4 py-1 items-center">
           <span className={thClass} onClick={() => toggleSort('word')}>{t.admin.clueWord}<SortArrow field="word" activeField={sortField} dir={sortDir} /></span>
           <span className={thClass} onClick={() => toggleSort('userId')}>{t.admin.clueAuthor}<SortArrow field="userId" activeField={sortField} dir={sortDir} /></span>
           <span className={`${thClass} text-center`} title="Рейтинговая">★</span>
@@ -366,23 +346,19 @@ export default function AdminPage() {
           <span className={`${thClass} text-center`} onClick={() => toggleSort('createdAt')}>{t.admin.clueDate}<SortArrow field="createdAt" activeField={sortField} dir={sortDir} /></span>
           <span className={`${thClass} text-center`} onClick={() => toggleSort('reportCount')}>{t.admin.reportsCount}<SortArrow field="reportCount" activeField={sortField} dir={sortDir} /></span>
           <span></span>
+          <span></span>
         </div>
 
         <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
           {sorted.map((clue) => (
             <div key={clue.id}>
-              {/* Row */}
               <div
-                onClick={() => toggleExpand(clue.id)}
-                className={`bg-gray-800/60 border rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600 ${
-                  expandedId === clue.id
-                    ? 'border-gray-500'
-                    : 'border-gray-700/30'
-                }`}
+                onClick={() => handleViewClue(clue)}
+                className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
               >
-                <div className="grid grid-cols-2 md:grid-cols-[1.5fr_1fr_2rem_4.5rem_4rem_1fr_3rem_2rem] gap-2 items-center">
+                <div className="grid grid-cols-2 md:grid-cols-[1.5fr_1fr_2rem_4.5rem_4rem_1fr_3rem_2rem_2rem] gap-2 items-center">
                   <span className="font-bold text-white uppercase text-sm">
-                    {clue.word} <span className="text-gray-500 font-semibold">{clue.number}</span>
+                    {clue.word} <span className="text-amber-400 font-semibold">{clue.number}</span>
                     {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                     {clue.redCount != null && (
                       <span className="ml-1 text-[0.6rem] text-purple-400 font-bold" title={`${clue.redCount}/${clue.blueCount}/${clue.assassinCount}`}>
@@ -390,8 +366,13 @@ export default function AdminPage() {
                       </span>
                     )}
                   </span>
-                  <span className="text-gray-400 text-sm truncate">
-                    {clue.userId}
+                  <span className="text-sm truncate">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openProfile(clue.userId); }}
+                      className="text-board-blue hover:text-blue-300 transition-colors"
+                    >
+                      {clue.displayName}
+                    </button>
                   </span>
                   <span className="text-sm text-center">{clue.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                   <span className="text-sm text-center text-gray-400">{clue.attempts || '—'}</span>
@@ -409,6 +390,16 @@ export default function AdminPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      handleToggleClueDisabled(clue.id, clue.disabled);
+                    }}
+                    className={`text-sm font-bold transition-colors leading-none ${clue.disabled ? 'text-board-red hover:text-red-300' : 'text-board-blue hover:text-blue-300'}`}
+                    title={clue.disabled ? 'Включить' : 'Выключить'}
+                  >
+                    {clue.disabled ? '✗' : '✓'}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setConfirmDeleteId(clue.id);
                     }}
                     className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"
@@ -418,106 +409,6 @@ export default function AdminPage() {
                   </button>
                 </div>
               </div>
-
-              {/* Expanded detail */}
-              {expandedId === clue.id && (
-                <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg p-4">
-                  <div className="flex gap-6 flex-col md:flex-row">
-                    {/* Left: ClueStatsPanel + ratings + reports */}
-                    <div className="flex-1 space-y-4 min-w-0">
-                      {/* Stats via ClueStatsPanel */}
-                      <ClueStatsPanel
-                        key={statsRefreshKey[clue.id] || 0}
-                        clueId={clue.id}
-                        spymasterUserId={clue.userId}
-                        onShowAttemptPicks={(indices) => setViewingAttemptPicks((prev) => ({ ...prev, [clue.id]: indices.length > 0 ? indices : null }))}
-                        onDeleteAttempt={(attemptUserId, timestamp) => setConfirmDeleteResult({ clueId: clue.id, userId: attemptUserId, timestamp })}
-                      />
-
-                      {/* Ratings */}
-                      <div>
-                        <h3 className="text-sm font-bold text-white mb-2">
-                          {t.admin.ratings}
-                        </h3>
-                        {ratings[clue.id] ? (
-                          ratings[clue.id].total === 0 ? (
-                            <p className="text-gray-500 text-sm">{t.admin.noRatings}</p>
-                          ) : (
-                            <div>
-                              <div className="flex gap-3 mb-1">
-                                {[1, 2, 3, 4, 5].map((r) => (
-                                  <div key={r} className="text-center">
-                                    <span className="text-xs text-gray-400">{r}</span>
-                                    <p className="text-white font-bold text-sm">{ratings[clue.id].counts[r] || 0}</p>
-                                  </div>
-                                ))}
-                              </div>
-                              <p className="text-xs text-gray-400 mb-2">
-                                {t.admin.avgRating}: <span className="text-white font-bold">{ratings[clue.id].avg}</span>
-                                {' '}({ratings[clue.id].total})
-                              </p>
-                              {ratings[clue.id].items && ratings[clue.id].items!.length > 0 && (
-                                <div className="max-h-[150px] overflow-y-auto">
-                                  <table className="w-full text-xs">
-                                    <tbody>
-                                      {ratings[clue.id].items!.map((item) => (
-                                        <tr key={item.userId} className="border-t border-gray-700/30">
-                                          <td className="py-1 pr-2 text-gray-300 truncate max-w-[10rem]">
-                                            <button
-                                              onClick={() => openProfile(item.userId)}
-                                              className="text-board-blue hover:text-blue-300 transition-colors"
-                                            >
-                                              {item.displayName}
-                                            </button>
-                                          </td>
-                                          <td className="py-1 text-center text-amber-400 font-semibold">{item.rating}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              )}
-                            </div>
-                          )
-                        ) : (
-                          <p className="text-gray-500 text-sm">...</p>
-                        )}
-                      </div>
-
-                      {/* Reports */}
-                      <div>
-                        <h3 className="text-sm font-bold text-white mb-2">
-                          {t.admin.reports}
-                        </h3>
-                        {reports[clue.id] ? (
-                          reports[clue.id].length === 0 ? (
-                            <p className="text-gray-500 text-sm">{t.admin.noReports}</p>
-                          ) : (
-                            <div className="space-y-2">
-                              {reports[clue.id].map((report) => (
-                                <div key={report.id} className="bg-gray-900/50 rounded p-3 text-sm">
-                                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                                    <span>{t.admin.reportBy}: {report.userId}</span>
-                                    <span>{formatDateTime(report.createdAt)}</span>
-                                  </div>
-                                  <p className="text-gray-300">{t.admin.reportReason}: {report.reason}</p>
-                                </div>
-                              ))}
-                            </div>
-                          )
-                        ) : (
-                          <p className="text-gray-500 text-sm">...</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right: game board preview */}
-                    <div className="md:w-[600px] shrink-0">
-                      <AdminBoard clue={clue} pickPercents={pickPercentsMap[clue.id]} viewingAttemptPicks={viewingAttemptPicks[clue.id]} />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -540,12 +431,13 @@ export default function AdminPage() {
           </div>
 
           {/* Table header */}
-          <div className="hidden md:grid grid-cols-[1.5fr_1fr_4.5rem_2rem_1fr_2rem] gap-2 px-4 py-1 items-center">
+          <div className="hidden md:grid grid-cols-[1.5fr_1fr_4.5rem_2rem_1fr_2rem_2rem] gap-2 px-4 py-1 items-center">
             <span className={thClass} onClick={() => toggleResultSort('clueWord')}>{t.admin.clueWord}<SortArrow field="clueWord" activeField={resultSort} dir={resultDir} /></span>
             <span className={thClass} onClick={() => toggleResultSort('userId')}>{t.admin.player}<SortArrow field="userId" activeField={resultSort} dir={resultDir} /></span>
             <span className={`${thClass} text-center`} onClick={() => toggleResultSort('score')}>{t.admin.score}<SortArrow field="score" activeField={resultSort} dir={resultDir} /></span>
             <span className={`${thClass} text-center`} title="Рейтинговая">★</span>
             <span className={`${thClass} text-center`} onClick={() => toggleResultSort('timestamp')}>{t.admin.clueDate}<SortArrow field="timestamp" activeField={resultSort} dir={resultDir} /></span>
+            <span></span>
             <span></span>
           </div>
 
@@ -556,10 +448,11 @@ export default function AdminPage() {
                 onClick={() => handleViewResult(r)}
                 className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
               >
-                <div className="grid grid-cols-2 md:grid-cols-[1.5fr_1fr_4.5rem_2rem_1fr_2rem] gap-2 items-center">
+                <div className="grid grid-cols-2 md:grid-cols-[1.5fr_1fr_4.5rem_2rem_1fr_2rem_2rem] gap-2 items-center">
                   <span className="font-bold text-white uppercase text-sm">
                     {r.clueWord || r.clueId.slice(0, 12)}
-                    {r.clueNumber != null && <span className="ml-1 text-gray-500 font-semibold">{r.clueNumber}</span>}
+                    {r.clueNumber != null && <span className="ml-1 text-amber-400 font-semibold">{r.clueNumber}</span>}
+                    {r.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                   </span>
                   <span className="text-sm truncate">
                     <button
@@ -575,6 +468,16 @@ export default function AdminPage() {
                   </span>
                   <span className="text-sm text-center">{r.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                   <span className="text-gray-400 text-sm text-center">{formatDateTime(r.timestamp)}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleResultDisabled(r);
+                    }}
+                    className={`text-sm font-bold transition-colors leading-none ${r.disabled ? 'text-board-red hover:text-red-300' : 'text-board-blue hover:text-blue-300'}`}
+                    title={r.disabled ? 'Включить' : 'Выключить'}
+                  >
+                    {r.disabled ? '✗' : '✓'}
+                  </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setConfirmDeleteResult({ clueId: r.clueId, userId: r.userId, timestamp: r.timestamp }); }}
                     className="text-gray-500 hover:text-board-red text-lg font-bold transition-colors leading-none"

@@ -286,7 +286,6 @@ async function handleClues(req: VercelRequest, res: VercelResponse, sql: ReturnT
       } else {
         await sql`UPDATE users SET captain_casual = NULL WHERE id = ${clue.userId}`;
       }
-      try { await recalcUserStats(sql, clue.userId); } catch { /* best-effort */ }
       return res.json({ ok: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -514,15 +513,6 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: Retur
     const adminCheck = await sql`SELECT is_admin FROM users WHERE id = ${adminUserId}`;
     if (!adminCheck.length || !adminCheck[0].is_admin) return res.status(403).json({ error: 'Admin only' });
     await sql`UPDATE results SET disabled = ${disabled} WHERE clue_id = ${clueId} AND user_id = ${resultUserId} AND timestamp = ${timestamp}`;
-    // Recalc stats (best-effort)
-    try {
-      await recalcClueStats(sql, clueId);
-      await recalcUserStats(sql, resultUserId);
-      const clueInfo = await sql`SELECT user_id FROM clues WHERE id = ${clueId}`;
-      if (clueInfo.length > 0 && (clueInfo[0].user_id as string) !== resultUserId) {
-        await recalcUserStats(sql, clueInfo[0].user_id as string);
-      }
-    } catch { /* best-effort */ }
     return res.json({ ok: true });
   }
 
@@ -565,14 +555,6 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: Retur
           }
         }
       } catch { /* notifications are best-effort */ }
-      // Recalculate precomputed ratings (best-effort, don't block response)
-      try {
-        await recalcClueStats(sql, result.clueId);
-        await recalcUserStats(sql, result.userId);
-        if (clueAuthorId && clueAuthorId !== result.userId) {
-          await recalcUserStats(sql, clueAuthorId);
-        }
-      } catch { /* rating recalc is best-effort */ }
       return res.json({ ok: true, targetIndices, nullIndices });
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err && (err as Record<string, unknown>).code === '23505') {
@@ -623,7 +605,6 @@ async function handleRatings(req: VercelRequest, res: VercelResponse, sql: Retur
   await sql`INSERT INTO ratings (clue_id, user_id, rating)
     VALUES (${clueId}, ${userId}, ${rating})
     ON CONFLICT (clue_id, user_id) DO UPDATE SET rating = ${rating}`;
-  try { await recalcClueStats(sql, clueId); } catch { /* best-effort */ }
   res.json({ ok: true });
 }
 

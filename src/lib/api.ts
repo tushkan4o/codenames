@@ -49,6 +49,7 @@ export interface AdminClue {
   word: string;
   number: number;
   userId: string;
+  displayName: string;
   boardSize: string;
   boardSeed: string;
   wordPack: string;
@@ -116,6 +117,7 @@ export interface AdminResult {
   clueWord: string | null;
   clueNumber: number | null;
   ranked: boolean;
+  disabled: boolean;
   guessedIndices: number[];
 }
 
@@ -392,5 +394,9 @@ export const api = {
 
   async adminGetFeedback(adminId: string): Promise<AdminFeedback[]> {
     return get(`/api/feedback?action=list&adminId=${encodeURIComponent(adminId)}`);
+  },
+
+  async recalcAll(): Promise<{ ok: boolean }> {
+    return post('/api/game?route=recalc-all', {});
   },
 };
