@@ -553,6 +553,11 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: Retur
       const solveRating = computeSolveRating(result.score, clueRating);
       await sql`INSERT INTO results (clue_id, user_id, guessed_indices, correct_count, total_targets, score, timestamp, board_size, solve_rating)
         VALUES (${result.clueId}, ${result.userId}, ${result.guessedIndices}, ${correctCount}, ${targetIndices.length}, ${result.score}, ${result.timestamp}, ${result.boardSize || null}, ${solveRating})`;
+      // Update clue attempts + avg_score immediately
+      await sql`UPDATE clues SET
+        attempts = (SELECT COUNT(*) FROM results WHERE clue_id = ${result.clueId} AND disabled IS NOT TRUE),
+        avg_score = ROUND((SELECT COALESCE(AVG(score), 0) FROM results WHERE clue_id = ${result.clueId} AND disabled IS NOT TRUE)::numeric, 1)
+        WHERE id = ${result.clueId}`;
       // Notify clue author about new solve
       let clueAuthorId: string | null = null;
       try {
