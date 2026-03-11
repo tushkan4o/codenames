@@ -154,6 +154,7 @@ export default function NavBar() {
       const target = e.target as Node;
       if (showDropdown && dropdownRef.current && !dropdownRef.current.contains(target) && bellBtnRef.current && !bellBtnRef.current.contains(target)) {
         setShowDropdown(false);
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       }
       if (showSettings && settingsRef.current && !settingsRef.current.contains(target) && gearBtnRef.current && !gearBtnRef.current.contains(target)) {
         setShowSettings(false);
@@ -180,11 +181,18 @@ export default function NavBar() {
   }
 
   async function handleBellClick() {
-    if (!showDropdown) setBellPos(computePos(bellBtnRef));
-    setShowDropdown((v) => !v);
-    setShowSettings(false);
-    if (!showDropdown && user && unreadCount > 0) {
-      await api.markNotificationsRead(user.id);
+    if (!showDropdown) {
+      // Opening dropdown
+      setBellPos(computePos(bellBtnRef));
+      setShowDropdown(true);
+      setShowSettings(false);
+      // Mark as read on server (but keep showing in dropdown)
+      if (user && unreadCount > 0) {
+        api.markNotificationsRead(user.id).catch(() => {});
+      }
+    } else {
+      // Closing dropdown — update local state to reflect read status
+      setShowDropdown(false);
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     }
   }
