@@ -120,21 +120,21 @@ function percentile(arr: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
-/** Clue rating = P75(all solve scores) * 20, rounded to integer */
+/** Clue rating = P75(all solve scores) * 40, rounded to integer */
 function computeClueRating(scores: number[]): number {
-  return Math.round(percentile(scores, 75) * 20);
+  return Math.round(percentile(scores, 75) * 40);
 }
 
-/** Captain rating = avg(clue ratings of ranked clues) * multiplier, rounded to integer */
+/** Captain rating = avg(clue ratings of ranked clues), rounded to integer */
 function computeCaptainRating(clueRatings: number[]): number {
   if (clueRatings.length === 0) return 0;
   const avg = clueRatings.reduce((s, v) => s + v, 0) / clueRatings.length;
-  return Math.round(avg * 2);
+  return Math.round(avg);
 }
 
-/** Solve rating for a single solve = 120 + score*20 - clueRating */
+/** Solve rating for a single solve = 150 + score*40 - clueRating */
 function computeSolveRating(score: number, clueRating: number): number {
-  return Math.round(120 + score * 20 - clueRating);
+  return Math.round(150 + score * 40 - clueRating);
 }
 
 /** Scout rating = avg(solveRatings), rounded to integer */

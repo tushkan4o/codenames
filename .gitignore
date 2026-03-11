@@ -9,3 +9,6 @@ dist
 tasks/
 CLAUDE.md
 .claude/
+
+.vercel
+.env*.local

@@ -32,7 +32,7 @@ export default function AdminPage() {
   const { t } = useTranslation();
   const { openProfile } = useProfileModal();
 
-  const [adminTab, setAdminTab] = useState<AdminTab>('clues');
+  const [adminTab, setAdminTab] = useState<AdminTab | null>(null);
   const [clues, setClues] = useState<AdminClue[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [results, setResults] = useState<AdminResult[]>([]);
@@ -74,20 +74,17 @@ export default function AdminPage() {
   const [resultsTotal, setResultsTotal] = useState(0);
   const [resultsOffset, setResultsOffset] = useState(0);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     if (!user?.isAdmin) {
       navigate('/');
       return;
     }
-    // Load initial tab
-    loadTabData('clues');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate]);
 
   useEffect(() => {
-    if (user?.isAdmin) loadTabData(adminTab);
+    if (user?.isAdmin && adminTab) loadTabData(adminTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminTab]);
 
