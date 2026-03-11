@@ -1406,6 +1406,8 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`CREATE TABLE IF NOT EXISTS subscriptions (id SERIAL PRIMARY KEY, subscriber_id TEXT NOT NULL REFERENCES users(id), target_id TEXT NOT NULL REFERENCES users(id), created_at BIGINT NOT NULL, UNIQUE(subscriber_id, target_id))`;
     await sql`CREATE INDEX IF NOT EXISTS idx_subscriptions_target ON subscriptions(target_id)`;
     await sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS score_info TEXT`;
+    // Backfill: populate message for old comment/mention notifications from comments table
+    await sql`UPDATE notifications n SET message = (SELECT content FROM comments cm WHERE cm.clue_id = n.clue_id AND cm.user_id = n.actor_id ORDER BY cm.created_at DESC LIMIT 1) WHERE n.type IN ('new_comment', 'mention') AND n.message IS NULL AND n.clue_id IS NOT NULL`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {
