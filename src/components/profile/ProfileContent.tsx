@@ -773,7 +773,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {entry.clue?.word ?? entry.result.clueId.slice(0, 12)}
                           <span className="ml-1 text-amber-400 font-semibold">{entry.clue?.number ?? entry.result.totalTargets}</span>
-                          {entry.result.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
+                          {entry.result.disabled && <span className="ml-1 text-[0.6rem] text-red-400 font-bold border border-red-400/40 rounded px-0.5">OFF</span>}
                         </span>
                         <span className="text-xs text-gray-500 text-center hidden sm:block">{entry.result.timestamp > 0 ? formatDate(entry.result.timestamp) : '—'}</span>
                         <span className="text-sm font-bold text-white text-center">
