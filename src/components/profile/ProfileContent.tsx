@@ -391,7 +391,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     } else { setSolvedSort(field); setSolvedDir('desc'); }
   }
 
-  const thClass = 'py-2 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
+  const thClass = 'py-1 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
 
   const starIcon = rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>;
   const checkIcon = solvedFilter === 'all' ? '✓' : solvedFilter === 'solved' ? <span className="text-board-blue">✓</span> : <span className="text-gray-600">–</span>;
@@ -639,7 +639,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   <div key={clue.id}>
                     <div
                       onClick={() => setExpandedGivenId(isExpanded ? null : clue.id)}
-                      className={`bg-gray-800/60 border rounded-lg px-4 py-2.5 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
+                      className={`bg-gray-800/60 border rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
                       <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3.5rem_2rem_2rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
@@ -753,7 +753,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   <div key={i}>
                     <div
                       onClick={() => setExpandedSolvedKey(isExpanded ? null : solvedKey)}
-                      className={`bg-gray-800/60 border rounded-lg px-4 py-2.5 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
+                      className={`bg-gray-800/60 border rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
                       <div className="grid grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3rem_3.5rem_2rem_2rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">

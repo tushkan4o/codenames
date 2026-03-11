@@ -58,31 +58,33 @@ export default function ClueRating({ clueId, onRate, onReport, initialRating, sh
 
   return (
     <div className="mt-2">
-      {/* Main row: label + stars on left, buttons on right */}
-      <div className="flex items-center justify-between px-1 py-2">
-        <div className="flex items-center gap-2">
-          <span className="text-yellow-400 text-xs font-semibold min-w-[4rem]">
-            {justRated ? t.rating.thanks : t.rating.rateLabel}
-          </span>
-          <div className="flex gap-0.5">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                onClick={() => handleRate(star)}
-                onMouseEnter={() => !disabled && setHoverRating(star)}
-                onMouseLeave={() => setHoverRating(null)}
-                disabled={disabled}
-                className={`text-lg transition-colors ${
-                  star <= displayRating
-                    ? 'text-yellow-400'
-                    : 'text-gray-600'
-                } ${disabled ? 'cursor-default' : 'cursor-pointer hover:text-yellow-300'}`}
-              >
-                ★
-              </button>
-            ))}
+      {/* Main row: stars + buttons; column on mobile, row on desktop */}
+      <div className="flex flex-col sm:flex-row items-center sm:justify-between px-1 py-2 gap-2 sm:gap-0">
+        {!shareOnly && (
+          <div className="flex items-center gap-2">
+            <span className="text-yellow-400 text-xs font-semibold min-w-[4rem]">
+              {justRated ? t.rating.thanks : t.rating.rateLabel}
+            </span>
+            <div className="flex gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => handleRate(star)}
+                  onMouseEnter={() => !disabled && setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(null)}
+                  disabled={disabled}
+                  className={`text-lg transition-colors ${
+                    star <= displayRating
+                      ? 'text-yellow-400'
+                      : 'text-gray-600'
+                  } ${disabled ? 'cursor-default' : 'cursor-pointer hover:text-yellow-300'}`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         <div className="flex items-center gap-3 shrink-0">
           {!shareOnly && !disabled && (
             <button

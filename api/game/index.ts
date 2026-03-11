@@ -101,7 +101,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'captain-reshuffle': return handleCaptainReshuffle(req, res, sql);
     case 'init': return handleInit(res, sql);
     case 'migrate-ids': return handleMigrateIds(res, sql);
-    case 'migrate-ratings': return handleMigrateRatings(res, sql);
+    case 'migrate-ratings': // legacy alias
+    case 'recalc-all': return handleRecalcAll(res, sql);
     case 'debug': return res.json({ route, method: req.method, query: req.query, url: req.url });
     default: return res.status(400).json({ error: 'Unknown route' });
   }
@@ -151,54 +152,95 @@ function computeOverallRating(captainRating: number, scoutRating: number, hasCap
 
 // ==================== PRECOMPUTED RATING HELPERS ====================
 
-/** Recompute and store clue_rating for a single clue */
-async function recalcClueRating(sql: ReturnType<typeof neon>, clueId: string): Promise<number> {
-  const rows = await sql`SELECT score FROM results WHERE clue_id = ${clueId}`;
-  const scores = rows.map((r: Record<string, unknown>) => Number(r.score) || 0);
-  const rating = computeClueRating(scores);
-  await sql`UPDATE clues SET clue_rating = ${rating} WHERE id = ${clueId}`;
-  return rating;
+/** Recompute and store all stats for a single clue */
+async function recalcClueStats(sql: ReturnType<typeof neon>, clueId: string): Promise<void> {
+  const resultRows = await sql`SELECT score FROM results WHERE clue_id = ${clueId}`;
+  const scores = resultRows.map((r: Record<string, unknown>) => Number(r.score) || 0);
+  const clueRating = computeClueRating(scores);
+  const attempts = resultRows.length;
+  const avgScore = attempts > 0 ? scores.reduce((s, v) => s + v, 0) / attempts : 0;
+  const ratingRows = await sql`SELECT rating FROM ratings WHERE clue_id = ${clueId}`;
+  const ratingsCount = ratingRows.length;
+  const avgRating = ratingsCount > 0
+    ? ratingRows.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.rating) || 0), 0) / ratingsCount : 0;
+  await sql`UPDATE clues SET
+    clue_rating = ${clueRating}, attempts = ${attempts},
+    avg_score = ${Math.round(avgScore * 10) / 10},
+    ratings_count = ${ratingsCount},
+    avg_rating = ${Math.round(avgRating * 10) / 10}
+    WHERE id = ${clueId}`;
 }
 
-/** Recompute and store all ratings for a single user */
-async function recalcUserRatings(sql: ReturnType<typeof neon>, userId: string): Promise<void> {
+/** Recompute and store all stats + ratings for a single user */
+async function recalcUserStats(sql: ReturnType<typeof neon>, userId: string): Promise<void> {
+  // Clue stats
+  const clueRows = await sql`SELECT id, number, ranked FROM clues WHERE user_id = ${userId}`;
+  const cluesGiven = clueRows.length;
+  const avgWordsPerClue = cluesGiven > 0
+    ? clueRows.reduce((s: number, c: Record<string, unknown>) => s + (Number(c.number) || 0), 0) / cluesGiven : 0;
+
+  // Avg score others got on this user's clues
+  let avgScoreOnClues = 0;
+  if (cluesGiven > 0) {
+    const clueIds = clueRows.map((c: Record<string, unknown>) => c.id as string);
+    const othersRows = await sql`SELECT COALESCE(AVG(score), 0) as avg FROM results WHERE clue_id = ANY(${clueIds}) AND user_id != ${userId}`;
+    avgScoreOnClues = Number(othersRows[0].avg) || 0;
+  }
+
+  // Solve stats
+  const solveRows = await sql`SELECT score, guessed_indices, clue_id FROM results WHERE user_id = ${userId}`;
+  const cluesSolved = solveRows.length;
+  const avgWordsPicked = cluesSolved > 0
+    ? solveRows.reduce((s: number, r: Record<string, unknown>) => s + ((r.guessed_indices as number[])?.length || 0), 0) / cluesSolved : 0;
+  const avgScore = cluesSolved > 0
+    ? solveRows.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / cluesSolved : 0;
+
   // Captain rating: based on user's ranked clues
-  const rankedClues = await sql`SELECT id FROM clues WHERE user_id = ${userId} AND ranked = true`;
-  const rankedCluesGiven = rankedClues.length;
+  const rankedClueIds = clueRows
+    .filter((c: Record<string, unknown>) => c.ranked !== false)
+    .map((c: Record<string, unknown>) => c.id as string);
+  const rankedCluesGiven = rankedClueIds.length;
   let captainRating = 0;
   if (rankedCluesGiven > 0) {
-    const clueIds = rankedClues.map((c: Record<string, unknown>) => c.id as string);
-    const clueRows = await sql`SELECT id, clue_rating FROM clues WHERE id = ANY(${clueIds}) AND clue_rating > 0`;
-    const clueRatings = clueRows.map((c: Record<string, unknown>) => Number(c.clue_rating) || 0);
+    const ratedClues = await sql`SELECT id, clue_rating FROM clues WHERE id = ANY(${rankedClueIds}) AND clue_rating > 0`;
+    const clueRatings = ratedClues.map((c: Record<string, unknown>) => Number(c.clue_rating) || 0);
     captainRating = computeCaptainRating(clueRatings);
   }
 
   // Scout rating: based on user's solves of ranked clues by OTHER users
-  const myResults = await sql`
-    SELECT r.score, r.clue_id FROM results r
-    JOIN clues c ON r.clue_id = c.id
-    WHERE r.user_id = ${userId} AND c.ranked = true AND c.user_id != ${userId}`;
-  const rankedCluesSolved = myResults.length;
   let scoutRating = 0;
-  if (rankedCluesSolved > 0) {
-    const solvedClueIds = [...new Set(myResults.map((r: Record<string, unknown>) => r.clue_id as string))];
-    const solvedClueRows = await sql`SELECT id, clue_rating FROM clues WHERE id = ANY(${solvedClueIds})`;
-    const clueRatingMap = new Map<string, number>();
-    for (const c of solvedClueRows) clueRatingMap.set(c.id as string, Number(c.clue_rating) || 0);
-    const solveRatings = myResults.map((r: Record<string, unknown>) =>
-      computeSolveRating(Number(r.score) || 0, clueRatingMap.get(r.clue_id as string) || 0)
-    );
-    scoutRating = computeScoutRating(solveRatings);
+  let rankedCluesSolved = 0;
+  if (cluesSolved > 0) {
+    const solvedClueIds = [...new Set(solveRows.map((r: Record<string, unknown>) => r.clue_id as string))];
+    const solvedClueRows = await sql`SELECT id, clue_rating, ranked, user_id FROM clues WHERE id = ANY(${solvedClueIds})`;
+    const rankedOtherClueMap = new Map<string, number>();
+    for (const c of solvedClueRows) {
+      if (c.ranked !== false && (c.user_id as string) !== userId) {
+        rankedOtherClueMap.set(c.id as string, Number(c.clue_rating) || 0);
+      }
+    }
+    const rankedOtherSolves = solveRows.filter((r: Record<string, unknown>) => rankedOtherClueMap.has(r.clue_id as string));
+    rankedCluesSolved = rankedOtherSolves.length;
+    if (rankedCluesSolved > 0) {
+      const solveRatings = rankedOtherSolves.map((r: Record<string, unknown>) =>
+        computeSolveRating(Number(r.score) || 0, rankedOtherClueMap.get(r.clue_id as string) || 0)
+      );
+      scoutRating = computeScoutRating(solveRatings);
+    }
   }
 
   const overallRating = computeOverallRating(captainRating, scoutRating, captainRating > 0, scoutRating > 0);
 
   await sql`UPDATE users SET
-    captain_rating = ${captainRating},
-    scout_rating = ${scoutRating},
-    overall_rating = ${overallRating},
-    ranked_clues_given = ${rankedCluesGiven},
-    ranked_clues_solved = ${rankedCluesSolved}
+    captain_rating = ${captainRating}, scout_rating = ${scoutRating},
+    overall_rating = ${overallRating}, ranked_clues_given = ${rankedCluesGiven},
+    ranked_clues_solved = ${rankedCluesSolved},
+    clues_given = ${cluesGiven},
+    avg_words_per_clue = ${Math.round(avgWordsPerClue * 10) / 10},
+    avg_score_on_clues = ${Math.round(avgScoreOnClues * 10) / 10},
+    clues_solved = ${cluesSolved},
+    avg_words_picked = ${Math.round(avgWordsPicked * 10) / 10},
+    avg_score = ${Math.round(avgScore * 10) / 10}
     WHERE id = ${userId}`;
 }
 
@@ -244,6 +286,7 @@ async function handleClues(req: VercelRequest, res: VercelResponse, sql: ReturnT
       } else {
         await sql`UPDATE users SET captain_casual = NULL WHERE id = ${clue.userId}`;
       }
+      try { await recalcUserStats(sql, clue.userId); } catch { /* best-effort */ }
       return res.json({ ok: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -353,12 +396,12 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   if (stats === 'true') {
+    // Read precomputed summary from clues table
+    const clueRows = await sql`SELECT created_at, clue_rating, attempts, avg_score, ratings_count, avg_rating FROM clues WHERE id = ${id}`;
+    const clue = clueRows.length > 0 ? clueRows[0] : null;
+    // Live query for per-solve details + pickCounts (light, per-clue)
     const rows = await sql`SELECT user_id, score, guessed_indices, timestamp FROM results WHERE clue_id = ${id} ORDER BY timestamp ASC`;
-    if (rows.length === 0) {
-      return res.json({ attempts: 0, avgScore: 0, scores: [], pickCounts: {}, details: [] });
-    }
     const scores = rows.map((r: Record<string, unknown>) => Number(r.score) || 0);
-    const totalScore = scores.reduce((s: number, v: number) => s + v, 0);
     const pickCounts: Record<number, number> = {};
     for (const r of rows) {
       const indices = r.guessed_indices as number[] | null;
@@ -372,15 +415,14 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
       score: Number(r.score) || 0,
       timestamp: Number(r.timestamp), guessedIndices: r.guessed_indices as number[],
     }));
-    const clueRows = await sql`SELECT created_at FROM clues WHERE id = ${id}`;
-    const createdAt = clueRows.length > 0 ? Number(clueRows[0].created_at) : 0;
-    const ratingRows = await sql`SELECT COUNT(*)::int as count, COALESCE(AVG(rating), 0) as avg FROM ratings WHERE clue_id = ${id}`;
-    const ratingsCount = ratingRows.length > 0 ? Number(ratingRows[0].count) : 0;
-    const avgRating = ratingRows.length > 0 ? Math.round(Number(ratingRows[0].avg) * 10) / 10 : 0;
-    const clueRating = computeClueRating(scores);
     return res.json({
-      attempts: rows.length, avgScore: Math.round((totalScore / rows.length) * 10) / 10,
-      scores, pickCounts, details, createdAt, ratingsCount, avgRating, clueRating,
+      attempts: clue ? Number(clue.attempts) || 0 : rows.length,
+      avgScore: clue ? Number(clue.avg_score) || 0 : 0,
+      scores, pickCounts, details,
+      createdAt: clue ? Number(clue.created_at) || 0 : 0,
+      ratingsCount: clue ? Number(clue.ratings_count) || 0 : 0,
+      avgRating: clue ? Number(clue.avg_rating) || 0 : 0,
+      clueRating: clue ? Number(clue.clue_rating) || 0 : 0,
     });
   }
 
@@ -502,10 +544,10 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: Retur
       } catch { /* notifications are best-effort */ }
       // Recalculate precomputed ratings (best-effort, don't block response)
       try {
-        await recalcClueRating(sql, result.clueId);
-        await recalcUserRatings(sql, result.userId);
+        await recalcClueStats(sql, result.clueId);
+        await recalcUserStats(sql, result.userId);
         if (clueAuthorId && clueAuthorId !== result.userId) {
-          await recalcUserRatings(sql, clueAuthorId);
+          await recalcUserStats(sql, clueAuthorId);
         }
       } catch { /* rating recalc is best-effort */ }
       return res.json({ ok: true, targetIndices, nullIndices });
@@ -548,9 +590,17 @@ async function handleRatings(req: VercelRequest, res: VercelResponse, sql: Retur
   }
 
   if (rating == null) return res.status(400).json({ error: 'Missing rating or reason' });
+
+  // Prevent rating your own clue
+  const clueRows = await sql`SELECT user_id FROM clues WHERE id = ${clueId}`;
+  if (clueRows.length > 0 && clueRows[0].user_id === userId) {
+    return res.status(403).json({ error: 'Cannot rate your own clue' });
+  }
+
   await sql`INSERT INTO ratings (clue_id, user_id, rating)
     VALUES (${clueId}, ${userId}, ${rating})
     ON CONFLICT (clue_id, user_id) DO UPDATE SET rating = ${rating}`;
+  try { await recalcClueStats(sql, clueId); } catch { /* best-effort */ }
   res.json({ ok: true });
 }
 
@@ -784,58 +834,37 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const { boardSize } = req.query;
+  const hasBoardSize = boardSize && typeof boardSize === 'string';
 
-  // --- Spymasters: read precomputed captain_rating ---
-  const spymasterRows = boardSize && typeof boardSize === 'string'
-    ? await sql`
-        SELECT u.id as user_id, u.display_name, u.captain_rating,
-          (SELECT COUNT(*) FROM clues c2 WHERE c2.user_id = u.id AND c2.ranked = true AND c2.board_size = ${boardSize})::int as clues_given,
-          (SELECT COALESCE(AVG(c3.number), 0) FROM clues c3 WHERE c3.user_id = u.id AND c3.ranked = true AND c3.number > 0 AND c3.board_size = ${boardSize}) as avg_words,
-          (SELECT COALESCE(AVG(r.score), 0) FROM results r JOIN clues c4 ON r.clue_id = c4.id WHERE c4.user_id = u.id AND c4.ranked = true AND r.user_id != u.id AND c4.board_size = ${boardSize}) as avg_score
-        FROM users u WHERE u.ranked_clues_given > 0 ORDER BY u.captain_rating DESC`
-    : await sql`
-        SELECT u.id as user_id, u.display_name, u.captain_rating, u.ranked_clues_given as clues_given,
-          (SELECT COALESCE(AVG(c3.number), 0) FROM clues c3 WHERE c3.user_id = u.id AND c3.ranked = true AND c3.number > 0) as avg_words,
-          (SELECT COALESCE(AVG(r.score), 0) FROM results r JOIN clues c4 ON r.clue_id = c4.id WHERE c4.user_id = u.id AND c4.ranked = true AND r.user_id != u.id) as avg_score
-        FROM users u WHERE u.ranked_clues_given > 0 ORDER BY u.captain_rating DESC`;
+  // All data is precomputed — pure SELECTs only
+  const spymasterRows = await sql`
+    SELECT id as user_id, display_name, captain_rating, ranked_clues_given as clues_given,
+      avg_words_per_clue as avg_words, avg_score_on_clues as avg_score
+    FROM users WHERE ranked_clues_given > 0 ORDER BY captain_rating DESC`;
 
-  const spymasters = spymasterRows
-    .filter((s: Record<string, unknown>) => Number(s.clues_given) > 0)
-    .map((s: Record<string, unknown>) => ({
-      userId: s.user_id as string,
-      displayName: s.display_name as string,
-      cluesGiven: Number(s.clues_given),
-      avgWordsPerClue: Math.round(Number(s.avg_words) * 10) / 10,
-      avgScoreOnClues: Math.round(Number(s.avg_score) * 10) / 10,
-      captainRating: Number(s.captain_rating) || 0,
-    }));
+  const spymasters = spymasterRows.map((s: Record<string, unknown>) => ({
+    userId: s.user_id as string,
+    displayName: s.display_name as string,
+    cluesGiven: Number(s.clues_given),
+    avgWordsPerClue: Number(s.avg_words) || 0,
+    avgScoreOnClues: Number(s.avg_score) || 0,
+    captainRating: Number(s.captain_rating) || 0,
+  }));
 
-  // --- Guessers: read precomputed scout_rating ---
-  const guesserRows = boardSize && typeof boardSize === 'string'
-    ? await sql`
-        SELECT u.id as user_id, u.display_name, u.scout_rating,
-          (SELECT COUNT(*) FROM results r2 JOIN clues c2 ON r2.clue_id = c2.id WHERE r2.user_id = u.id AND c2.ranked = true AND c2.board_size = ${boardSize})::int as clues_solved,
-          (SELECT COALESCE(AVG(array_length(r3.guessed_indices, 1)), 0) FROM results r3 JOIN clues c3 ON r3.clue_id = c3.id WHERE r3.user_id = u.id AND c3.ranked = true AND c3.board_size = ${boardSize}) as avg_picked,
-          (SELECT COALESCE(AVG(r4.score), 0) FROM results r4 JOIN clues c4 ON r4.clue_id = c4.id WHERE r4.user_id = u.id AND c4.ranked = true AND c4.board_size = ${boardSize}) as avg_score
-        FROM users u WHERE u.ranked_clues_solved > 0 ORDER BY u.scout_rating DESC`
-    : await sql`
-        SELECT u.id as user_id, u.display_name, u.scout_rating, u.ranked_clues_solved as clues_solved,
-          (SELECT COALESCE(AVG(array_length(r3.guessed_indices, 1)), 0) FROM results r3 JOIN clues c3 ON r3.clue_id = c3.id WHERE r3.user_id = u.id AND c3.ranked = true) as avg_picked,
-          (SELECT COALESCE(AVG(r4.score), 0) FROM results r4 JOIN clues c4 ON r4.clue_id = c4.id WHERE r4.user_id = u.id AND c4.ranked = true) as avg_score
-        FROM users u WHERE u.ranked_clues_solved > 0 ORDER BY u.scout_rating DESC`;
+  const guesserRows = await sql`
+    SELECT id as user_id, display_name, scout_rating, ranked_clues_solved as clues_solved,
+      avg_words_picked as avg_picked, avg_score
+    FROM users WHERE ranked_clues_solved > 0 ORDER BY scout_rating DESC`;
 
-  const guessers = guesserRows
-    .filter((g: Record<string, unknown>) => Number(g.clues_solved) > 0)
-    .map((g: Record<string, unknown>) => ({
-      userId: g.user_id as string,
-      displayName: g.display_name as string,
-      cluesSolved: Number(g.clues_solved),
-      avgWordsPicked: Math.round(Number(g.avg_picked) * 10) / 10,
-      avgScore: Math.round(Number(g.avg_score) * 10) / 10,
-      scoutRating: Number(g.scout_rating) || 0,
-    }));
+  const guessers = guesserRows.map((g: Record<string, unknown>) => ({
+    userId: g.user_id as string,
+    displayName: g.display_name as string,
+    cluesSolved: Number(g.clues_solved),
+    avgWordsPicked: Number(g.avg_picked) || 0,
+    avgScore: Number(g.avg_score) || 0,
+    scoutRating: Number(g.scout_rating) || 0,
+  }));
 
-  // --- Overall: read precomputed ratings ---
   const overallRows = await sql`
     SELECT id as user_id, display_name, captain_rating, scout_rating, overall_rating as rating,
       ranked_clues_given, ranked_clues_solved
@@ -849,27 +878,21 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
     rating: Number(o.rating) || 0,
   }));
 
-  // --- ClueStats: query clues with aggregated result/rating stats ---
-  const clueStatsRows = boardSize && typeof boardSize === 'string'
+  // ClueStats: read precomputed columns from clues table
+  const clueStatsRows = hasBoardSize
     ? await sql`
-        SELECT c.id, c.word, c.number, c.user_id, c.ranked, c.created_at, c.clue_rating,
-          u.display_name,
-          (SELECT COUNT(*) FROM results r WHERE r.clue_id = c.id)::int as attempts,
-          (SELECT COALESCE(AVG(r2.score), 0) FROM results r2 WHERE r2.clue_id = c.id) as avg_score,
-          (SELECT COUNT(*) FROM ratings rt WHERE rt.clue_id = c.id)::int as ratings_count,
-          (SELECT COALESCE(AVG(rt2.rating), 0) FROM ratings rt2 WHERE rt2.clue_id = c.id) as avg_rating
+        SELECT c.id, c.word, c.number, c.user_id, c.ranked, c.created_at,
+          c.clue_rating, c.attempts, c.avg_score, c.ratings_count, c.avg_rating,
+          u.display_name
         FROM clues c LEFT JOIN users u ON c.user_id = u.id
         WHERE c.board_size = ${boardSize}
-        ORDER BY attempts DESC`
+        ORDER BY c.attempts DESC`
     : await sql`
-        SELECT c.id, c.word, c.number, c.user_id, c.ranked, c.created_at, c.clue_rating,
-          u.display_name,
-          (SELECT COUNT(*) FROM results r WHERE r.clue_id = c.id)::int as attempts,
-          (SELECT COALESCE(AVG(r2.score), 0) FROM results r2 WHERE r2.clue_id = c.id) as avg_score,
-          (SELECT COUNT(*) FROM ratings rt WHERE rt.clue_id = c.id)::int as ratings_count,
-          (SELECT COALESCE(AVG(rt2.rating), 0) FROM ratings rt2 WHERE rt2.clue_id = c.id) as avg_rating
+        SELECT c.id, c.word, c.number, c.user_id, c.ranked, c.created_at,
+          c.clue_rating, c.attempts, c.avg_score, c.ratings_count, c.avg_rating,
+          u.display_name
         FROM clues c LEFT JOIN users u ON c.user_id = u.id
-        ORDER BY attempts DESC`;
+        ORDER BY c.attempts DESC`;
 
   const clueStats = clueStatsRows.map((c: Record<string, unknown>) => ({
     id: c.id as string,
@@ -879,10 +902,10 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
     displayName: (c.display_name as string) || (c.user_id as string),
     ranked: c.ranked ?? true,
     attempts: Number(c.attempts) || 0,
-    avgScore: Math.round(Number(c.avg_score) * 10) / 10,
+    avgScore: Number(c.avg_score) || 0,
     createdAt: Number(c.created_at) || 0,
     ratingsCount: Number(c.ratings_count) || 0,
-    avgRating: Math.round(Number(c.avg_rating) * 10) / 10,
+    avgRating: Number(c.avg_rating) || 0,
     clueRating: Number(c.clue_rating) || 0,
   }));
 
@@ -905,53 +928,30 @@ async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: Ret
   const { userId } = req.query;
   if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
 
-  // Single query to get user info + precomputed ratings
+  // Single query — all stats are precomputed
   const userRows = await sql`SELECT display_name, avatar_url, bio, country,
-    captain_rating, scout_rating, overall_rating, ranked_clues_given, ranked_clues_solved
+    captain_rating, scout_rating, overall_rating, ranked_clues_given, ranked_clues_solved,
+    clues_given, avg_words_per_clue, avg_score_on_clues,
+    clues_solved, avg_words_picked, avg_score
     FROM users WHERE id = ${userId}`;
   const u = userRows.length > 0 ? userRows[0] : null;
-  const displayName = u ? (u.display_name as string) : userId;
-  const avatarUrl = u ? (u.avatar_url as string | null) || undefined : undefined;
-  const bio = u ? (u.bio as string | null) || undefined : undefined;
-  const country = u ? (u.country as string | null) || undefined : undefined;
-  const captainRating = u ? Number(u.captain_rating) || 0 : 0;
-  const scoutRating = u ? Number(u.scout_rating) || 0 : 0;
-  const overallRating = u ? Number(u.overall_rating) || 0 : 0;
-  const rankedCluesGiven = u ? Number(u.ranked_clues_given) || 0 : 0;
-  const rankedCluesSolved = u ? Number(u.ranked_clues_solved) || 0 : 0;
-
-  // Basic aggregate stats via SQL
-  const clueStatsRows = await sql`SELECT COUNT(*) as cnt,
-    COALESCE(AVG(number), 0) as avg_words
-    FROM clues WHERE user_id = ${userId}`;
-  const cluesGiven = Number(clueStatsRows[0].cnt) || 0;
-  const avgWordsPerClue = Number(clueStatsRows[0].avg_words) || 0;
-
-  let avgScoreOnClues = 0;
-  if (cluesGiven > 0) {
-    const avgRows = await sql`SELECT COALESCE(AVG(r.score), 0) as avg
-      FROM results r JOIN clues c ON r.clue_id = c.id
-      WHERE c.user_id = ${userId} AND r.user_id != ${userId}`;
-    avgScoreOnClues = Number(avgRows[0].avg) || 0;
-  }
-
-  const solveStatsRows = await sql`SELECT COUNT(*) as cnt,
-    COALESCE(AVG(array_length(guessed_indices, 1)), 0) as avg_picked,
-    COALESCE(AVG(score), 0) as avg_score
-    FROM results WHERE user_id = ${userId}`;
-  const cluesSolved = Number(solveStatsRows[0].cnt) || 0;
-  const avgWordsPicked = Number(solveStatsRows[0].avg_picked) || 0;
-  const avgScore = Number(solveStatsRows[0].avg_score) || 0;
 
   res.json({
-    displayName, cluesGiven, avgWordsPerClue: Math.round(avgWordsPerClue * 10) / 10,
-    avgScoreOnClues: Math.round(avgScoreOnClues * 10) / 10, cluesSolved,
-    avgWordsPicked: Math.round(avgWordsPicked * 10) / 10, avgScore: Math.round(avgScore * 10) / 10,
-    rankedCluesGiven, rankedCluesSolved,
-    overallRating, captainRating, scoutRating,
-    ...(avatarUrl ? { avatarUrl } : {}),
-    ...(bio ? { bio } : {}),
-    ...(country ? { country } : {}),
+    displayName: u ? (u.display_name as string) : userId,
+    cluesGiven: u ? Number(u.clues_given) || 0 : 0,
+    avgWordsPerClue: u ? Number(u.avg_words_per_clue) || 0 : 0,
+    avgScoreOnClues: u ? Number(u.avg_score_on_clues) || 0 : 0,
+    cluesSolved: u ? Number(u.clues_solved) || 0 : 0,
+    avgWordsPicked: u ? Number(u.avg_words_picked) || 0 : 0,
+    avgScore: u ? Number(u.avg_score) || 0 : 0,
+    rankedCluesGiven: u ? Number(u.ranked_clues_given) || 0 : 0,
+    rankedCluesSolved: u ? Number(u.ranked_clues_solved) || 0 : 0,
+    overallRating: u ? Number(u.overall_rating) || 0 : 0,
+    captainRating: u ? Number(u.captain_rating) || 0 : 0,
+    scoutRating: u ? Number(u.scout_rating) || 0 : 0,
+    ...(u?.avatar_url ? { avatarUrl: u.avatar_url as string } : {}),
+    ...(u?.bio ? { bio: u.bio as string } : {}),
+    ...(u?.country ? { country: u.country as string } : {}),
   });
 }
 
@@ -1191,13 +1191,13 @@ async function handleMigrateIds(res: VercelResponse, sql: ReturnType<typeof neon
 
 // ==================== MIGRATE RATINGS ====================
 
-async function handleMigrateRatings(res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleRecalcAll(res: VercelResponse, sql: ReturnType<typeof neon>) {
   try {
-    // 1. Recompute clue_rating for all clues
+    // 1. Recompute all stats for all clues
     const clues = await sql`SELECT id FROM clues`;
     let cluesUpdated = 0;
     for (const c of clues) {
-      await recalcClueRating(sql, c.id as string);
+      await recalcClueStats(sql, c.id as string);
       cluesUpdated++;
     }
 
@@ -1205,7 +1205,7 @@ async function handleMigrateRatings(res: VercelResponse, sql: ReturnType<typeof 
     const users = await sql`SELECT id FROM users`;
     let usersUpdated = 0;
     for (const u of users) {
-      await recalcUserRatings(sql, u.id as string);
+      await recalcUserStats(sql, u.id as string);
       usersUpdated++;
     }
 
@@ -1261,6 +1261,24 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ranked_clues_given INT DEFAULT 0`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ranked_clues_solved INT DEFAULT 0`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS clue_rating INT DEFAULT 0`;
+    // Precomputed aggregate stats
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS clues_given INT DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_words_per_clue REAL DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_score_on_clues REAL DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS clues_solved INT DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_words_picked REAL DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_score REAL DEFAULT 0`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS attempts INT DEFAULT 0`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS avg_score REAL DEFAULT 0`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS ratings_count INT DEFAULT 0`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS avg_rating REAL DEFAULT 0`;
+    // Indexes
+    await sql`CREATE INDEX IF NOT EXISTS idx_results_clue ON results(clue_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_results_user ON results(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_clues_user_ranked ON clues(user_id, ranked)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_comments_clue ON comments(clue_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_profile_comments_profile ON profile_comments(profile_user_id)`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

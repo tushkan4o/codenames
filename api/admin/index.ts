@@ -374,6 +374,24 @@ async function handleInit(_req: VercelRequest, res: VercelResponse) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ranked_clues_given INT DEFAULT 0`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ranked_clues_solved INT DEFAULT 0`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS clue_rating INT DEFAULT 0`;
+    // Precomputed aggregate stats
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS clues_given INT DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_words_per_clue REAL DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_score_on_clues REAL DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS clues_solved INT DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_words_picked REAL DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_score REAL DEFAULT 0`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS attempts INT DEFAULT 0`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS avg_score REAL DEFAULT 0`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS ratings_count INT DEFAULT 0`;
+    await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS avg_rating REAL DEFAULT 0`;
+    // Indexes
+    await sql`CREATE INDEX IF NOT EXISTS idx_results_clue ON results(clue_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_results_user ON results(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_clues_user_ranked ON clues(user_id, ranked)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_comments_clue ON comments(clue_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_profile_comments_profile ON profile_comments(profile_user_id)`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

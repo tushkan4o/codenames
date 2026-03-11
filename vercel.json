@@ -1,5 +1,9 @@
 {
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ]
+  ],
+  "crons": [{
+    "path": "/api/game?route=recalc-all",
+    "schedule": "0 * * * *"
+  }]
 }

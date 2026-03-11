@@ -235,7 +235,7 @@ export default function LeaderboardPage() {
 
   const [expandedClueId, setExpandedClueId] = useState<string | null>(null);
 
-  const thAccordion = 'py-2 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
+  const thAccordion = 'py-1 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
 
   const starIcon = rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>;
   const checkIcon = solvedFilter === 'all' ? '✓' : solvedFilter === 'solved' ? <span className="text-board-blue">✓</span> : <span className="text-gray-600">✓</span>;
@@ -284,7 +284,7 @@ export default function LeaderboardPage() {
                     <div
                       key={o.userId}
                       onClick={() => openProfile(o.userId)}
-                      className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-2.5 cursor-pointer transition-colors hover:border-gray-600"
+                      className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
                     >
                       <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 items-center">
                         <span className="text-gray-500 text-sm text-center">{i + 1}</span>
@@ -322,7 +322,7 @@ export default function LeaderboardPage() {
                     <div
                       key={s.userId}
                       onClick={() => openProfile(s.userId)}
-                      className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-2.5 cursor-pointer transition-colors hover:border-gray-600"
+                      className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
                     >
                       <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 items-center">
                         <span className="text-gray-500 text-sm text-center">{i + 1}</span>
@@ -359,7 +359,7 @@ export default function LeaderboardPage() {
                     <div
                       key={g.userId}
                       onClick={() => openProfile(g.userId)}
-                      className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-2.5 cursor-pointer transition-colors hover:border-gray-600"
+                      className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
                     >
                       <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 items-center">
                         <span className="text-gray-500 text-sm text-center">{i + 1}</span>
@@ -402,7 +402,7 @@ export default function LeaderboardPage() {
                   <div key={`${c.id}-${i}`}>
                     <div
                       onClick={() => setExpandedClueId(isExpanded ? null : c.id)}
-                      className={`bg-gray-800/60 border rounded-lg px-4 py-2.5 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
+                      className={`bg-gray-800/60 border rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
                       <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_5rem_9rem_3.5rem_2rem_2rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
