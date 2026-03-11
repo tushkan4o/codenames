@@ -120,9 +120,12 @@ function percentile(arr: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
-/** Clue rating = P75(all solve scores) * 40, rounded to integer */
-function computeClueRating(scores: number[]): number {
-  return Math.round(percentile(scores, 75) * 40);
+/** Clue rating = P75(scores)*20 + avg(scores)*20 - reshuffles*10, rounded to integer */
+function computeClueRating(scores: number[], reshuffleCount: number = 0): number {
+  if (scores.length === 0) return 0;
+  const p75 = percentile(scores, 75);
+  const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
+  return Math.round(p75 * 20 + avg * 20 - reshuffleCount * 10);
 }
 
 /** Captain rating = avg(clue ratings of ranked clues), rounded to integer */
@@ -156,7 +159,9 @@ function computeOverallRating(captainRating: number, scoutRating: number, hasCap
 async function recalcClueStats(sql: ReturnType<typeof neon>, clueId: string): Promise<void> {
   const resultRows = await sql`SELECT score FROM results WHERE clue_id = ${clueId} AND (disabled IS NOT TRUE)`;
   const scores = resultRows.map((r: Record<string, unknown>) => Number(r.score) || 0);
-  const clueRating = computeClueRating(scores);
+  const clueRow = await sql`SELECT reshuffle_count FROM clues WHERE id = ${clueId}` as Record<string, unknown>[];
+  const reshuffleCount = clueRow.length > 0 ? Number(clueRow[0].reshuffle_count) || 0 : 0;
+  const clueRating = computeClueRating(scores, reshuffleCount);
   const attempts = resultRows.length;
   const avgScore = attempts > 0 ? scores.reduce((s, v) => s + v, 0) / attempts : 0;
   const ratingRows = await sql`SELECT rating FROM ratings WHERE clue_id = ${clueId}`;
