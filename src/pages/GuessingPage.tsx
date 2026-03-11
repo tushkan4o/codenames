@@ -54,16 +54,6 @@ function saveCompletedGuess(state: CompletedGuessState) {
   localStorage.setItem(COMPLETED_GUESS_KEY, JSON.stringify(state));
 }
 
-function loadCompletedGuess(clueId: string): CompletedGuessState | null {
-  try {
-    const raw = localStorage.getItem(COMPLETED_GUESS_KEY);
-    if (!raw) return null;
-    const state = JSON.parse(raw);
-    if (state.clueId !== clueId) return null;
-    return state;
-  } catch { return null; }
-}
-
 
 export default function GuessingPage() {
   const { clueId } = useParams<{ clueId: string }>();
