@@ -748,7 +748,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             <>
               <div className="overflow-y-hidden" style={{ scrollbarGutter: 'stable' }}>
                 <div className={`grid ${isOwnProfile ? 'grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3rem_3.5rem_2rem_2rem]' : 'grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3.5rem_2rem_2rem]'} gap-x-2 px-4 py-1 items-center`}>
-                  <span className={thClass} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
+                  <span className={thClass} onClick={() => toggleSolvedSort('number')}>Решение<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
                   <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={solvedSort} dir={solvedDir} /></span>
                   {isOwnProfile && <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></span>}
                   <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('solveRating')}>{t.profile.rating}<SortArrow field="solveRating" activeField={solvedSort} dir={solvedDir} /></span>

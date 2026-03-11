@@ -175,7 +175,7 @@ async function recalcClueStats(sql: ReturnType<typeof neon>, clueId: string): Pr
     avg_rating = ${Math.round(avgRating * 10) / 10}
     WHERE id = ${clueId}`;
   // Recompute solve_rating for all results of this clue (120 + score*40 - clueRating)
-  await sql`UPDATE results SET solve_rating = ROUND(120 + score * 40 - ${clueRating}) WHERE clue_id = ${clueId}`;
+  await sql`UPDATE results SET solve_rating = (120 + COALESCE(score, 0) * 40 - ${clueRating})::int WHERE clue_id = ${clueId}`;
 }
 
 /** Recompute and store all stats + ratings for a single user */
