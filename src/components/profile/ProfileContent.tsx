@@ -314,14 +314,14 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     }
   }
 
-  async function handleToggleResultDisabled(entry: { result: GuessResult; clue?: Clue }) {
+  async function handleToggleResultDisabled(entry: SolvedEntry) {
     if (!user?.isAdmin) return;
     const newDisabled = !entry.result.disabled;
     try {
       await api.toggleResultDisabled(entry.result.clueId, entry.result.userId, entry.result.timestamp, newDisabled, user.id);
-      setSolvedResults((prev) => prev.map((r) =>
-        r.clueId === entry.result.clueId && r.userId === entry.result.userId && r.timestamp === entry.result.timestamp
-          ? { ...r, disabled: newDisabled } : r
+      setSolvedEntries((prev) => prev.map((e) =>
+        e.result.clueId === entry.result.clueId && e.result.userId === entry.result.userId && e.result.timestamp === entry.result.timestamp
+          ? { ...e, result: { ...e.result, disabled: newDisabled } } : e
       ));
     } catch (err) {
       console.error('Failed to toggle result disabled:', err);
