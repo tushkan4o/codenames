@@ -224,7 +224,7 @@ export default function NotificationsPage() {
         {/* Table */}
         <div className="bg-gray-800/60 border border-gray-700/30 rounded-xl overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[2rem_4.5rem_1fr_4.5rem_5rem_4rem] sm:grid-cols-[2rem_5.5rem_8rem_5rem_1fr_5rem] gap-x-1 px-2 py-1.5 border-b border-gray-700/50 text-[0.65rem] font-semibold text-gray-500 uppercase">
+          <div className="grid grid-cols-[2rem_4.5rem_1fr_6.5rem_4.5rem_4rem] sm:grid-cols-[2rem_5.5rem_8rem_7rem_1fr_5rem] gap-x-1 px-2 py-1.5 border-b border-gray-700/50 text-[0.65rem] font-semibold text-gray-500 uppercase">
             <label className="flex items-center justify-center cursor-pointer">
               <input
                 type="checkbox"
@@ -249,7 +249,7 @@ export default function NotificationsPage() {
             notifications.map((n) => (
               <div
                 key={n.id}
-                className={`grid grid-cols-[2rem_4.5rem_1fr_4.5rem_5rem_4rem] sm:grid-cols-[2rem_5.5rem_8rem_5rem_1fr_5rem] gap-x-1 px-2 py-1.5 border-b border-gray-700/20 hover:bg-gray-700/30 transition-colors items-center text-xs ${!n.read ? 'bg-gray-700/10' : ''}`}
+                className={`grid grid-cols-[2rem_4.5rem_1fr_6.5rem_4.5rem_4rem] sm:grid-cols-[2rem_5.5rem_8rem_7rem_1fr_5rem] gap-x-1 px-2 py-1.5 border-b border-gray-700/20 hover:bg-gray-700/30 transition-colors items-center text-xs ${!n.read ? 'bg-gray-700/10' : ''}`}
               >
                 <label className="flex items-center justify-center cursor-pointer">
                   <input
@@ -270,14 +270,14 @@ export default function NotificationsPage() {
                 {n.clueId ? (
                   <button
                     onClick={() => handleNotificationClick(n)}
-                    className="text-white hover:text-board-blue truncate text-left font-medium"
+                    className="text-amber-400 hover:text-amber-300 truncate text-left font-medium"
                   >
                     {n.clueWord || '—'}
                   </button>
                 ) : (
                   <span className="text-gray-500">—</span>
                 )}
-                <span className="text-amber-400 font-bold text-center">{getResultText(n)}</span>
+                <span className="text-white font-bold text-center">{getResultText(n)}</span>
               </div>
             ))
           )}
