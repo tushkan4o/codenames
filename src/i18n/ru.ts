@@ -448,6 +448,7 @@ export const ru = {
     columnClue: 'Подсказка',
     columnResult: 'Результат / Комментарий',
     loadMore: 'Загрузить ещё',
+    groupAll: 'Все',
   },
 };
 
