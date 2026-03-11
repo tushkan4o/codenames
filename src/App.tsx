@@ -18,6 +18,7 @@ import AdminPage from './pages/AdminPage';
 import OAuthRegisterPage from './pages/OAuthRegisterPage';
 import TutorialPage from './pages/TutorialPage';
 import FaqPage from './pages/FaqPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 function EvictionBanner() {
   const { evicted, user } = useAuth();
@@ -168,6 +169,7 @@ export default function App() {
             <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
             <Route path="/profile/:userId" element={<RequireAuth><ProfilePage /></RequireAuth>} />
             <Route path="/faq" element={<RequireAuth><FaqPage /></RequireAuth>} />
+            <Route path="/notifications" element={<RequireAuth><NotificationsPage /></RequireAuth>} />
             <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
           </Routes>
         </GameProvider>

@@ -466,6 +466,10 @@ async function handleInit(_req: VercelRequest, res: VercelResponse) {
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(user_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_profile_comments_profile ON profile_comments(profile_user_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_results_timestamp ON results(timestamp DESC)`;
+    // Subscriptions
+    await sql`CREATE TABLE IF NOT EXISTS subscriptions (id SERIAL PRIMARY KEY, subscriber_id TEXT NOT NULL REFERENCES users(id), target_id TEXT NOT NULL REFERENCES users(id), created_at BIGINT NOT NULL, UNIQUE(subscriber_id, target_id))`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_subscriptions_target ON subscriptions(target_id)`;
+    await sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS score_info TEXT`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

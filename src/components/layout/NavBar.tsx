@@ -6,6 +6,8 @@ import { useTranslation } from '../../i18n/useTranslation';
 import { api } from '../../lib/api';
 import type { CardFontSize, ColorSortMode } from '../../types/user';
 
+interface ScoreInfo { score: number; correctCount: number; totalTargets: number }
+
 interface Notification {
   id: number;
   type: string;
@@ -13,6 +15,7 @@ interface Notification {
   actorName: string;
   clueId: string;
   clueWord: string;
+  scoreInfo: ScoreInfo | null;
   createdAt: number;
   read: boolean;
 }
@@ -26,6 +29,7 @@ interface GroupedNotification {
   latestAt: number;
   read: boolean;
   actorName: string;
+  scoreInfo: ScoreInfo | null;
 }
 
 interface LinkedAccount {
@@ -101,7 +105,7 @@ export default function NavBar() {
   const groupedNotifications = useMemo(() => {
     const map = new Map<string, GroupedNotification>();
     for (const n of notifications) {
-      const key = n.type === 'profile_comment' ? 'profile' : (n.clueId || `single-${n.id}`);
+      const key = n.type === 'profile_comment' ? 'profile' : n.type === 'new_clue' ? `new_clue-${n.actorId}` : (n.clueId || `single-${n.id}`);
       const existing = map.get(key);
       if (existing) {
         existing.types.add(n.type);
@@ -121,6 +125,7 @@ export default function NavBar() {
           latestAt: n.createdAt,
           read: n.read,
           actorName: n.actorName,
+          scoreInfo: n.scoreInfo,
         });
       }
     }
@@ -203,7 +208,14 @@ export default function NavBar() {
   function getGroupedText(g: GroupedNotification): string {
     // Single notification — use original format
     if (g.count === 1) {
-      if (g.types.has('new_solve')) return t.nav.newSolve.replace('{player}', g.actorName).replace('{clue}', g.clueWord || '');
+      if (g.types.has('new_solve')) {
+        if (g.scoreInfo) {
+          const s = g.scoreInfo;
+          return t.nav.newSolveWithScore.replace('{player}', g.actorName).replace('{clue}', g.clueWord || '').replace('{score}', `${s.score}(${s.correctCount}/${s.totalTargets})`);
+        }
+        return t.nav.newSolve.replace('{player}', g.actorName).replace('{clue}', g.clueWord || '');
+      }
+      if (g.types.has('new_clue')) return t.nav.newClue.replace('{player}', g.actorName).replace('{clue}', g.clueWord || '');
       if (g.types.has('new_comment')) return t.nav.newComment.replace('{player}', g.actorName).replace('{clue}', g.clueWord || '');
       if (g.types.has('mention')) return t.nav.newMention.replace('{player}', g.actorName);
       if (g.types.has('profile_comment')) return t.nav.newProfileComment.replace('{player}', g.actorName);
@@ -211,6 +223,8 @@ export default function NavBar() {
     }
     // Grouped — profile comments
     if (g.key === 'profile') return `${t.nav.groupProfileComments} (${g.count})`;
+    // Grouped — new clues from subscribed player
+    if (g.types.size === 1 && g.types.has('new_clue')) return `${t.nav.groupNewClues.replace('{player}', g.actorName)} (${g.count})`;
     // Grouped — clue-based
     const hasSolves = g.types.has('new_solve');
     const hasComments = g.types.has('new_comment') || g.types.has('mention');
@@ -313,14 +327,22 @@ export default function NavBar() {
               >
                 <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700/50">
                   <span className="text-xs font-semibold text-gray-400 uppercase">{t.nav.notifications}</span>
-                  {notifications.length > 0 && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={handleClearAll}
-                      className="text-xs text-gray-500 hover:text-board-red transition-colors"
+                      onClick={() => { setShowDropdown(false); navigate('/notifications'); }}
+                      className="text-xs text-gray-500 hover:text-board-blue transition-colors"
                     >
-                      {t.nav.clearAll}
+                      {t.nav.viewAll}
                     </button>
-                  )}
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={handleClearAll}
+                        className="text-xs text-gray-500 hover:text-board-red transition-colors"
+                      >
+                        {t.nav.clearAll}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="max-h-[300px] overflow-y-auto">
                   {groupedNotifications.length === 0 ? (

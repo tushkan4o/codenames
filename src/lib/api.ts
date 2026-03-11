@@ -304,8 +304,17 @@ export const api = {
   },
 
   // Notifications
-  async getNotifications(userId: string): Promise<{ id: number; type: string; actorId: string; actorName: string; clueId: string; clueWord: string; createdAt: number; read: boolean }[]> {
+  async getNotifications(userId: string): Promise<{ id: number; type: string; actorId: string; actorName: string; clueId: string; clueWord: string; scoreInfo: { score: number; correctCount: number; totalTargets: number } | null; createdAt: number; read: boolean }[]> {
     return get(`/api/game?route=notifications&userId=${encodeURIComponent(userId)}`);
+  },
+
+  async getAllNotifications(userId: string, opts?: { offset?: number; limit?: number; typeFilter?: string; actorFilter?: string }): Promise<{ notifications: { id: number; type: string; actorId: string; actorName: string; clueId: string; clueWord: string; scoreInfo: { score: number; correctCount: number; totalTargets: number } | null; createdAt: number; read: boolean }[]; total: number }> {
+    const params = new URLSearchParams({ route: 'notifications', userId, all: 'true' });
+    if (opts?.offset) params.set('offset', String(opts.offset));
+    if (opts?.limit) params.set('limit', String(opts.limit));
+    if (opts?.typeFilter) params.set('typeFilter', opts.typeFilter);
+    if (opts?.actorFilter) params.set('actorFilter', opts.actorFilter);
+    return get(`/api/game?${params}`);
   },
 
   async markNotificationsRead(userId: string): Promise<void> {
@@ -314,6 +323,23 @@ export const api = {
 
   async clearNotifications(userId: string): Promise<void> {
     await post('/api/game?route=notifications', { userId, action: 'clear_all' });
+  },
+
+  async deleteNotifications(userId: string, ids: number[]): Promise<void> {
+    await post('/api/game?route=notifications', { userId, action: 'delete_selected', ids });
+  },
+
+  // Subscriptions
+  async checkSubscription(userId: string, targetId: string): Promise<{ subscribed: boolean }> {
+    return get(`/api/game?route=subscriptions&userId=${encodeURIComponent(userId)}&targetId=${encodeURIComponent(targetId)}`);
+  },
+
+  async subscribe(subscriberId: string, targetId: string): Promise<void> {
+    await post('/api/game?route=subscriptions', { subscriberId, targetId });
+  },
+
+  async unsubscribe(subscriberId: string, targetId: string): Promise<void> {
+    await del(`/api/game?route=subscriptions&subscriberId=${encodeURIComponent(subscriberId)}&targetId=${encodeURIComponent(targetId)}`);
   },
 
   // Player search (for mentions)

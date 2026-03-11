@@ -89,6 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'ratings': return handleRatings(req, res, sql);
     case 'comments': return handleComments(req, res, sql);
     case 'notifications': return handleNotifications(req, res, sql);
+    case 'subscriptions': return handleSubscriptions(req, res, sql);
     case 'profile-comments': return handleProfileComments(req, res, sql);
     case 'leaderboard': return handleLeaderboard(req, res, sql);
     case 'stats': return handleUserStats(req, res, sql);
@@ -293,6 +294,12 @@ async function handleClues(req: VercelRequest, res: VercelResponse, sql: ReturnT
       } else {
         await sql`UPDATE users SET captain_casual = NULL WHERE id = ${clue.userId}`;
       }
+      // Notify subscribers about new clue
+      try {
+        await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, created_at)
+          SELECT subscriber_id, 'new_clue', ${clue.userId}, ${clue.id}, ${clue.word}, ${Date.now()}
+          FROM subscriptions WHERE target_id = ${clue.userId}`;
+      } catch { /* notifications are best-effort */ }
       return res.json({ ok: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -565,8 +572,9 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: Retur
         if (clueInfo.length > 0) {
           clueAuthorId = clueInfo[0].user_id as string;
           if (clueAuthorId !== result.userId) {
-            await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, created_at)
-              VALUES (${clueAuthorId}, 'new_solve', ${result.userId}, ${result.clueId}, ${clueInfo[0].word}, ${Date.now()})`;
+            const scoreInfo = JSON.stringify({ score: result.score, correctCount, totalTargets: targetIndices.length });
+            await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, score_info, created_at)
+              VALUES (${clueAuthorId}, 'new_solve', ${result.userId}, ${result.clueId}, ${clueInfo[0].word}, ${scoreInfo}, ${Date.now()})`;
           }
         }
       } catch { /* notifications are best-effort */ }
@@ -719,19 +727,99 @@ async function handleComments(req: VercelRequest, res: VercelResponse, sql: Retu
 
 // ==================== NOTIFICATIONS ====================
 
-async function handleNotifications(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+// ==================== SUBSCRIPTIONS ====================
+
+async function handleSubscriptions(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
   if (req.method === 'GET') {
-    const { userId } = req.query;
+    const { userId, targetId } = req.query;
     if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
-    const rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.created_at, n.read, u.display_name as actor_name
+    if (targetId && typeof targetId === 'string') {
+      const rows = await sql`SELECT id FROM subscriptions WHERE subscriber_id = ${userId} AND target_id = ${targetId}` as Record<string, unknown>[];
+      return res.json({ subscribed: rows.length > 0 });
+    }
+    const rows = await sql`SELECT s.target_id, u.display_name FROM subscriptions s LEFT JOIN users u ON s.target_id = u.id WHERE s.subscriber_id = ${userId} ORDER BY s.created_at DESC`;
+    return res.json(rows.map((r: Record<string, unknown>) => ({ targetId: r.target_id, displayName: (r.display_name as string) || r.target_id })));
+  }
+
+  if (req.method === 'POST') {
+    const { subscriberId, targetId } = req.body;
+    if (!subscriberId || !targetId) return res.status(400).json({ error: 'subscriberId and targetId required' });
+    if (subscriberId === targetId) return res.status(400).json({ error: 'Cannot subscribe to yourself' });
+    await sql`INSERT INTO subscriptions (subscriber_id, target_id, created_at) VALUES (${subscriberId}, ${targetId}, ${Date.now()}) ON CONFLICT (subscriber_id, target_id) DO NOTHING`;
+    return res.json({ ok: true });
+  }
+
+  if (req.method === 'DELETE') {
+    const { subscriberId, targetId } = req.query;
+    if (!subscriberId || !targetId) return res.status(400).json({ error: 'subscriberId and targetId required' });
+    await sql`DELETE FROM subscriptions WHERE subscriber_id = ${subscriberId as string} AND target_id = ${targetId as string}`;
+    return res.json({ ok: true });
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
+// ==================== NOTIFICATIONS ====================
+
+async function handleNotifications(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+  const mapRow = (r: Record<string, unknown>) => ({
+    id: Number(r.id), type: r.type as string, actorId: r.actor_id as string,
+    actorName: (r.actor_name as string) || (r.actor_id as string),
+    clueId: r.clue_id as string, clueWord: r.clue_word as string,
+    scoreInfo: r.score_info ? JSON.parse(r.score_info as string) : null,
+    createdAt: Number(r.created_at), read: r.read as boolean,
+  });
+
+  if (req.method === 'GET') {
+    const { userId, all, typeFilter, actorFilter } = req.query;
+    if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
+
+    // Full paginated fetch for notifications page
+    if (all === 'true') {
+      const offset = Number(req.query.offset) || 0;
+      const limit = Math.min(Number(req.query.limit) || 50, 200);
+      const tf = typeof typeFilter === 'string' && typeFilter ? typeFilter : null;
+      const af = typeof actorFilter === 'string' && actorFilter ? `%${actorFilter.toLowerCase()}%` : null;
+
+      let rows: Record<string, unknown>[];
+      let countRows: Record<string, unknown>[];
+
+      if (tf && af) {
+        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.created_at, n.read, u.display_name as actor_name
+          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
+          WHERE n.user_id = ${userId} AND n.type = ${tf} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})
+          ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
+        countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
+          WHERE n.user_id = ${userId} AND n.type = ${tf} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})` as Record<string, unknown>[];
+      } else if (tf) {
+        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.created_at, n.read, u.display_name as actor_name
+          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
+          WHERE n.user_id = ${userId} AND n.type = ${tf}
+          ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
+        countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n WHERE n.user_id = ${userId} AND n.type = ${tf}` as Record<string, unknown>[];
+      } else if (af) {
+        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.created_at, n.read, u.display_name as actor_name
+          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
+          WHERE n.user_id = ${userId} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})
+          ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
+        countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
+          WHERE n.user_id = ${userId} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})` as Record<string, unknown>[];
+      } else {
+        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.created_at, n.read, u.display_name as actor_name
+          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
+          WHERE n.user_id = ${userId}
+          ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
+        countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n WHERE n.user_id = ${userId}` as Record<string, unknown>[];
+      }
+
+      return res.json({ notifications: rows.map(mapRow), total: Number(countRows[0]?.total) || 0 });
+    }
+
+    // Default: last 50 for bell dropdown
+    const rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.created_at, n.read, u.display_name as actor_name
       FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
-      WHERE n.user_id = ${userId} ORDER BY n.created_at DESC LIMIT 50`;
-    return res.json(rows.map((r: Record<string, unknown>) => ({
-      id: Number(r.id), type: r.type as string, actorId: r.actor_id as string,
-      actorName: (r.actor_name as string) || (r.actor_id as string),
-      clueId: r.clue_id as string, clueWord: r.clue_word as string,
-      createdAt: Number(r.created_at), read: r.read as boolean,
-    })));
+      WHERE n.user_id = ${userId} ORDER BY n.created_at DESC LIMIT 50` as Record<string, unknown>[];
+    return res.json(rows.map(mapRow));
   }
 
   if (req.method === 'POST') {
@@ -748,6 +836,12 @@ async function handleNotifications(req: VercelRequest, res: VercelResponse, sql:
     if (action === 'clear_all') {
       await sql`DELETE FROM notifications WHERE user_id = ${userId}`;
       return res.json({ ok: true });
+    }
+    if (action === 'delete_selected') {
+      const ids: number[] = req.body.ids;
+      if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'ids array required' });
+      await sql`DELETE FROM notifications WHERE id = ANY(${ids}) AND user_id = ${userId}`;
+      return res.json({ ok: true, deleted: ids.length });
     }
     return res.status(400).json({ error: 'Unknown action' });
   }
@@ -1300,6 +1394,10 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_clue ON comments(clue_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(user_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_profile_comments_profile ON profile_comments(profile_user_id)`;
+    // Subscriptions
+    await sql`CREATE TABLE IF NOT EXISTS subscriptions (id SERIAL PRIMARY KEY, subscriber_id TEXT NOT NULL REFERENCES users(id), target_id TEXT NOT NULL REFERENCES users(id), created_at BIGINT NOT NULL, UNIQUE(subscriber_id, target_id))`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_subscriptions_target ON subscriptions(target_id)`;
+    await sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS score_info TEXT`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {
