@@ -859,7 +859,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   const spymasterRows = await sql`
     SELECT id as user_id, display_name, captain_rating, ranked_clues_given as clues_given,
       avg_words_per_clue as avg_words, avg_score_on_clues as avg_score
-    FROM users WHERE ranked_clues_given >= 3 ORDER BY captain_rating DESC`;
+    FROM users WHERE ranked_clues_given > 0 ORDER BY captain_rating DESC`;
 
   const spymasters = spymasterRows.map((s: Record<string, unknown>) => ({
     userId: s.user_id as string,
@@ -873,7 +873,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   const guesserRows = await sql`
     SELECT id as user_id, display_name, scout_rating, ranked_clues_solved as clues_solved,
       avg_words_picked as avg_picked, avg_score
-    FROM users WHERE ranked_clues_solved >= 3 ORDER BY scout_rating DESC`;
+    FROM users WHERE ranked_clues_solved > 0 ORDER BY scout_rating DESC`;
 
   const guessers = guesserRows.map((g: Record<string, unknown>) => ({
     userId: g.user_id as string,
@@ -887,7 +887,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   const overallRows = await sql`
     SELECT id as user_id, display_name, captain_rating, scout_rating, overall_rating as rating,
       ranked_clues_given, ranked_clues_solved
-    FROM users WHERE overall_rating > 0 AND (ranked_clues_given + ranked_clues_solved) >= 3 ORDER BY overall_rating DESC`;
+    FROM users WHERE (ranked_clues_given + ranked_clues_solved) > 0 ORDER BY overall_rating DESC`;
 
   const overall = overallRows.map((o: Record<string, unknown>) => ({
     userId: o.user_id as string,

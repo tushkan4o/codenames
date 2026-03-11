@@ -159,21 +159,30 @@ export default function LeaderboardPage() {
   }
 
   const sortedSpymasters = useMemo(() => {
-    if (!spySort) return [...spymasters];
-    const key = spySort;
-    return [...spymasters].sort((a, b) => {
+    const sorted = [...spymasters];
+    const key = spySort || 'captainRating';
+    sorted.sort((a, b) => {
+      // Qualified (>=3) first, then unqualified
+      const aQ = a.cluesGiven >= 3 ? 1 : 0;
+      const bQ = b.cluesGiven >= 3 ? 1 : 0;
+      if (aQ !== bQ) return bQ - aQ;
       const diff = (b[key] as number) - (a[key] as number);
       return spyDir === 'desc' ? diff : -diff;
     });
+    return sorted;
   }, [spymasters, spySort, spyDir]);
 
   const sortedGuessers = useMemo(() => {
-    if (!guesserSort) return [...guessers];
-    const key = guesserSort;
-    return [...guessers].sort((a, b) => {
+    const sorted = [...guessers];
+    const key = guesserSort || 'scoutRating';
+    sorted.sort((a, b) => {
+      const aQ = a.cluesSolved >= 3 ? 1 : 0;
+      const bQ = b.cluesSolved >= 3 ? 1 : 0;
+      if (aQ !== bQ) return bQ - aQ;
       const diff = (b[key] as number) - (a[key] as number);
       return guesserDir === 'desc' ? diff : -diff;
     });
+    return sorted;
   }, [guessers, guesserSort, guesserDir]);
 
   const filteredClues = useMemo(() => {
@@ -215,12 +224,16 @@ export default function LeaderboardPage() {
   }
 
   const sortedOverall = useMemo(() => {
-    if (!overallSort) return [...overall];
-    const key = overallSort;
-    return [...overall].sort((a, b) => {
+    const sorted = [...overall];
+    const key = overallSort || 'rating';
+    sorted.sort((a, b) => {
+      const aQ = (a.rankedCluesGiven + a.rankedCluesSolved) >= 3 ? 1 : 0;
+      const bQ = (b.rankedCluesGiven + b.rankedCluesSolved) >= 3 ? 1 : 0;
+      if (aQ !== bQ) return bQ - aQ;
       const diff = (b[key] as number) - (a[key] as number);
       return overallDir === 'desc' ? diff : -diff;
     });
+    return sorted;
   }, [overall, overallSort, overallDir]);
 
   function toggleClueSort(field: NonNullable<typeof clueSort>) {
@@ -287,12 +300,14 @@ export default function LeaderboardPage() {
                       className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
                     >
                       <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 items-center">
-                        <span className="text-gray-500 text-sm text-center">{i + 1}</span>
+                        <span className="text-gray-500 text-sm text-center">{(o.rankedCluesGiven + o.rankedCluesSolved) >= 3 ? (i + 1) : '—'}</span>
                         <span className="font-semibold text-sm text-white truncate">{o.displayName}</span>
                         <span className="text-sm text-gray-400 text-center sm:hidden">{o.rankedCluesGiven + o.rankedCluesSolved}</span>
                         <span className="text-sm text-gray-400 text-center hidden sm:block">{o.rankedCluesGiven}</span>
                         <span className="text-sm text-gray-400 text-center hidden sm:block">{o.rankedCluesSolved}</span>
-                        <span className="text-sm text-amber-400 font-bold text-center">{o.rating}</span>
+                        <span className={`text-sm font-bold text-center ${(o.rankedCluesGiven + o.rankedCluesSolved) >= 3 ? 'text-amber-400' : 'text-gray-500'}`}>
+                          {(o.rankedCluesGiven + o.rankedCluesSolved) >= 3 ? o.rating : o.rating ? `${o.rating}?` : '—'}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -325,11 +340,13 @@ export default function LeaderboardPage() {
                       className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
                     >
                       <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 items-center">
-                        <span className="text-gray-500 text-sm text-center">{i + 1}</span>
+                        <span className="text-gray-500 text-sm text-center">{s.cluesGiven >= 3 ? (i + 1) : '—'}</span>
                         <span className="font-semibold text-sm text-white truncate">{s.displayName}</span>
                         <span className="text-sm text-gray-400 text-center">{s.cluesGiven}</span>
                         <span className="text-sm text-gray-400 text-center hidden sm:block">{s.avgWordsPerClue.toFixed(1)}</span>
-                        <span className="text-sm text-amber-400 font-bold text-center">{s.captainRating || '—'}</span>
+                        <span className={`text-sm font-bold text-center ${s.cluesGiven >= 3 ? 'text-amber-400' : 'text-gray-500'}`}>
+                          {s.cluesGiven >= 3 ? (s.captainRating || '—') : s.captainRating ? `${s.captainRating}?` : '—'}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -362,11 +379,13 @@ export default function LeaderboardPage() {
                       className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
                     >
                       <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 items-center">
-                        <span className="text-gray-500 text-sm text-center">{i + 1}</span>
+                        <span className="text-gray-500 text-sm text-center">{g.cluesSolved >= 3 ? (i + 1) : '—'}</span>
                         <span className="font-semibold text-sm text-white truncate">{g.displayName}</span>
                         <span className="text-sm text-gray-400 text-center">{g.cluesSolved}</span>
                         <span className="text-sm text-gray-400 text-center hidden sm:block">{g.avgWordsPicked.toFixed(1)}</span>
-                        <span className="text-sm text-amber-400 font-bold text-center">{g.scoutRating}</span>
+                        <span className={`text-sm font-bold text-center ${g.cluesSolved >= 3 ? 'text-amber-400' : 'text-gray-500'}`}>
+                          {g.cluesSolved >= 3 ? g.scoutRating : g.scoutRating ? `${g.scoutRating}?` : '—'}
+                        </span>
                       </div>
                     </div>
                   ))}

@@ -120,6 +120,7 @@ export default function GuessingPage() {
 
       // Smart link: server says user already solved this clue
       if (found?.existingResult) {
+        clearActiveGuess(); // Clear stale in-progress state
         setPickedIndices(found.existingResult.guessedIndices);
         setScore(found.existingResult.score);
         setRevealedTargets(found.targetIndices || []);
@@ -162,38 +163,19 @@ export default function GuessingPage() {
       // Check for active guess on a different clue (conflict)
       const saved = loadActiveGuess();
       if (saved && saved.clueId !== clueId && saved.pickedIndices.length > 0) {
-        // Verify the conflicting clue still exists
-        const conflictClue = await api.getClueById(saved.clueId);
-        if (conflictClue) {
+        // Verify the conflicting clue still exists and user hasn't solved it
+        const conflictClue = await api.getClueById(saved.clueId, false, user?.id);
+        if (conflictClue && !conflictClue.existingResult) {
           setConflictingGuess(saved);
           setLoading(false);
           return;
         }
-        // Clue was deleted — clear stale localStorage
+        // Clue was deleted or already solved — clear stale localStorage
         clearActiveGuess();
       }
 
-      // Restore completed game from localStorage (e.g. after back-navigation)
-      const completed = loadCompletedGuess(clueId);
-      if (completed) {
-        setPickedIndices(completed.pickedIndices);
-        setScore(completed.score);
-        setRevealedTargets(completed.targetIndices);
-        setRevealedNulls(completed.nullIndices);
-        setPhase('done');
-        api.getClueStats(clueId).then((s) => {
-          if (s.attempts > 0) {
-            const pcts: Record<number, number> = {};
-            const counts = (s as { pickCounts?: Record<number, number> }).pickCounts || {};
-            for (const [idx, cnt] of Object.entries(counts)) {
-              pcts[Number(idx)] = Math.round((cnt as number / s.attempts) * 100);
-            }
-            setPickPercents(pcts);
-          }
-        });
-        setLoading(false);
-        return;
-      }
+      // Clear stale completed state — if we reach here, server confirmed no existingResult
+      localStorage.removeItem(COMPLETED_GUESS_KEY);
 
       // Restore in-progress game from localStorage
       if (saved && saved.clueId === clueId && saved.pickedIndices.length > 0) {
@@ -291,6 +273,7 @@ export default function GuessingPage() {
   function handlePick(index: number) {
     if (phase !== 'picking' || !board || !clue) return;
     if (pickedIndices.includes(index)) return;
+    if (confirmEnd) return; // Don't pick cards while confirming end
 
     // If clicking a card that's currently revealing, cancel the reveal
     if (revealingIndices.has(index)) {
@@ -303,8 +286,6 @@ export default function GuessingPage() {
       });
       return;
     }
-
-    setConfirmEnd(false);
 
     // Cancel any currently revealing cards (only one at a time)
     if (revealingIndices.size > 0) {
@@ -609,12 +590,22 @@ export default function GuessingPage() {
           {confirmEnd && (
             <p className="text-amber-400 text-xs">{t.game.confirmEnd}</p>
           )}
-          <button
-            onClick={handleEndTurn}
-            className="px-4 py-1.5 rounded-lg bg-board-red/80 hover:bg-board-red text-white text-sm font-semibold transition-colors"
-          >
-            {t.game.finish}
-          </button>
+          <div className="flex gap-2">
+            {confirmEnd && (
+              <button
+                onClick={() => setConfirmEnd(false)}
+                className="px-4 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold transition-colors"
+              >
+                {t.rating.cancel}
+              </button>
+            )}
+            <button
+              onClick={handleEndTurn}
+              className="px-4 py-1.5 rounded-lg bg-board-red/80 hover:bg-board-red text-white text-sm font-semibold transition-colors"
+            >
+              {t.game.finish}
+            </button>
+          </div>
         </div>
       )}
 

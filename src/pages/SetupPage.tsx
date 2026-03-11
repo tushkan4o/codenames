@@ -170,13 +170,13 @@ export default function SetupPage() {
         try {
           const state = JSON.parse(saved);
           if (state.pickedIndices?.length > 0) {
-            // Verify the clue still exists before offering to continue
-            const exists = await api.getClueById(state.clueId);
-            if (exists) {
+            // Verify the clue still exists and user hasn't solved it already
+            const exists = await api.getClueById(state.clueId, false, user.id);
+            if (exists && !exists.existingResult) {
               setContinueGameId(state.clueId);
               return;
             }
-            // Clue was deleted — clear stale localStorage
+            // Clue was deleted or already solved — clear stale localStorage
             localStorage.removeItem('codenames_active_guess');
           }
         } catch { /* ignore */ }
