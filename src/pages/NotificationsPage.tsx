@@ -15,6 +15,7 @@ interface NotificationItem {
   actorName: string;
   clueId: string;
   clueWord: string;
+  clueNumber: number | null;
   scoreInfo: ScoreInfo | null;
   message: string | null;
   createdAt: number;
@@ -274,9 +275,10 @@ export default function NotificationsPage() {
                 {n.clueId ? (
                   <button
                     onClick={() => handleNotificationClick(n)}
-                    className="text-amber-400 hover:text-amber-300 truncate text-left font-medium"
+                    className="truncate text-left font-medium hover:opacity-80"
                   >
-                    {n.clueWord || '—'}
+                    <span className="text-white">{n.clueWord || '—'}</span>
+                    {n.clueNumber != null && <span className="text-amber-400 ml-1">{n.clueNumber}</span>}
                   </button>
                 ) : (
                   <span className="text-gray-500">—</span>

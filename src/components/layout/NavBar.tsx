@@ -17,6 +17,7 @@ interface Notification {
   clueWord: string;
   scoreInfo: ScoreInfo | null;
   message: string | null;
+  clueNumber: number | null;
   createdAt: number;
   read: boolean;
 }
@@ -31,6 +32,7 @@ interface GroupedNotification {
   read: boolean;
   actorName: string;
   scoreInfo: ScoreInfo | null;
+  clueNumber: number | null;
 }
 
 interface LinkedAccount {
@@ -127,6 +129,7 @@ export default function NavBar() {
           read: n.read,
           actorName: n.actorName,
           scoreInfo: n.scoreInfo,
+          clueNumber: n.clueNumber,
         });
       }
     }

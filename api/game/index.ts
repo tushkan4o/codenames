@@ -762,14 +762,21 @@ async function handleSubscriptions(req: VercelRequest, res: VercelResponse, sql:
 // ==================== NOTIFICATIONS ====================
 
 async function handleNotifications(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
-  const mapRow = (r: Record<string, unknown>) => ({
-    id: Number(r.id), type: r.type as string, actorId: r.actor_id as string,
-    actorName: (r.actor_name as string) || (r.actor_id as string),
-    clueId: r.clue_id as string, clueWord: r.clue_word as string,
-    scoreInfo: r.score_info ? JSON.parse(r.score_info as string) : null,
-    message: (r.message as string) || null,
-    createdAt: Number(r.created_at), read: r.read as boolean,
-  });
+  const mapRow = (r: Record<string, unknown>) => {
+    let scoreInfo = r.score_info ? JSON.parse(r.score_info as string) : null;
+    // Fallback: fill score_info from joined results for old new_solve notifications
+    if (!scoreInfo && r.type === 'new_solve' && r.r_score != null) {
+      scoreInfo = { score: Number(r.r_score), correctCount: Number(r.r_correct_count), totalTargets: Number(r.r_total_targets) };
+    }
+    return {
+      id: Number(r.id), type: r.type as string, actorId: r.actor_id as string,
+      actorName: (r.actor_name as string) || (r.actor_id as string),
+      clueId: r.clue_id as string, clueWord: r.clue_word as string,
+      clueNumber: r.clue_number != null ? Number(r.clue_number) : null,
+      scoreInfo, message: (r.message as string) || null,
+      createdAt: Number(r.created_at), read: r.read as boolean,
+    };
+  };
 
   if (req.method === 'GET') {
     const { userId, all, typeFilter, actorFilter } = req.query;
@@ -786,28 +793,28 @@ async function handleNotifications(req: VercelRequest, res: VercelResponse, sql:
       let countRows: Record<string, unknown>[];
 
       if (tf && af) {
-        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name
-          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
+        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name, r.score as r_score, r.correct_count as r_correct_count, r.total_targets as r_total_targets, c.number as clue_number
+          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id LEFT JOIN results r ON n.type = 'new_solve' AND r.clue_id = n.clue_id AND r.user_id = n.actor_id LEFT JOIN clues c ON c.id = n.clue_id
           WHERE n.user_id = ${userId} AND n.type = ${tf} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})
           ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
         countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
           WHERE n.user_id = ${userId} AND n.type = ${tf} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})` as Record<string, unknown>[];
       } else if (tf) {
-        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name
-          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
+        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name, r.score as r_score, r.correct_count as r_correct_count, r.total_targets as r_total_targets, c.number as clue_number
+          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id LEFT JOIN results r ON n.type = 'new_solve' AND r.clue_id = n.clue_id AND r.user_id = n.actor_id LEFT JOIN clues c ON c.id = n.clue_id
           WHERE n.user_id = ${userId} AND n.type = ${tf}
           ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
         countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n WHERE n.user_id = ${userId} AND n.type = ${tf}` as Record<string, unknown>[];
       } else if (af) {
-        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name
-          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
+        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name, r.score as r_score, r.correct_count as r_correct_count, r.total_targets as r_total_targets, c.number as clue_number
+          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id LEFT JOIN results r ON n.type = 'new_solve' AND r.clue_id = n.clue_id AND r.user_id = n.actor_id LEFT JOIN clues c ON c.id = n.clue_id
           WHERE n.user_id = ${userId} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})
           ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
         countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
           WHERE n.user_id = ${userId} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})` as Record<string, unknown>[];
       } else {
-        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name
-          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
+        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name, r.score as r_score, r.correct_count as r_correct_count, r.total_targets as r_total_targets, c.number as clue_number
+          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id LEFT JOIN results r ON n.type = 'new_solve' AND r.clue_id = n.clue_id AND r.user_id = n.actor_id LEFT JOIN clues c ON c.id = n.clue_id
           WHERE n.user_id = ${userId}
           ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
         countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n WHERE n.user_id = ${userId}` as Record<string, unknown>[];
@@ -817,8 +824,8 @@ async function handleNotifications(req: VercelRequest, res: VercelResponse, sql:
     }
 
     // Default: last 50 for bell dropdown
-    const rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name
-      FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
+    const rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name, r.score as r_score, r.correct_count as r_correct_count, r.total_targets as r_total_targets, c.number as clue_number
+      FROM notifications n LEFT JOIN users u ON n.actor_id = u.id LEFT JOIN results r ON n.type = 'new_solve' AND r.clue_id = n.clue_id AND r.user_id = n.actor_id LEFT JOIN clues c ON c.id = n.clue_id
       WHERE n.user_id = ${userId} ORDER BY n.created_at DESC LIMIT 50` as Record<string, unknown>[];
     return res.json(rows.map(mapRow));
   }
