@@ -181,7 +181,7 @@ export default function NotificationsPage() {
       const len = (n.clueWord || '').length + (n.clueNumber != null ? String(n.clueNumber).length + 1 : 0);
       if (len > max) max = len;
     }
-    return `${max + 1}ch`;
+    return `${max + 2}ch`;
   }, [notifications]);
 
   return (

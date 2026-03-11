@@ -446,7 +446,7 @@ export const ru = {
     columnUser: 'Игрок',
     columnType: 'Тип',
     columnClue: 'Подсказка',
-    columnResult: 'Результат',
+    columnResult: 'Результат / Комментарий',
     loadMore: 'Загрузить ещё',
   },
 };
