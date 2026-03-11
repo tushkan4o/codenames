@@ -101,10 +101,10 @@ export default function NavBar() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Group notifications by clue
+  // Group unread notifications by clue (bell dropdown shows only unread)
   const groupedNotifications = useMemo(() => {
     const map = new Map<string, GroupedNotification>();
-    for (const n of notifications) {
+    for (const n of notifications.filter((n) => !n.read)) {
       const key = n.type === 'profile_comment' ? 'profile' : n.type === 'new_clue' ? `new_clue-${n.actorId}` : (n.clueId || `single-${n.id}`);
       const existing = map.get(key);
       if (existing) {
