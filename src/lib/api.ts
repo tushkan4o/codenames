@@ -253,8 +253,15 @@ export const api = {
     await del(`/api/admin?action=deleteUser&adminId=${encodeURIComponent(adminId)}&userId=${encodeURIComponent(userId)}`);
   },
 
-  async adminGetAllResults(adminId: string): Promise<AdminResult[]> {
-    return get(`/api/admin?action=results&adminId=${encodeURIComponent(adminId)}`);
+  async adminGetResults(adminId: string, opts?: { limit?: number; cursor?: string; search?: string; sortField?: string; sortDir?: string; offset?: number }): Promise<{ items: AdminResult[]; hasMore: boolean; nextCursor: string | null; total?: number }> {
+    const params = new URLSearchParams({ action: 'results', adminId });
+    if (opts?.limit) params.set('limit', String(opts.limit));
+    if (opts?.cursor) params.set('cursor', opts.cursor);
+    if (opts?.search) params.set('search', opts.search);
+    if (opts?.sortField) params.set('sortField', opts.sortField);
+    if (opts?.sortDir) params.set('sortDir', opts.sortDir);
+    if (opts?.offset) params.set('offset', String(opts.offset));
+    return get(`/api/admin?${params}`);
   },
 
   async adminDeleteResult(adminId: string, clueId: string, userId: string, timestamp: number): Promise<void> {

@@ -162,13 +162,81 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (action === 'results') {
-      const rows = await sql`
-        SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked
-        FROM results r
-        LEFT JOIN clues c ON c.id = r.clue_id
-        ORDER BY r.timestamp DESC
-      `;
-      return res.json(rows.map((row: Record<string, unknown>) => ({
+      const limit = Math.min(Number(req.query.limit) || 100, 500);
+      const cursor = req.query.cursor ? Number(req.query.cursor) : null;
+      const search = typeof req.query.search === 'string' && req.query.search.trim() ? `%${req.query.search.trim().toLowerCase()}%` : null;
+      const sortField = (req.query.sortField as string) || 'timestamp';
+      const sortDir = (req.query.sortDir as string) === 'asc' ? 'asc' : 'desc';
+      const offset = req.query.offset ? Number(req.query.offset) : 0;
+
+      // Use cursor for timestamp sort, offset for other sorts
+      const useTimestampCursor = sortField === 'timestamp' && cursor != null && !search;
+
+      // Count total (only on first page = no cursor and no offset)
+      let total = 0;
+      if (!cursor && offset === 0) {
+        const countRows = search
+          ? await sql`SELECT COUNT(*)::int as cnt FROM results r LEFT JOIN clues c ON c.id = r.clue_id WHERE LOWER(r.user_id) LIKE ${search} OR LOWER(c.word) LIKE ${search}`
+          : await sql`SELECT COUNT(*)::int as cnt FROM results`;
+        total = Number(countRows[0]?.cnt) || 0;
+      }
+
+      let rows: Record<string, unknown>[];
+      if (useTimestampCursor) {
+        rows = sortDir === 'desc'
+          ? await sql`
+              SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked
+              FROM results r LEFT JOIN clues c ON c.id = r.clue_id
+              WHERE r.timestamp < ${cursor}
+              ORDER BY r.timestamp DESC LIMIT ${limit + 1}`
+          : await sql`
+              SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked
+              FROM results r LEFT JOIN clues c ON c.id = r.clue_id
+              WHERE r.timestamp > ${cursor}
+              ORDER BY r.timestamp ASC LIMIT ${limit + 1}`;
+      } else if (search) {
+        // Search with offset-based pagination (any sort)
+        if (sortField === 'score') {
+          rows = sortDir === 'desc'
+            ? await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id WHERE LOWER(r.user_id) LIKE ${search} OR LOWER(c.word) LIKE ${search} ORDER BY r.score DESC, r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`
+            : await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id WHERE LOWER(r.user_id) LIKE ${search} OR LOWER(c.word) LIKE ${search} ORDER BY r.score ASC, r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`;
+        } else if (sortField === 'userId') {
+          rows = sortDir === 'desc'
+            ? await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id WHERE LOWER(r.user_id) LIKE ${search} OR LOWER(c.word) LIKE ${search} ORDER BY r.user_id DESC, r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`
+            : await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id WHERE LOWER(r.user_id) LIKE ${search} OR LOWER(c.word) LIKE ${search} ORDER BY r.user_id ASC, r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`;
+        } else if (sortField === 'clueWord') {
+          rows = sortDir === 'desc'
+            ? await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id WHERE LOWER(r.user_id) LIKE ${search} OR LOWER(c.word) LIKE ${search} ORDER BY c.word DESC, r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`
+            : await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id WHERE LOWER(r.user_id) LIKE ${search} OR LOWER(c.word) LIKE ${search} ORDER BY c.word ASC, r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`;
+        } else {
+          rows = sortDir === 'desc'
+            ? await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id WHERE LOWER(r.user_id) LIKE ${search} OR LOWER(c.word) LIKE ${search} ORDER BY r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`
+            : await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id WHERE LOWER(r.user_id) LIKE ${search} OR LOWER(c.word) LIKE ${search} ORDER BY r.timestamp ASC LIMIT ${limit + 1} OFFSET ${offset}`;
+        }
+      } else {
+        // No search, offset-based for non-timestamp sorts
+        if (sortField === 'score') {
+          rows = sortDir === 'desc'
+            ? await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id ORDER BY r.score DESC, r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`
+            : await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id ORDER BY r.score ASC, r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`;
+        } else if (sortField === 'userId') {
+          rows = sortDir === 'desc'
+            ? await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id ORDER BY r.user_id DESC, r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`
+            : await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id ORDER BY r.user_id ASC, r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`;
+        } else if (sortField === 'clueWord') {
+          rows = sortDir === 'desc'
+            ? await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id ORDER BY c.word DESC, r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`
+            : await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id ORDER BY c.word ASC, r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`;
+        } else {
+          // timestamp sort without cursor (first page or asc)
+          rows = sortDir === 'desc'
+            ? await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id ORDER BY r.timestamp DESC LIMIT ${limit + 1} OFFSET ${offset}`
+            : await sql`SELECT r.*, c.word as clue_word, c.number as clue_number, c.board_size as clue_board_size, c.ranked as clue_ranked FROM results r LEFT JOIN clues c ON c.id = r.clue_id ORDER BY r.timestamp ASC LIMIT ${limit + 1} OFFSET ${offset}`;
+        }
+      }
+
+      const hasMore = rows.length > limit;
+      const items = (hasMore ? rows.slice(0, limit) : rows).map((row: Record<string, unknown>) => ({
         clueId: row.clue_id,
         userId: row.user_id,
         score: row.score,
@@ -181,7 +249,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ranked: row.clue_ranked ?? true,
         disabled: row.disabled || false,
         guessedIndices: row.guessed_indices || [],
-      })));
+      }));
+      const lastItem = items[items.length - 1];
+      return res.json({
+        items,
+        hasMore,
+        nextCursor: hasMore && lastItem ? String(lastItem.timestamp) : null,
+        ...(total > 0 ? { total } : {}),
+      });
     }
 
     if (action === 'reports') {
@@ -390,6 +465,7 @@ async function handleInit(_req: VercelRequest, res: VercelResponse) {
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_clue ON comments(clue_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(user_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_profile_comments_profile ON profile_comments(profile_user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_results_timestamp ON results(timestamp DESC)`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

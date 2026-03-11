@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
@@ -67,6 +67,15 @@ export default function AdminPage() {
   const [recalcLoading, setRecalcLoading] = useState(false);
   const [recalcStatus, setRecalcStatus] = useState<string | null>(null);
 
+  // Results pagination state
+  const [resultsCursor, setResultsCursor] = useState<string | null>(null);
+  const [resultsHasMore, setResultsHasMore] = useState(false);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [resultsTotal, setResultsTotal] = useState(0);
+  const [resultsOffset, setResultsOffset] = useState(0);
+  const resultsContainerRef = useRef<HTMLDivElement>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
   useEffect(() => {
     if (!user?.isAdmin) {
       navigate('/');
@@ -87,9 +96,48 @@ export default function AdminPage() {
     setLoadedTabs((prev) => new Set(prev).add(tab));
     if (tab === 'clues') api.adminGetAllClues(user.id).then(setClues);
     else if (tab === 'users') api.adminGetUsers(user.id).then(setUsers);
-    else if (tab === 'results') api.adminGetAllResults(user.id).then(setResults);
+    else if (tab === 'results') fetchResults(true);
     else if (tab === 'feedback') api.adminGetFeedback(user.id).then(setFeedbackItems);
   }
+
+  // Store mutable refs for pagination state used in loadMore
+  const resultsCursorRef = useRef(resultsCursor);
+  const resultsOffsetRef = useRef(resultsOffset);
+  const resultsLoadingRef = useRef(resultsLoading);
+  resultsCursorRef.current = resultsCursor;
+  resultsOffsetRef.current = resultsOffset;
+  resultsLoadingRef.current = resultsLoading;
+
+  const fetchResults = useCallback(async (reset = false) => {
+    if (!user?.isAdmin || resultsLoadingRef.current) return;
+    setResultsLoading(true);
+    try {
+      const isTimestampSort = resultSort === 'timestamp';
+      const cursor = reset ? undefined : (isTimestampSort && !resultSearch.trim() ? resultsCursorRef.current ?? undefined : undefined);
+      const offset = reset ? 0 : (!isTimestampSort || resultSearch.trim() ? resultsOffsetRef.current : 0);
+      const data = await api.adminGetResults(user.id, {
+        limit: 100,
+        cursor,
+        search: resultSearch.trim() || undefined,
+        sortField: resultSort,
+        sortDir: resultDir,
+        offset,
+      });
+      if (reset) {
+        setResults(data.items);
+      } else {
+        setResults((prev) => [...prev, ...data.items]);
+      }
+      setResultsHasMore(data.hasMore);
+      setResultsCursor(data.nextCursor);
+      setResultsOffset(reset ? data.items.length : resultsOffsetRef.current + data.items.length);
+      if (data.total != null) setResultsTotal(data.total);
+    } catch (err) {
+      console.error('Failed to fetch results:', err);
+    } finally {
+      setResultsLoading(false);
+    }
+  }, [user, resultSort, resultDir, resultSearch]);
 
   async function handleRecalcAll() {
     setRecalcLoading(true);
@@ -120,6 +168,53 @@ export default function AdminPage() {
   function toggleResultSort(field: ResultSortField) {
     if (resultSort === field) setResultDir((d) => d === 'desc' ? 'asc' : 'desc');
     else { setResultSort(field); setResultDir('desc'); }
+    // Reset will be triggered by useEffect below
+  }
+
+  // Re-fetch results when sort changes
+  useEffect(() => {
+    if (!loadedTabs.has('results') || !user?.isAdmin) return;
+    fetchResultsReset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultSort, resultDir]);
+
+  function handleResultSearchChange(value: string) {
+    setResultSearch(value);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      fetchResultsReset();
+    }, 300);
+  }
+
+  function fetchResultsReset() {
+    if (!user?.isAdmin) return;
+    setResultsLoading(true);
+    setResultsCursor(null);
+    setResultsOffset(0);
+    api.adminGetResults(user.id, {
+      limit: 100,
+      search: resultSearch.trim() || undefined,
+      sortField: resultSort,
+      sortDir: resultDir,
+    }).then((data) => {
+      setResults(data.items);
+      setResultsHasMore(data.hasMore);
+      setResultsCursor(data.nextCursor);
+      setResultsOffset(data.items.length);
+      if (data.total != null) setResultsTotal(data.total);
+    }).catch((err) => {
+      console.error('Failed to fetch results:', err);
+    }).finally(() => {
+      setResultsLoading(false);
+    });
+  }
+
+  function handleResultsScroll() {
+    const el = resultsContainerRef.current;
+    if (!el || resultsLoading || !resultsHasMore) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) {
+      fetchResults(false);
+    }
   }
 
   async function handleViewClue(clue: AdminClue) {
@@ -244,20 +339,6 @@ export default function AdminPage() {
     return userDir === 'desc' ? diff : -diff;
   });
 
-  const filteredResults = results.filter((r) => {
-    const q = resultSearch.toLowerCase();
-    if (!q) return true;
-    return r.userId.toLowerCase().includes(q) || (r.clueWord || '').toLowerCase().includes(q);
-  });
-
-  const sortedResults = [...filteredResults].sort((a, b) => {
-    let diff = 0;
-    if (resultSort === 'timestamp') diff = b.timestamp - a.timestamp;
-    else if (resultSort === 'score') diff = b.score - a.score;
-    else if (resultSort === 'userId') diff = a.userId.localeCompare(b.userId);
-    else if (resultSort === 'clueWord') diff = (a.clueWord || '').localeCompare(b.clueWord || '');
-    return resultDir === 'desc' ? diff : -diff;
-  });
 
   const thClass = 'py-1 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
 
@@ -298,7 +379,7 @@ export default function AdminPage() {
             onClick={() => setAdminTab('results')}
             className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${adminTab === 'results' ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
-            {t.admin.resultsTab} ({results.length})
+            {t.admin.resultsTab} ({resultsTotal || results.length})
           </button>
           <button
             onClick={() => setAdminTab('users')}
@@ -421,13 +502,13 @@ export default function AdminPage() {
               type="text"
               placeholder={t.admin.searchResults}
               value={resultSearch}
-              onChange={(e) => setResultSearch(e.target.value)}
+              onChange={(e) => handleResultSearchChange(e.target.value)}
               className="w-full bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
             />
           </div>
 
           <div className="text-sm text-gray-400 mb-2">
-            {t.admin.allResults} ({filteredResults.length})
+            {t.admin.allResults} ({results.length}{resultsTotal > 0 ? ` / ${resultsTotal}` : ''})
           </div>
 
           {/* Table header */}
@@ -441,8 +522,8 @@ export default function AdminPage() {
             <span></span>
           </div>
 
-          <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
-            {sortedResults.map((r, i) => (
+          <div ref={resultsContainerRef} onScroll={handleResultsScroll} className="space-y-1 overflow-y-auto flex-1 min-h-0">
+            {results.map((r, i) => (
               <div
                 key={`${r.clueId}-${r.userId}-${r.timestamp}-${i}`}
                 onClick={() => handleViewResult(r)}
@@ -487,6 +568,17 @@ export default function AdminPage() {
                 </div>
               </div>
             ))}
+            {resultsLoading && (
+              <div className="text-center py-3 text-gray-500 text-sm">Загрузка...</div>
+            )}
+            {!resultsLoading && resultsHasMore && (
+              <button
+                onClick={() => fetchResults(false)}
+                className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Загрузить ещё
+              </button>
+            )}
           </div>
         </div>)}
 
