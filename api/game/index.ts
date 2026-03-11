@@ -135,9 +135,9 @@ function computeCaptainRating(clueRatings: number[]): number {
   return Math.round(avg);
 }
 
-/** Solve rating for a single solve = 150 + score*40 - clueRating */
+/** Solve rating for a single solve = 120 + score*40 - clueRating */
 function computeSolveRating(score: number, clueRating: number): number {
-  return Math.round(150 + score * 40 - clueRating);
+  return Math.round(120 + score * 40 - clueRating);
 }
 
 /** Scout rating = avg(solveRatings), rounded to integer */
