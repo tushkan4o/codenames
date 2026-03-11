@@ -234,7 +234,7 @@ export default function NotificationsPage() {
         {/* Table */}
         <div className="bg-gray-800/60 border border-gray-700/30 rounded-xl overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[2rem_4.5rem_1fr_6.5rem_auto_1fr] sm:grid-cols-[2rem_5.5rem_7rem_7rem_auto_1fr] gap-x-1 px-2 py-1.5 border-b border-gray-700/50 text-[0.65rem] font-semibold text-gray-500 uppercase">
+          <div className="grid grid-cols-[2rem_4.5rem_1fr_6.5rem_1fr] sm:grid-cols-[2rem_5.5rem_7rem_7rem_1fr] gap-x-1 px-2 py-1.5 border-b border-gray-700/50 text-[0.65rem] font-semibold text-gray-500 uppercase">
             <label className="flex items-center justify-center cursor-pointer" onClick={toggleSelectAll}>
               <div className={`w-3.5 h-3.5 rounded border transition-colors flex items-center justify-center ${allSelected ? 'bg-board-blue/80 border-board-blue' : 'border-gray-600 bg-gray-700/50'}`}>
                 {allSelected && <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 6l3 3 5-5" /></svg>}
@@ -243,8 +243,7 @@ export default function NotificationsPage() {
             <span>{t.notifications.columnDate}</span>
             <span className="hidden sm:block">{t.notifications.columnUser}</span>
             <span>{t.notifications.columnType}</span>
-            <span>{t.notifications.columnClue}</span>
-            <span>{t.notifications.columnResult}</span>
+            <span>{t.notifications.columnClue} / {t.notifications.columnResult}</span>
           </div>
 
           {/* Rows */}
@@ -256,7 +255,7 @@ export default function NotificationsPage() {
             notifications.map((n) => (
               <div
                 key={n.id}
-                className={`grid grid-cols-[2rem_4.5rem_1fr_6.5rem_auto_1fr] sm:grid-cols-[2rem_5.5rem_7rem_7rem_auto_1fr] gap-x-1 px-2 py-1.5 border-b border-gray-700/20 hover:bg-gray-700/30 transition-colors items-center text-xs ${!n.read ? 'bg-gray-700/10' : ''}`}
+                className={`grid grid-cols-[2rem_4.5rem_1fr_6.5rem_1fr] sm:grid-cols-[2rem_5.5rem_7rem_7rem_1fr] gap-x-1 px-2 py-1.5 border-b border-gray-700/20 hover:bg-gray-700/30 transition-colors items-center text-xs ${!n.read ? 'bg-gray-700/10' : ''}`}
               >
                 <label className="flex items-center justify-center cursor-pointer" onClick={() => toggleSelect(n.id)}>
                   <div className={`w-3.5 h-3.5 rounded border transition-colors flex items-center justify-center ${selectedIds.has(n.id) ? 'bg-board-blue/80 border-board-blue' : 'border-gray-600 bg-gray-700/50'}`}>
@@ -271,18 +270,20 @@ export default function NotificationsPage() {
                   {n.actorName}
                 </button>
                 <span className="text-gray-400 truncate">{typeLabel(n.type, t)}</span>
-                {n.clueId ? (
-                  <button
-                    onClick={() => handleNotificationClick(n)}
-                    className="whitespace-nowrap text-left font-medium hover:opacity-80"
-                  >
-                    <span className="text-white">{n.clueWord || '—'}</span>
-                    {n.clueNumber != null && <span className="text-amber-400 ml-1">{n.clueNumber}</span>}
-                  </button>
-                ) : (
-                  <span className="text-gray-500">—</span>
-                )}
-                <span className={`break-words ${n.type === 'new_solve' ? 'text-center' : 'text-left'}`}>{renderResult(n)}</span>
+                <div className="flex items-baseline gap-1.5 flex-wrap">
+                  {n.clueId ? (
+                    <button
+                      onClick={() => handleNotificationClick(n)}
+                      className="whitespace-nowrap text-left font-medium hover:opacity-80 shrink-0"
+                    >
+                      <span className="text-white">{n.clueWord || '—'}</span>
+                      {n.clueNumber != null && <span className="text-amber-400 ml-1">{n.clueNumber}</span>}
+                    </button>
+                  ) : (
+                    <span className="text-gray-500">—</span>
+                  )}
+                  <span className="break-words min-w-0">{renderResult(n)}</span>
+                </div>
               </div>
             ))
           )}
