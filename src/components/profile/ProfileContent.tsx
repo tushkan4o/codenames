@@ -186,8 +186,8 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
         const bAttempts = b.clue ? (clueStatsMap[b.clue.id]?.attempts ?? 0) : 0;
         diff = bAttempts - aAttempts;
       } else if (solvedSort === 'solveRating') {
-        const aSR = a.clue && clueStatsMap[a.clue.id]?.attempts ? 120 + (a.result.score ?? 0) * 20 - (clueStatsMap[a.clue.id]?.clueRating ?? 0) : 0;
-        const bSR = b.clue && clueStatsMap[b.clue.id]?.attempts ? 120 + (b.result.score ?? 0) * 20 - (clueStatsMap[b.clue.id]?.clueRating ?? 0) : 0;
+        const aSR = a.result.solveRating ?? 0;
+        const bSR = b.result.solveRating ?? 0;
         diff = bSR - aSR;
       } else if (solvedSort === 'myScore') diff = (b.result.score ?? 0) - (a.result.score ?? 0);
       return solvedDir === 'desc' ? diff : -diff;
@@ -747,11 +747,11 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           ) : (
             <>
               <div className="overflow-y-hidden" style={{ scrollbarGutter: 'stable' }}>
-                <div className="grid grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
+                <div className={`grid ${isOwnProfile ? 'grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3rem_3.5rem_2rem_2rem]' : 'grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3.5rem_2rem_2rem]'} gap-x-2 px-4 py-1 items-center`}>
                   <span className={thClass} onClick={() => toggleSolvedSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
                   <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={solvedSort} dir={solvedDir} /></span>
-                  <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></span>
-                  <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('solveRating')}>{t.profile.rating}<SortArrow field="solveRating" activeField={solvedSort} dir={solvedDir} /></span>
+                  {isOwnProfile && <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('myScore')}>{t.profile.sortScore}<SortArrow field="myScore" activeField={solvedSort} dir={solvedDir} /></span>}
+                  <span className={`${thClass} text-center`} onClick={() => toggleSolvedSort('solveRating')}>{t.profile.rating}<SortArrow field="solveRating" activeField={solvedSort} dir={solvedDir} /></span>
                   <span className={`${thClass} text-center`} onClick={cycleRankedFilter} title={starTitle}>{starIcon}</span>
                   <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
                 </div>
@@ -769,18 +769,18 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       onClick={() => setExpandedSolvedKey(isExpanded ? null : solvedKey)}
                       className={`bg-gray-800/60 border rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                     >
-                      <div className="grid grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3rem_3.5rem_2rem_2rem] gap-x-2 items-center">
+                      <div className={`grid ${isOwnProfile ? 'grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3rem_3.5rem_2rem_2rem]' : 'grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3.5rem_2rem_2rem]'} gap-x-2 items-center`}>
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {entry.clue?.word ?? entry.result.clueId.slice(0, 12)}
                           <span className="ml-1 text-amber-400 font-semibold">{entry.clue?.number ?? entry.result.totalTargets}</span>
                           {entry.result.disabled && <span className="ml-1 text-[0.6rem] text-red-400 font-bold border border-red-400/40 rounded px-0.5">OFF</span>}
                         </span>
                         <span className="text-xs text-gray-500 text-center hidden sm:block">{entry.result.timestamp > 0 ? formatDate(entry.result.timestamp) : '—'}</span>
-                        <span className="text-sm font-bold text-white text-center">
+                        {isOwnProfile && <span className="text-sm font-bold text-white text-center hidden sm:block">
                           {entry.result.score ?? 0}
                           <span className="text-gray-500 font-normal ml-0.5 text-xs">({entry.result.correctCount}/{entry.result.totalTargets})</span>
-                        </span>
-                        <span className="text-sm text-gray-400 text-center hidden sm:block">{cStats && cStats.attempts > 0 ? (120 + (entry.result.score ?? 0) * 20 - cStats.clueRating) : '—'}</span>
+                        </span>}
+                        <span className="text-sm text-gray-400 text-center">{entry.result.solveRating ? entry.result.solveRating : '—'}</span>
                         <span className="text-sm text-center">{entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
                           {user?.isAdmin ? (

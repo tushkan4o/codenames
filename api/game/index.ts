@@ -174,6 +174,8 @@ async function recalcClueStats(sql: ReturnType<typeof neon>, clueId: string): Pr
     ratings_count = ${ratingsCount},
     avg_rating = ${Math.round(avgRating * 10) / 10}
     WHERE id = ${clueId}`;
+  // Recompute solve_rating for all results of this clue (120 + score*40 - clueRating)
+  await sql`UPDATE results SET solve_rating = ROUND(120 + score * 40 - ${clueRating}) WHERE clue_id = ${clueId}`;
 }
 
 /** Recompute and store all stats + ratings for a single user */
@@ -507,7 +509,7 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: Retur
       clueId: row.clue_id, userId: row.user_id, guessedIndices: row.guessed_indices,
       correctCount: row.correct_count, totalTargets: row.total_targets,
       score: row.score, timestamp: Number(row.timestamp), boardSize: row.board_size,
-      disabled: row.disabled || false,
+      disabled: row.disabled || false, solveRating: Number(row.solve_rating) || 0,
     })));
   }
 
@@ -546,8 +548,11 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: Retur
       await sql`INSERT INTO users (id, display_name, created_at)
         VALUES (${result.userId}, ${result.userId}, ${result.timestamp})
         ON CONFLICT (id) DO NOTHING`;
-      await sql`INSERT INTO results (clue_id, user_id, guessed_indices, correct_count, total_targets, score, timestamp, board_size)
-        VALUES (${result.clueId}, ${result.userId}, ${result.guessedIndices}, ${correctCount}, ${targetIndices.length}, ${result.score}, ${result.timestamp}, ${result.boardSize || null})`;
+      const crRows = await sql`SELECT clue_rating FROM clues WHERE id = ${result.clueId}` as Record<string, unknown>[];
+      const clueRating = crRows.length > 0 ? Number(crRows[0].clue_rating) || 0 : 0;
+      const solveRating = computeSolveRating(result.score, clueRating);
+      await sql`INSERT INTO results (clue_id, user_id, guessed_indices, correct_count, total_targets, score, timestamp, board_size, solve_rating)
+        VALUES (${result.clueId}, ${result.userId}, ${result.guessedIndices}, ${correctCount}, ${targetIndices.length}, ${result.score}, ${result.timestamp}, ${result.boardSize || null}, ${solveRating})`;
       // Notify clue author about new solve
       let clueAuthorId: string | null = null;
       try {
@@ -1278,6 +1283,7 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS clues_solved INT DEFAULT 0`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_words_picked REAL DEFAULT 0`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_score REAL DEFAULT 0`;
+    await sql`ALTER TABLE results ADD COLUMN IF NOT EXISTS solve_rating INT DEFAULT 0`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS attempts INT DEFAULT 0`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS avg_score REAL DEFAULT 0`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS ratings_count INT DEFAULT 0`;
