@@ -678,8 +678,8 @@ async function handleComments(req: VercelRequest, res: VercelResponse, sql: Retu
       // Notify clue author about new comment
       if (clueInfo.length > 0 && clueInfo[0].user_id !== userId) {
         notifiedSet.add(clueInfo[0].user_id as string);
-        await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, created_at)
-          VALUES (${clueInfo[0].user_id}, 'new_comment', ${userId}, ${clueId}, ${clueInfo[0].word}, ${now})`;
+        await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, message, created_at)
+          VALUES (${clueInfo[0].user_id}, 'new_comment', ${userId}, ${clueId}, ${clueInfo[0].word}, ${trimmed}, ${now})`;
       }
       // Notify mentioned users (@[nickname] bracket format + legacy @nickname)
       const bracketMentions = trimmed.match(/@\[([^\]]+)\]/g);
@@ -693,8 +693,8 @@ async function handleComments(req: VercelRequest, res: VercelResponse, sql: Retu
             const mentionedId = userRows[0].id as string;
             if (mentionedId !== userId && !notifiedSet.has(mentionedId)) {
               notifiedSet.add(mentionedId);
-              await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, created_at)
-                VALUES (${mentionedId}, 'mention', ${userId}, ${clueId}, ${clueInfo.length > 0 ? clueInfo[0].word : null}, ${now})`;
+              await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, message, created_at)
+                Values (${mentionedId}, 'mention', ${userId}, ${clueId}, ${clueInfo.length > 0 ? clueInfo[0].word : null}, ${trimmed}, ${now})`;
             }
           }
         }
@@ -767,6 +767,7 @@ async function handleNotifications(req: VercelRequest, res: VercelResponse, sql:
     actorName: (r.actor_name as string) || (r.actor_id as string),
     clueId: r.clue_id as string, clueWord: r.clue_word as string,
     scoreInfo: r.score_info ? JSON.parse(r.score_info as string) : null,
+    message: (r.message as string) || null,
     createdAt: Number(r.created_at), read: r.read as boolean,
   });
 
@@ -785,27 +786,27 @@ async function handleNotifications(req: VercelRequest, res: VercelResponse, sql:
       let countRows: Record<string, unknown>[];
 
       if (tf && af) {
-        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.created_at, n.read, u.display_name as actor_name
+        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name
           FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
           WHERE n.user_id = ${userId} AND n.type = ${tf} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})
           ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
         countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
           WHERE n.user_id = ${userId} AND n.type = ${tf} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})` as Record<string, unknown>[];
       } else if (tf) {
-        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.created_at, n.read, u.display_name as actor_name
+        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name
           FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
           WHERE n.user_id = ${userId} AND n.type = ${tf}
           ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
         countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n WHERE n.user_id = ${userId} AND n.type = ${tf}` as Record<string, unknown>[];
       } else if (af) {
-        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.created_at, n.read, u.display_name as actor_name
+        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name
           FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
           WHERE n.user_id = ${userId} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})
           ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
         countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
           WHERE n.user_id = ${userId} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})` as Record<string, unknown>[];
       } else {
-        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.created_at, n.read, u.display_name as actor_name
+        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name
           FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
           WHERE n.user_id = ${userId}
           ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
@@ -816,7 +817,7 @@ async function handleNotifications(req: VercelRequest, res: VercelResponse, sql:
     }
 
     // Default: last 50 for bell dropdown
-    const rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.created_at, n.read, u.display_name as actor_name
+    const rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name
       FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
       WHERE n.user_id = ${userId} ORDER BY n.created_at DESC LIMIT 50` as Record<string, unknown>[];
     return res.json(rows.map(mapRow));
@@ -908,8 +909,8 @@ async function handleProfileComments(req: VercelRequest, res: VercelResponse, sq
     // Notify profile owner about new comment (if not self)
     try {
       if (profileUserId !== authorId) {
-        await sql`INSERT INTO notifications (user_id, type, actor_id, created_at)
-          VALUES (${profileUserId}, 'profile_comment', ${authorId}, ${now})`;
+        await sql`INSERT INTO notifications (user_id, type, actor_id, message, created_at)
+          VALUES (${profileUserId}, 'profile_comment', ${authorId}, ${trimmed}, ${now})`;
       }
     } catch { /* best-effort */ }
     return res.json({ ok: true, id: Number(rows[0].id) });

@@ -16,6 +16,7 @@ interface NotificationItem {
   clueId: string;
   clueWord: string;
   scoreInfo: ScoreInfo | null;
+  message: string | null;
   createdAt: number;
   read: boolean;
 }
@@ -159,6 +160,9 @@ export default function NotificationsPage() {
     if (n.type === 'new_solve' && n.scoreInfo) {
       return `${n.scoreInfo.score}(${n.scoreInfo.correctCount}/${n.scoreInfo.totalTargets})`;
     }
+    if ((n.type === 'new_comment' || n.type === 'mention' || n.type === 'profile_comment') && n.message) {
+      return n.message;
+    }
     return '';
   }
 
@@ -277,7 +281,7 @@ export default function NotificationsPage() {
                 ) : (
                   <span className="text-gray-500">—</span>
                 )}
-                <span className="text-white font-bold text-center">{getResultText(n)}</span>
+                <span className={`truncate ${n.type === 'new_solve' ? 'text-white font-bold text-center' : 'text-gray-400 text-left'}`}>{getResultText(n)}</span>
               </div>
             ))
           )}

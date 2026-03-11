@@ -16,6 +16,7 @@ interface Notification {
   clueId: string;
   clueWord: string;
   scoreInfo: ScoreInfo | null;
+  message: string | null;
   createdAt: number;
   read: boolean;
 }
