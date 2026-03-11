@@ -291,7 +291,7 @@ export default function AdminPage() {
     return resultDir === 'desc' ? diff : -diff;
   });
 
-  const thClass = 'py-2 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
+  const thClass = 'py-1 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -357,7 +357,7 @@ export default function AdminPage() {
         </div>
 
         {/* Table header */}
-        <div className="hidden md:grid grid-cols-[1.5fr_1fr_2rem_4.5rem_4rem_1fr_3rem_2rem] gap-2 px-4 py-2 items-center">
+        <div className="hidden md:grid grid-cols-[1.5fr_1fr_2rem_4.5rem_4rem_1fr_3rem_2rem] gap-2 px-4 py-1 items-center">
           <span className={thClass} onClick={() => toggleSort('word')}>{t.admin.clueWord}<SortArrow field="word" activeField={sortField} dir={sortDir} /></span>
           <span className={thClass} onClick={() => toggleSort('userId')}>{t.admin.clueAuthor}<SortArrow field="userId" activeField={sortField} dir={sortDir} /></span>
           <span className={`${thClass} text-center`} title="Рейтинговая">★</span>
@@ -374,7 +374,7 @@ export default function AdminPage() {
               {/* Row */}
               <div
                 onClick={() => toggleExpand(clue.id)}
-                className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${
+                className={`bg-gray-800/60 border rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600 ${
                   expandedId === clue.id
                     ? 'border-gray-500'
                     : 'border-gray-700/30'
@@ -540,7 +540,7 @@ export default function AdminPage() {
           </div>
 
           {/* Table header */}
-          <div className="hidden md:grid grid-cols-[1.5fr_1fr_4.5rem_2rem_1fr_2rem] gap-2 px-4 py-2 items-center">
+          <div className="hidden md:grid grid-cols-[1.5fr_1fr_4.5rem_2rem_1fr_2rem] gap-2 px-4 py-1 items-center">
             <span className={thClass} onClick={() => toggleResultSort('clueWord')}>{t.admin.clueWord}<SortArrow field="clueWord" activeField={resultSort} dir={resultDir} /></span>
             <span className={thClass} onClick={() => toggleResultSort('userId')}>{t.admin.player}<SortArrow field="userId" activeField={resultSort} dir={resultDir} /></span>
             <span className={`${thClass} text-center`} onClick={() => toggleResultSort('score')}>{t.admin.score}<SortArrow field="score" activeField={resultSort} dir={resultDir} /></span>
@@ -554,7 +554,7 @@ export default function AdminPage() {
               <div
                 key={`${r.clueId}-${r.userId}-${r.timestamp}-${i}`}
                 onClick={() => handleViewResult(r)}
-                className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600"
+                className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
               >
                 <div className="grid grid-cols-2 md:grid-cols-[1.5fr_1fr_4.5rem_2rem_1fr_2rem] gap-2 items-center">
                   <span className="font-bold text-white uppercase text-sm">
@@ -604,7 +604,7 @@ export default function AdminPage() {
           </div>
 
           {/* Table header */}
-          <div className="hidden md:grid grid-cols-[1.5fr_4.5rem_4.5rem_4rem_1fr_1fr_2rem] gap-2 px-4 py-2 items-center">
+          <div className="hidden md:grid grid-cols-[1.5fr_4.5rem_4.5rem_4rem_1fr_1fr_2rem] gap-2 px-4 py-1 items-center">
             <span className={thClass} onClick={() => toggleUserSort('displayName')}>{t.leaderboard.player}<SortArrow field="displayName" activeField={userSort} dir={userDir} /></span>
             <span className={`${thClass} text-center`} onClick={() => toggleUserSort('cluesGiven')}>{t.admin.given}<SortArrow field="cluesGiven" activeField={userSort} dir={userDir} /></span>
             <span className={`${thClass} text-center`} onClick={() => toggleUserSort('cluesSolved')}>{t.admin.solved}<SortArrow field="cluesSolved" activeField={userSort} dir={userDir} /></span>
@@ -621,7 +621,7 @@ export default function AdminPage() {
                 <div key={u.id}>
                   <div
                     onClick={() => setExpandedUserId(isExpanded ? null : u.id)}
-                    className={`bg-gray-800/60 border rounded-lg px-4 py-2 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
+                    className={`bg-gray-800/60 border rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                   >
                     <div className="grid grid-cols-2 md:grid-cols-[1.5fr_4.5rem_4.5rem_4rem_1fr_1fr_2rem] gap-2 items-center">
                       <span className="text-sm truncate">

@@ -358,6 +358,7 @@ async function handleInit(_req: VercelRequest, res: VercelResponse) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false`;
     await sql`CREATE TABLE IF NOT EXISTS reports (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), reason TEXT NOT NULL, created_at BIGINT NOT NULL)`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS disabled BOOLEAN DEFAULT false`;
+    await sql`ALTER TABLE results ADD COLUMN IF NOT EXISTS disabled BOOLEAN DEFAULT false`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS ranked BOOLEAN DEFAULT true`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS red_count INT`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS blue_count INT`;

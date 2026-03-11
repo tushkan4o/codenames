@@ -154,7 +154,7 @@ function computeOverallRating(captainRating: number, scoutRating: number, hasCap
 
 /** Recompute and store all stats for a single clue */
 async function recalcClueStats(sql: ReturnType<typeof neon>, clueId: string): Promise<void> {
-  const resultRows = await sql`SELECT score FROM results WHERE clue_id = ${clueId}`;
+  const resultRows = await sql`SELECT score FROM results WHERE clue_id = ${clueId} AND (disabled IS NOT TRUE)`;
   const scores = resultRows.map((r: Record<string, unknown>) => Number(r.score) || 0);
   const clueRating = computeClueRating(scores);
   const attempts = resultRows.length;
@@ -183,12 +183,12 @@ async function recalcUserStats(sql: ReturnType<typeof neon>, userId: string): Pr
   let avgScoreOnClues = 0;
   if (cluesGiven > 0) {
     const clueIds = clueRows.map((c: Record<string, unknown>) => c.id as string);
-    const othersRows = await sql`SELECT COALESCE(AVG(score), 0) as avg FROM results WHERE clue_id = ANY(${clueIds}) AND user_id != ${userId}`;
+    const othersRows = await sql`SELECT COALESCE(AVG(score), 0) as avg FROM results WHERE clue_id = ANY(${clueIds}) AND user_id != ${userId} AND (disabled IS NOT TRUE)`;
     avgScoreOnClues = Number(othersRows[0].avg) || 0;
   }
 
   // Solve stats
-  const solveRows = await sql`SELECT score, guessed_indices, clue_id FROM results WHERE user_id = ${userId}`;
+  const solveRows = await sql`SELECT score, guessed_indices, clue_id FROM results WHERE user_id = ${userId} AND (disabled IS NOT TRUE)`;
   const cluesSolved = solveRows.length;
   const avgWordsPicked = cluesSolved > 0
     ? solveRows.reduce((s: number, r: Record<string, unknown>) => s + ((r.guessed_indices as number[])?.length || 0), 0) / cluesSolved : 0;
@@ -388,7 +388,10 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
     if (typeof disabled !== 'boolean' || !userId) return res.status(400).json({ error: 'disabled (boolean) and userId required' });
     const rows = await sql`SELECT user_id FROM clues WHERE id = ${id}`;
     if (rows.length === 0) return res.status(404).json({ error: 'Clue not found' });
-    if (rows[0].user_id !== userId) return res.status(403).json({ error: 'Only the clue owner can toggle disabled' });
+    if (rows[0].user_id !== userId) {
+      const adminCheck = await sql`SELECT is_admin FROM users WHERE id = ${userId}`;
+      if (!adminCheck.length || !adminCheck[0].is_admin) return res.status(403).json({ error: 'Only the clue owner or admin can toggle disabled' });
+    }
     await sql`UPDATE clues SET disabled = ${disabled} WHERE id = ${id}`;
     return res.json({ ok: true });
   }
@@ -400,7 +403,7 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
     const clueRows = await sql`SELECT created_at, clue_rating, attempts, avg_score, ratings_count, avg_rating FROM clues WHERE id = ${id}`;
     const clue = clueRows.length > 0 ? clueRows[0] : null;
     // Live query for per-solve details + pickCounts (light, per-clue)
-    const rows = await sql`SELECT user_id, score, guessed_indices, timestamp FROM results WHERE clue_id = ${id} ORDER BY timestamp ASC`;
+    const rows = await sql`SELECT user_id, score, guessed_indices, timestamp, disabled FROM results WHERE clue_id = ${id} AND (disabled IS NOT TRUE) ORDER BY timestamp ASC`;
     const scores = rows.map((r: Record<string, unknown>) => Number(r.score) || 0);
     const pickCounts: Record<number, number> = {};
     for (const r of rows) {
@@ -500,7 +503,27 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: Retur
       clueId: row.clue_id, userId: row.user_id, guessedIndices: row.guessed_indices,
       correctCount: row.correct_count, totalTargets: row.total_targets,
       score: row.score, timestamp: Number(row.timestamp), boardSize: row.board_size,
+      disabled: row.disabled || false,
     })));
+  }
+
+  if (req.method === 'PATCH') {
+    const { clueId, resultUserId, timestamp, disabled, adminUserId } = req.body || {};
+    if (!clueId || !resultUserId || !timestamp || typeof disabled !== 'boolean' || !adminUserId)
+      return res.status(400).json({ error: 'clueId, resultUserId, timestamp, disabled, adminUserId required' });
+    const adminCheck = await sql`SELECT is_admin FROM users WHERE id = ${adminUserId}`;
+    if (!adminCheck.length || !adminCheck[0].is_admin) return res.status(403).json({ error: 'Admin only' });
+    await sql`UPDATE results SET disabled = ${disabled} WHERE clue_id = ${clueId} AND user_id = ${resultUserId} AND timestamp = ${timestamp}`;
+    // Recalc stats (best-effort)
+    try {
+      await recalcClueStats(sql, clueId);
+      await recalcUserStats(sql, resultUserId);
+      const clueInfo = await sql`SELECT user_id FROM clues WHERE id = ${clueId}`;
+      if (clueInfo.length > 0 && (clueInfo[0].user_id as string) !== resultUserId) {
+        await recalcUserStats(sql, clueInfo[0].user_id as string);
+      }
+    } catch { /* best-effort */ }
+    return res.json({ ok: true });
   }
 
   if (req.method === 'POST') {
@@ -840,7 +863,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   const spymasterRows = await sql`
     SELECT id as user_id, display_name, captain_rating, ranked_clues_given as clues_given,
       avg_words_per_clue as avg_words, avg_score_on_clues as avg_score
-    FROM users WHERE ranked_clues_given > 0 ORDER BY captain_rating DESC`;
+    FROM users WHERE ranked_clues_given >= 3 ORDER BY captain_rating DESC`;
 
   const spymasters = spymasterRows.map((s: Record<string, unknown>) => ({
     userId: s.user_id as string,
@@ -854,7 +877,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   const guesserRows = await sql`
     SELECT id as user_id, display_name, scout_rating, ranked_clues_solved as clues_solved,
       avg_words_picked as avg_picked, avg_score
-    FROM users WHERE ranked_clues_solved > 0 ORDER BY scout_rating DESC`;
+    FROM users WHERE ranked_clues_solved >= 3 ORDER BY scout_rating DESC`;
 
   const guessers = guesserRows.map((g: Record<string, unknown>) => ({
     userId: g.user_id as string,
@@ -868,7 +891,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   const overallRows = await sql`
     SELECT id as user_id, display_name, captain_rating, scout_rating, overall_rating as rating,
       ranked_clues_given, ranked_clues_solved
-    FROM users WHERE overall_rating > 0 ORDER BY overall_rating DESC`;
+    FROM users WHERE overall_rating > 0 AND (ranked_clues_given + ranked_clues_solved) >= 3 ORDER BY overall_rating DESC`;
 
   const overall = overallRows.map((o: Record<string, unknown>) => ({
     userId: o.user_id as string,
@@ -1229,6 +1252,7 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false`;
     await sql`CREATE TABLE IF NOT EXISTS reports (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), reason TEXT NOT NULL, created_at BIGINT NOT NULL)`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS disabled BOOLEAN DEFAULT false`;
+    await sql`ALTER TABLE results ADD COLUMN IF NOT EXISTS disabled BOOLEAN DEFAULT false`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS ranked BOOLEAN DEFAULT true`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS red_count INT`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS blue_count INT`;

@@ -16,7 +16,7 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'Как привязать к аккаунту Discord/Google?',
     answer: 'Для этого не надо создавать новый аккаунт. Чтобы сохранить текущий прогресс можно привязать к существующему аккаунту Discord или Google в настройках.',
-    image: '/fax/example/attach_account.png'
+    image: '/faq/attach_account.png'
   },
   {
     question: 'По каким правилам загадывать слова?',

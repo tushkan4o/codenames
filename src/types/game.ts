@@ -71,6 +71,7 @@ export interface GuessResult {
   timestamp: number;
   userId: string;
   boardSize?: BoardSize;
+  disabled?: boolean;
 }
 
 export type GameMode = 'clue-giving' | 'guessing';

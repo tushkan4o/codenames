@@ -217,6 +217,10 @@ export const api = {
     await patch(`/api/game?route=clue&id=${encodeURIComponent(clueId)}`, { userId, disabled });
   },
 
+  async toggleResultDisabled(clueId: string, resultUserId: string, timestamp: number, disabled: boolean, adminUserId: string): Promise<void> {
+    await patch('/api/game?route=results', { clueId, resultUserId, timestamp, disabled, adminUserId });
+  },
+
   // Reports
   async submitReport(clueId: string, userId: string, reason: string): Promise<void> {
     await post('/api/game?route=ratings', { clueId, userId, reason });

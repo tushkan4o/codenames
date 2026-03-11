@@ -314,6 +314,20 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     }
   }
 
+  async function handleToggleResultDisabled(entry: { result: GuessResult; clue?: Clue }) {
+    if (!user?.isAdmin) return;
+    const newDisabled = !entry.result.disabled;
+    try {
+      await api.toggleResultDisabled(entry.result.clueId, entry.result.userId, entry.result.timestamp, newDisabled, user.id);
+      setSolvedResults((prev) => prev.map((r) =>
+        r.clueId === entry.result.clueId && r.userId === entry.result.userId && r.timestamp === entry.result.timestamp
+          ? { ...r, disabled: newDisabled } : r
+      ));
+    } catch (err) {
+      console.error('Failed to toggle result disabled:', err);
+    }
+  }
+
   function cycleRankedFilter() {
     setRankedFilter((f) => f === 'all' ? 'ranked' : f === 'ranked' ? 'casual' : 'all');
   }
@@ -650,7 +664,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                         <span className="text-sm text-gray-400 text-center">{cStats && cStats.attempts > 0 ? cStats.clueRating : '—'}</span>
                         <span className="text-sm text-center">{clue.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
-                          {isOwnProfile ? (
+                          {(isOwnProfile || user?.isAdmin) ? (
                             <button
                               onClick={(e) => { e.stopPropagation(); handleToggleDisabled(clue); }}
                               className={`font-bold transition-colors ${clue.disabled ? 'text-board-red hover:text-red-300' : 'text-board-blue hover:text-blue-300'}`}
@@ -759,6 +773,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {entry.clue?.word ?? entry.result.clueId.slice(0, 12)}
                           <span className="ml-1 text-amber-400 font-semibold">{entry.clue?.number ?? entry.result.totalTargets}</span>
+                          {entry.result.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                         </span>
                         <span className="text-xs text-gray-500 text-center hidden sm:block">{entry.result.timestamp > 0 ? formatDate(entry.result.timestamp) : '—'}</span>
                         <span className="text-sm font-bold text-white text-center">
@@ -768,7 +783,15 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                         <span className="text-sm text-gray-400 text-center hidden sm:block">{cStats && cStats.attempts > 0 ? (120 + (entry.result.score ?? 0) * 20 - cStats.clueRating) : '—'}</span>
                         <span className="text-sm text-center">{entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
-                          {canView ? (
+                          {user?.isAdmin ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleToggleResultDisabled(entry); }}
+                              className={`font-bold transition-colors ${entry.result.disabled ? 'text-board-red hover:text-red-300' : 'text-board-blue hover:text-blue-300'}`}
+                              title={entry.result.disabled ? 'Активировать' : 'Деактивировать'}
+                            >
+                              {entry.result.disabled ? '✗' : '✓'}
+                            </button>
+                          ) : canView ? (
                             <span className="text-board-blue">✓</span>
                           ) : (
                             <span className="text-gray-500">–</span>
