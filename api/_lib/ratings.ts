@@ -1,5 +1,3 @@
-import type { neon } from '@neondatabase/serverless';
-
 // ==================== RATING FORMULAS ====================
 
 export function percentile(arr: number[], p: number): number {
@@ -53,7 +51,7 @@ export function computeOverallRating(captainRating: number, scoutRating: number,
 // ==================== PRECOMPUTED RATING HELPERS ====================
 
 /** Recompute and store all stats for a single clue */
-export async function recalcClueStats(sql: ReturnType<typeof neon>, clueId: string): Promise<void> {
+export async function recalcClueStats(sql: any, clueId: string): Promise<void> {
   // Run all 3 reads in parallel
   const [resultRows, clueRow, ratingRows] = await Promise.all([
     sql`SELECT score FROM results WHERE clue_id = ${clueId} AND (disabled IS NOT TRUE)`,
@@ -81,7 +79,7 @@ export async function recalcClueStats(sql: ReturnType<typeof neon>, clueId: stri
 }
 
 /** Recompute and store all stats + ratings for a single user */
-export async function recalcUserStats(sql: ReturnType<typeof neon>, userId: string): Promise<void> {
+export async function recalcUserStats(sql: any, userId: string): Promise<void> {
   // Fetch clue and solve data in parallel (independent queries)
   const [clueRows, solveRows] = await Promise.all([
     sql`SELECT id, number, ranked FROM clues WHERE user_id = ${userId}`,

@@ -253,7 +253,8 @@ export default function LeaderboardPage() {
 
   const [expandedClueId, setExpandedClueId] = useState<string | null>(null);
 
-  const thAccordion = 'py-1 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
+  const thAccordion = 'py-1 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none whitespace-nowrap';
+  const ratingGrid = 'grid grid-cols-[1.5rem_1fr_4rem_4rem] sm:grid-cols-[1.5rem_1fr_4rem_4rem_4rem_4rem] gap-x-1';
 
   const starIcon = rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>;
   const checkIcon = solvedFilter === 'all' ? '✓' : solvedFilter === 'solved' ? <span className="text-board-blue">✓</span> : <span className="text-gray-600">✓</span>;
@@ -328,7 +329,7 @@ export default function LeaderboardPage() {
           ) : (
             <>
               <div className="overflow-y-hidden" style={{ scrollbarGutter: 'stable' }}>
-                <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_5rem_4.5rem_5.5rem] gap-x-1 pl-2 py-1 items-center">
+                <div className={`${ratingGrid} pl-2 py-1 items-center`}>
                   <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                   <span className={thAccordion}>{t.leaderboard.player}</span>
                   <span className={`${thAccordion} text-center`} onClick={() => toggleSpySort('cluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="cluesGiven" activeField={spySort} dir={spyDir} /></span>
@@ -345,7 +346,7 @@ export default function LeaderboardPage() {
                       onClick={() => openProfile(s.userId)}
                       className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
                     >
-                      <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_5rem_4.5rem_5.5rem] gap-x-1 items-center">
+                      <div className={`${ratingGrid} items-center`}>
                         <span className="text-gray-500 text-sm text-center">{s.cluesGiven >= 3 ? (i + 1) : '—'}</span>
                         <span className="font-semibold text-sm text-white truncate">{s.displayName}</span>
                         <span className="text-sm text-gray-400 text-center">{s.cluesGiven}</span>
@@ -369,7 +370,7 @@ export default function LeaderboardPage() {
           ) : (
             <>
               <div className="overflow-y-hidden" style={{ scrollbarGutter: 'stable' }}>
-                <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_5rem_4.5rem_5.5rem] gap-x-1 pl-2 py-1 items-center">
+                <div className={`${ratingGrid} pl-2 py-1 items-center`}>
                   <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                   <span className={thAccordion}>{t.leaderboard.player}</span>
                   <span className={`${thAccordion} text-center`} onClick={() => toggleGuesserSort('cluesSolved')}>{t.leaderboard.cluesSolved}<SortArrow field="cluesSolved" activeField={guesserSort} dir={guesserDir} /></span>
@@ -386,7 +387,7 @@ export default function LeaderboardPage() {
                       onClick={() => openProfile(g.userId)}
                       className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
                     >
-                      <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_5rem_4.5rem_5.5rem] gap-x-1 items-center">
+                      <div className={`${ratingGrid} items-center`}>
                         <span className="text-gray-500 text-sm text-center">{g.cluesSolved >= 3 ? (i + 1) : '—'}</span>
                         <span className="font-semibold text-sm text-white truncate">{g.displayName}</span>
                         <span className="text-sm text-gray-400 text-center">{g.cluesSolved}</span>
