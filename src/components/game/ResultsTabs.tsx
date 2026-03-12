@@ -17,15 +17,16 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
   const numBins = 11;
   const bins = Array.from({ length: numBins }, (_, i) => scores.filter(s => s === i).length);
   const maxCount = Math.max(...bins, 1);
-  const cols = numBins, rows = 5;
-  const cellW = 1, cellH = 1;
-  const w = cols * cellW, h = rows * cellH;
-  const labelH = 8;
+  // Grid: 22 cols (0.5 step) x 14 rows (0.5 step), cellSize=15 → 330x210
+  const cellSize = 15;
+  const gridCols = numBins * 2, gridRows = 14;
+  const w = gridCols * cellSize, h = gridRows * cellSize;
+  const binW = 2 * cellSize; // each score bin = 2 grid cells wide
 
   // Step path
   let stepLine = '', stepArea = '';
   for (let i = 0; i < numBins; i++) {
-    const x0 = i * cellW, x1 = (i + 1) * cellW;
+    const x0 = i * binW, x1 = (i + 1) * binW;
     const barH = (bins[i] / maxCount) * h;
     const y = h - barH;
     if (i === 0) { stepLine = `M${x0},${y}`; stepArea = `M${x0},${h} L${x0},${y}`; }
@@ -36,43 +37,42 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
   stepArea += ` L${w},${h} Z`;
 
   const playerX = playerScore !== undefined && playerScore >= 0 && playerScore <= 10
-    ? (playerScore + 0.5) * cellW : null;
-
-  const svgH = 64;
+    ? (playerScore + 0.5) * binW : null;
 
   return (
-    <div className="mt-2">
+    <div className="mt-2 mx-auto" style={{ maxWidth: 320 }}>
+      {/* Player label above frame */}
+      {playerScore !== undefined && (
+        <div className="mb-0.5 text-[11px] font-bold text-yellow-400"
+          style={{ paddingLeft: playerScore === 0 ? 0 : `calc(${((playerScore + 0.5) / numBins) * 100}% - 24px)` }}>
+          ваш счёт
+        </div>
+      )}
       {/* Chart frame */}
-      <div className="border border-board-blue/50 rounded-lg overflow-hidden bg-gray-950">
-        <svg viewBox={`0 0 ${w} ${h}`} width="100%" style={{ height: svgH, display: 'block' }} preserveAspectRatio="none">
-          {/* Grid */}
-          {Array.from({ length: rows + 1 }, (_, i) => (
-            <line key={`h${i}`} x1={0} x2={w} y1={i * cellH} y2={i * cellH} stroke="#334155" strokeWidth="0.02" />
+      <div className="border border-board-blue/60 rounded-lg overflow-hidden bg-gray-950">
+        <svg viewBox={`0 0 ${w} ${h}`} width="100%" style={{ display: 'block' }} preserveAspectRatio="xMidYMid meet">
+          {/* Grid 0.5 step */}
+          {Array.from({ length: gridRows + 1 }, (_, i) => (
+            <line key={`h${i}`} x1={0} x2={w} y1={i * cellSize} y2={i * cellSize} stroke="#334155" strokeWidth="1" vectorEffect="non-scaling-stroke" />
           ))}
-          {Array.from({ length: cols + 1 }, (_, i) => (
-            <line key={`v${i}`} x1={i * cellW} x2={i * cellW} y1={0} y2={h} stroke="#334155" strokeWidth="0.02" />
+          {Array.from({ length: gridCols + 1 }, (_, i) => (
+            <line key={`v${i}`} x1={i * cellSize} x2={i * cellSize} y1={0} y2={h} stroke="#334155" strokeWidth="1" vectorEffect="non-scaling-stroke" />
           ))}
           {/* Area */}
           <path d={stepArea} fill="#3b82f6" fillOpacity="0.25" />
           {/* Step outline */}
-          <path d={stepLine} fill="none" stroke="#60a5fa" strokeWidth="0.04" />
+          <path d={stepLine} fill="none" stroke="#60a5fa" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
           {/* Player line */}
           {playerX !== null && (
             <line x1={playerX} x2={playerX} y1={0} y2={h}
-              stroke="#facc15" strokeWidth="0.04" strokeDasharray="0.08,0.06" />
-          )}
-          {/* Player label */}
-          {playerX !== null && playerScore !== undefined && (
-            <text x={playerX} y={0.35} textAnchor="middle" fill="#facc15" fontSize="0.32" fontWeight="bold" fontFamily="sans-serif">
-              ваш: {playerScore}
-            </text>
+              stroke="#facc15" strokeWidth="1.5" strokeDasharray="4,3" vectorEffect="non-scaling-stroke" />
           )}
         </svg>
       </div>
-      {/* X axis labels below frame */}
-      <div className="flex" style={{ height: labelH }}>
+      {/* X axis labels */}
+      <div className="flex mt-1">
         {Array.from({ length: numBins }, (_, i) => (
-          <div key={i} className="flex-1 text-center text-[8px] text-gray-500 leading-none mt-0.5">{i}</div>
+          <div key={i} className="flex-1 text-center text-[10px] text-gray-400 font-medium">{i}</div>
         ))}
       </div>
     </div>
