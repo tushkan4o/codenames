@@ -33,7 +33,6 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
   // Player score x position
   const playerX = playerScore !== undefined && playerScore <= maxVal
     ? pad.l + (bins.length > 1 ? playerScore * step : cw / 2) : null;
-  const bestX = pad.l + (bins.length > 1 ? maxVal * step : cw / 2);
 
   return (
     <div className="mt-2 bg-gray-900/80 border border-gray-700/50 rounded-lg px-3 py-2">
