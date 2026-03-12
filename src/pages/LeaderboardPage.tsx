@@ -106,8 +106,8 @@ export default function LeaderboardPage() {
   const loadData = useCallback(async (size: SizeFilter) => {
     const boardSize = size === 'all' ? undefined : size;
     const data = await api.getLeaderboard(boardSize);
-    setSpymasters(data.spymasters);
-    setGuessers(data.guessers);
+    setSpymasters(data.spymasters as SpymasterEntry[]);
+    setGuessers(data.guessers as GuesserEntry[]);
     setClueStats((data as { clueStats?: ClueStatEntry[] }).clueStats || []);
     setOverall((data as { overall?: OverallEntry[] }).overall || []);
   }, []);
