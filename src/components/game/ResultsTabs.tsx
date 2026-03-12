@@ -14,42 +14,63 @@ type ResultTab = 'info' | 'score' | 'comments';
 
 function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore?: number }) {
   if (scores.length === 0) return null;
-  const maxScore = Math.max(...scores, playerScore ?? 0);
-  const bins = Array.from({ length: maxScore + 1 }, (_, i) => scores.filter(s => s === i).length);
+  const maxVal = Math.max(...scores, playerScore ?? 0);
+  const bins = Array.from({ length: maxVal + 1 }, (_, i) => scores.filter(s => s === i).length);
   const maxCount = Math.max(...bins, 1);
-  const bestScore = maxScore;
+  const w = 200, h = 48, pad = { l: 0, r: 0, t: 2, b: 0 };
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+  const step = bins.length > 1 ? cw / (bins.length - 1) : cw;
+  const gridRows = 4;
+
+  // Build line points
+  const pts = bins.map((c, i) => ({
+    x: pad.l + (bins.length > 1 ? i * step : cw / 2),
+    y: pad.t + ch - (c / maxCount) * ch,
+  }));
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  const areaPath = `${linePath} L${pts[pts.length - 1].x},${pad.t + ch} L${pts[0].x},${pad.t + ch} Z`;
+
+  // Player score x position
+  const playerX = playerScore !== undefined && playerScore <= maxVal
+    ? pad.l + (bins.length > 1 ? playerScore * step : cw / 2) : null;
+  const bestX = pad.l + (bins.length > 1 ? maxVal * step : cw / 2);
 
   return (
-    <div className="mt-3 mb-1">
-      <div className="flex items-end gap-px" style={{ height: 56 }}>
-        {bins.map((count, i) => {
-          const h = maxCount > 0 ? (count / maxCount) * 100 : 0;
-          const isPlayer = playerScore === i;
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full relative">
-              {isPlayer && (
-                <div className="absolute inset-0 flex items-stretch justify-center z-10 pointer-events-none">
-                  <div className="w-px border-l border-dashed border-orange-400" />
-                </div>
-              )}
-              <div
-                className={`w-full rounded-t-sm ${isPlayer ? 'bg-orange-400' : 'bg-board-blue'}`}
-                style={{ height: `${h}%`, minHeight: count > 0 ? 2 : 0 }}
-              />
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex gap-px mt-0.5">
-        {bins.map((_, i) => (
-          <div key={i} className="flex-1 text-center text-[9px] text-gray-500">{i}</div>
-        ))}
-      </div>
-      <div className="flex justify-between mt-0.5 text-[10px]">
+    <div className="mt-2 bg-gray-900/80 border border-gray-700/50 rounded-lg px-3 py-2">
+      {/* Header labels */}
+      <div className="flex justify-center gap-4 mb-1 text-[10px]">
+        <span className="text-board-blue font-bold">{maxVal} <span className="font-normal text-gray-500">лучший</span></span>
         {playerScore !== undefined && (
-          <span className="text-orange-400">▲ {playerScore}</span>
+          <span className="text-orange-400 font-bold">{playerScore} <span className="font-normal text-gray-500">ваш</span></span>
         )}
-        <span className="text-gray-500 ml-auto">лучший: {bestScore}</span>
+      </div>
+      {/* SVG chart */}
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: h }} preserveAspectRatio="none">
+        {/* Grid lines */}
+        {Array.from({ length: gridRows + 1 }, (_, i) => {
+          const y = pad.t + (i / gridRows) * ch;
+          return <line key={i} x1={pad.l} x2={w - pad.r} y1={y} y2={y} stroke="#374151" strokeWidth="0.5" strokeOpacity="0.4" />;
+        })}
+        {/* Vertical grid lines */}
+        {bins.map((_, i) => {
+          const x = pad.l + (bins.length > 1 ? i * step : cw / 2);
+          return <line key={i} x1={x} x2={x} y1={pad.t} y2={pad.t + ch} stroke="#374151" strokeWidth="0.5" strokeOpacity="0.3" />;
+        })}
+        {/* Area fill */}
+        <path d={areaPath} fill="#3b82f6" fillOpacity="0.15" />
+        {/* Line */}
+        <path d={linePath} fill="none" stroke="#3b82f6" strokeWidth="1.5" strokeLinejoin="round" />
+        {/* Player score dashed line */}
+        {playerX !== null && (
+          <line x1={playerX} x2={playerX} y1={pad.t} y2={pad.t + ch}
+            stroke="#fb923c" strokeWidth="1" strokeDasharray="3,2" strokeOpacity="0.8" />
+        )}
+      </svg>
+      {/* X axis labels */}
+      <div className="flex" style={{ padding: `0 ${pad.l}px` }}>
+        {bins.map((_, i) => (
+          <div key={i} className="text-center text-[8px] text-gray-600" style={{ flex: 1 }}>{i}</div>
+        ))}
       </div>
     </div>
   );
@@ -184,9 +205,6 @@ export default function ResultsTabs({
           ) : stats ? (
             <p className="text-gray-500 mt-2">{t.results.firstSolve}</p>
           ) : null}
-          {stats && stats.scores && stats.scores.length > 1 && (
-            <ScoreHistogram scores={stats.scores} playerScore={score} />
-          )}
           {sortedDetails.length > 0 && (
             <div className="mt-2 overflow-y-auto max-h-[220px]">
               {/* Header */}
@@ -228,6 +246,9 @@ export default function ResultsTabs({
                 </div>
               ))}
             </div>
+          )}
+          {stats && stats.scores && stats.scores.length > 1 && (
+            <ScoreHistogram scores={stats.scores} playerScore={isOwnClue ? undefined : score} />
           )}
         </div>
       )}
