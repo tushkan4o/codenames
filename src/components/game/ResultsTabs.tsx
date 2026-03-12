@@ -22,12 +22,14 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
   const gridCols = numBins * 2, gridRows = 14;
   const w = gridCols * cellSize, h = gridRows * cellSize;
   const binW = 2 * cellSize; // each score bin = 2 grid cells wide
+  const topPad = 2 * cellSize; // top padding so max bar doesn't touch frame
+  const chartH = h - topPad; // usable chart height
 
   // Step path
   let stepLine = '', stepArea = '';
   for (let i = 0; i < numBins; i++) {
     const x0 = i * binW, x1 = (i + 1) * binW;
-    const barH = (bins[i] / maxCount) * h;
+    const barH = (bins[i] / maxCount) * chartH;
     const y = h - barH;
     if (i === 0) { stepLine = `M${x0},${y}`; stepArea = `M${x0},${h} L${x0},${y}`; }
     else { stepLine += ` L${x0},${y}`; stepArea += ` L${x0},${y}`; }
@@ -53,10 +55,10 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
         <svg viewBox={`0 0 ${w} ${h}`} width="100%" style={{ display: 'block' }} preserveAspectRatio="xMidYMid meet">
           {/* Grid 0.5 step */}
           {Array.from({ length: gridRows + 1 }, (_, i) => (
-            <line key={`h${i}`} x1={0} x2={w} y1={i * cellSize} y2={i * cellSize} stroke="#334155" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+            <line key={`h${i}`} x1={0} x2={w} y1={i * cellSize} y2={i * cellSize} stroke="#1e293b" strokeWidth="1" vectorEffect="non-scaling-stroke" />
           ))}
           {Array.from({ length: gridCols + 1 }, (_, i) => (
-            <line key={`v${i}`} x1={i * cellSize} x2={i * cellSize} y1={0} y2={h} stroke="#334155" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+            <line key={`v${i}`} x1={i * cellSize} x2={i * cellSize} y1={0} y2={h} stroke="#1e293b" strokeWidth="1" vectorEffect="non-scaling-stroke" />
           ))}
           {/* Area */}
           <path d={stepArea} fill="#3b82f6" fillOpacity="0.25" />
