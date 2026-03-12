@@ -262,9 +262,11 @@ export default function ResultsTabs({
               ))}
             </div>
           )}
-          {stats && stats.scores && stats.scores.length > 1 && (
-            <ScoreHistogram scores={stats.scores} playerScore={isOwnClue ? undefined : score} />
-          )}
+          {stats && stats.scores && stats.scores.length > 1 && (() => {
+            // Show current user's own score on histogram (not the viewed result's score)
+            const myDetail = user && !isOwnClue ? stats.details?.find(d => d.userId === user.id) : undefined;
+            return <ScoreHistogram scores={stats.scores} playerScore={myDetail?.score} />;
+          })()}
         </div>
       )}
 
