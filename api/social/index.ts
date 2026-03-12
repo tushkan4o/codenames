@@ -71,6 +71,18 @@ async function handleComments(req: VercelRequest, res: VercelResponse, sql: Retu
         await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, message, created_at)
           VALUES (${clueInfo[0].user_id}, 'new_comment', ${userId}, ${clueId}, ${clueInfo[0].word}, ${trimmed}, ${now})`;
       }
+      // Notify author of the comment being replied to
+      if (replyId) {
+        const replyRows = await sql`SELECT user_id FROM comments WHERE id = ${replyId}`;
+        if (replyRows.length > 0) {
+          const replyAuthorId = replyRows[0].user_id as string;
+          if (replyAuthorId !== userId && !notifiedSet.has(replyAuthorId)) {
+            notifiedSet.add(replyAuthorId);
+            await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, message, created_at)
+              VALUES (${replyAuthorId}, 'reply', ${userId}, ${clueId}, ${clueInfo.length > 0 ? clueInfo[0].word : null}, ${trimmed}, ${now})`;
+          }
+        }
+      }
       // Notify mentioned users (@[nickname] bracket format + legacy @nickname)
       const bracketMentions = trimmed.match(/@\[([^\]]+)\]/g);
       const legacyMentions = trimmed.replace(/@\[[^\]]+\]/g, '').match(/@([\wа-яА-ЯёЁ\-()]+)/g);
@@ -272,11 +284,23 @@ async function handleProfileComments(req: VercelRequest, res: VercelResponse, sq
     const trimmed = content.trim();
     const replyId = replyToId ? Number(replyToId) : null;
     const rows = await sql`INSERT INTO profile_comments (profile_user_id, author_id, content, created_at, reply_to_id) VALUES (${profileUserId}, ${authorId}, ${trimmed}, ${now}, ${replyId}) RETURNING id`;
-    // Notify profile owner about new comment (if not self)
+    // Notify profile owner + replied-to author
     try {
+      const notifiedSet = new Set<string>();
       if (profileUserId !== authorId) {
+        notifiedSet.add(profileUserId);
         await sql`INSERT INTO notifications (user_id, type, actor_id, message, created_at)
           VALUES (${profileUserId}, 'profile_comment', ${authorId}, ${trimmed}, ${now})`;
+      }
+      if (replyId) {
+        const replyRows = await sql`SELECT author_id FROM profile_comments WHERE id = ${replyId}`;
+        if (replyRows.length > 0) {
+          const replyAuthorId = replyRows[0].author_id as string;
+          if (replyAuthorId !== authorId && !notifiedSet.has(replyAuthorId)) {
+            await sql`INSERT INTO notifications (user_id, type, actor_id, message, created_at)
+              VALUES (${replyAuthorId}, 'reply', ${authorId}, ${trimmed}, ${now})`;
+          }
+        }
       }
     } catch { /* best-effort */ }
     return res.json({ ok: true, id: Number(rows[0].id) });

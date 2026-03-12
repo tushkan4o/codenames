@@ -24,7 +24,7 @@ interface NotificationItem {
 
 const PAGE_SIZE = 50;
 
-const GROUP_ORDER = ['new_solve', 'new_comment', 'new_clue', 'profile_comment', 'mention'] as const;
+const GROUP_ORDER = ['new_solve', 'new_comment', 'reply', 'new_clue', 'profile_comment', 'mention'] as const;
 
 function formatDate(ts: number): string {
   const d = new Date(ts);
@@ -42,6 +42,7 @@ function groupLabel(type: string, t: ReturnType<typeof import('../i18n/useTransl
     case 'new_clue': return t.notifications.typeNewClue;
     case 'profile_comment': return t.notifications.typeProfileComment;
     case 'mention': return t.notifications.typeMention;
+    case 'reply': return t.notifications.typeReply;
     case '__all__': return t.notifications.groupAll;
     default: return type;
   }
@@ -192,7 +193,7 @@ export default function NotificationsPage() {
         </>
       );
     }
-    if ((n.type === 'new_comment' || n.type === 'mention' || n.type === 'profile_comment') && n.message) {
+    if ((n.type === 'new_comment' || n.type === 'mention' || n.type === 'profile_comment' || n.type === 'reply') && n.message) {
       return <span className="text-gray-400">{n.message}</span>;
     }
     return null;

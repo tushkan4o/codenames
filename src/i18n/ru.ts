@@ -439,6 +439,7 @@ export const ru = {
     typeNewClue: 'Новые подсказки',
     typeProfileComment: 'Профиль',
     typeMention: 'Упоминания',
+    typeReply: 'Ответы',
     deleteSelected: 'Удалить',
     selectAll: 'Выбрать все',
     noNotifications: 'Нет уведомлений',
