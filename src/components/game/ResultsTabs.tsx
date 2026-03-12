@@ -27,20 +27,26 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
   const topPad = 2 * cellSize; // top padding so max bar doesn't touch frame
   const chartH = h - topPad; // usable chart height
 
-  // Step path: start from -0.5 (half bin before 0), use y=h+1 for empty bins to hide line below bottom
-  const startX = ox - binW / 2; // -0.5 bin offset
+  // Step path: bin i is centered on integer i, spanning (i-0.5) to (i+0.5)
+  // binCenter(i) = ox + i * binW, so left edge = ox + i*binW - binW/2
+  const getY = (i: number) => bins[i] === 0 ? h + 1 : h - (bins[i] / maxCount) * chartH;
   let stepLine = '', stepArea = '';
   for (let i = 0; i < numBins; i++) {
-    const x0 = startX + i * binW, x1 = startX + (i + 1) * binW;
-    const isEmpty = bins[i] === 0;
-    const barH = isEmpty ? 0 : (bins[i] / maxCount) * chartH;
-    const y = isEmpty ? h + 1 : h - barH; // push empty bins below visible area
-    if (i === 0) { stepLine = `M${x0},${y}`; stepArea = `M${x0},${h} L${x0},${y}`; }
-    else { stepLine += ` L${x0},${y}`; stepArea += ` L${x0},${y}`; }
-    stepLine += ` L${x1},${y}`;
-    stepArea += ` L${x1},${y}`;
+    const xLeft = ox + i * binW - binW / 2;
+    const xRight = ox + i * binW + binW / 2;
+    const y = getY(i);
+    if (i === 0) {
+      stepLine = `M${xLeft},${y}`;
+      stepArea = `M${xLeft},${h + 1} L${xLeft},${y}`;
+    } else {
+      stepLine += ` L${xLeft},${y}`;
+      stepArea += ` L${xLeft},${y}`;
+    }
+    stepLine += ` L${xRight},${y}`;
+    stepArea += ` L${xRight},${y}`;
   }
-  stepArea += ` L${startX + numBins * binW},${h} Z`;
+  const lastXR = ox + (numBins - 1) * binW + binW / 2;
+  stepArea += ` L${lastXR},${h + 1} Z`;
 
   const playerX = playerScore !== undefined && playerScore >= 0 && playerScore <= 10
     ? ox + (playerScore + 0.5) * binW : null;
