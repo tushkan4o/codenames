@@ -37,7 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       contentType,
     });
 
-    const sql = neon(process.env.DATABASE_URL!);
+    const sql = neon(process.env.DATABASE_URL!) as any;
     await sql`UPDATE users SET avatar_url = ${blob.url} WHERE id = ${userId}`;
 
     res.json({ avatarUrl: blob.url });

@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 // ==================== COMMENTS ====================
 
-async function handleComments(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleComments(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method === 'GET') {
     // Comments by user (for profile)
     const { userId: commentUserId } = req.query;
@@ -129,7 +129,7 @@ async function handleComments(req: VercelRequest, res: VercelResponse, sql: Retu
 
 // ==================== SUBSCRIPTIONS ====================
 
-async function handleSubscriptions(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleSubscriptions(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method === 'GET') {
     const { userId, targetId } = req.query;
     if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
@@ -161,7 +161,7 @@ async function handleSubscriptions(req: VercelRequest, res: VercelResponse, sql:
 
 // ==================== NOTIFICATIONS ====================
 
-async function handleNotifications(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleNotifications(req: VercelRequest, res: VercelResponse, sql: any) {
   const mapRow = (r: Record<string, unknown>) => {
     const scoreInfo = r.score_info ? JSON.parse(r.score_info as string) : null;
     return {
@@ -230,7 +230,7 @@ async function handleNotifications(req: VercelRequest, res: VercelResponse, sql:
 
 // ==================== PROFILE COMMENTS ====================
 
-async function handleProfileComments(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleProfileComments(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method === 'GET') {
     const { profileUserId } = req.query;
     if (!profileUserId || typeof profileUserId !== 'string') return res.status(400).json({ error: 'profileUserId required' });
@@ -334,7 +334,7 @@ async function handleProfileComments(req: VercelRequest, res: VercelResponse, sq
 
 // ==================== PROFILE (bio, country) ====================
 
-async function handleProfile(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleProfile(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method === 'GET') {
     const { userId } = req.query;
     if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
@@ -369,7 +369,7 @@ async function handleProfile(req: VercelRequest, res: VercelResponse, sql: Retur
 
 // ==================== NAME HISTORY ====================
 
-async function handleNameHistory(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleNameHistory(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   const { userId } = req.query;
   if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });

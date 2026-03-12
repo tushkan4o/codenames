@@ -12,6 +12,49 @@ import { useProfileModal } from '../../context/ProfileModalContext';
 
 type ResultTab = 'info' | 'score' | 'comments';
 
+function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore?: number }) {
+  if (scores.length === 0) return null;
+  const maxScore = Math.max(...scores, playerScore ?? 0);
+  const bins = Array.from({ length: maxScore + 1 }, (_, i) => scores.filter(s => s === i).length);
+  const maxCount = Math.max(...bins, 1);
+  const bestScore = maxScore;
+
+  return (
+    <div className="mt-3 mb-1">
+      <div className="flex items-end gap-px" style={{ height: 56 }}>
+        {bins.map((count, i) => {
+          const h = maxCount > 0 ? (count / maxCount) * 100 : 0;
+          const isPlayer = playerScore === i;
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full relative">
+              {isPlayer && (
+                <div className="absolute inset-0 flex items-stretch justify-center z-10 pointer-events-none">
+                  <div className="w-px border-l border-dashed border-orange-400" />
+                </div>
+              )}
+              <div
+                className={`w-full rounded-t-sm ${isPlayer ? 'bg-orange-400' : 'bg-board-blue'}`}
+                style={{ height: `${h}%`, minHeight: count > 0 ? 2 : 0 }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-px mt-0.5">
+        {bins.map((_, i) => (
+          <div key={i} className="flex-1 text-center text-[9px] text-gray-500">{i}</div>
+        ))}
+      </div>
+      <div className="flex justify-between mt-0.5 text-[10px]">
+        {playerScore !== undefined && (
+          <span className="text-orange-400">▲ {playerScore}</span>
+        )}
+        <span className="text-gray-500 ml-auto">лучший: {bestScore}</span>
+      </div>
+    </div>
+  );
+}
+
 function formatDate(ts: number): string {
   const d = new Date(ts);
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -54,6 +97,7 @@ export default function ResultsTabs({
   const [stats, setStats] = useState<{
     attempts: number;
     avgScore: number;
+    scores?: number[];
     details?: AttemptDetail[];
     createdAt?: number;
   } | null>(demoMode ? { attempts: 0, avgScore: 0 } : null);
@@ -140,6 +184,9 @@ export default function ResultsTabs({
           ) : stats ? (
             <p className="text-gray-500 mt-2">{t.results.firstSolve}</p>
           ) : null}
+          {stats && stats.scores && stats.scores.length > 1 && (
+            <ScoreHistogram scores={stats.scores} playerScore={score} />
+          )}
           {sortedDetails.length > 0 && (
             <div className="mt-2 overflow-y-auto max-h-[220px]">
               {/* Header */}

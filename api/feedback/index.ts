@@ -15,7 +15,7 @@ async function readBody(req: VercelRequest): Promise<Buffer> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const sql = neon(process.env.DATABASE_URL!);
+  const sql = neon(process.env.DATABASE_URL!) as any;
   const action = req.query.action as string;
 
   if (req.method === 'POST') {

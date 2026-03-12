@@ -81,7 +81,7 @@ function generateBoardData(
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const route = req.query.route as string;
-  const sql = neon(process.env.DATABASE_URL!);
+  const sql = neon(process.env.DATABASE_URL!) as any;
 
   switch (route) {
     case 'clues': return handleClues(req, res, sql);
@@ -104,7 +104,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 // ==================== CLUES ====================
 
-async function handleClues(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleClues(req: VercelRequest, res: VercelResponse, sql: any) {
   const action = req.query.action as string | undefined;
 
   if (action === 'random') {
@@ -160,7 +160,7 @@ async function handleClues(req: VercelRequest, res: VercelResponse, sql: ReturnT
   return res.status(405).json({ error: 'Method not allowed' });
 }
 
-async function handleRandom(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleRandom(req: VercelRequest, res: VercelResponse, sql: any) {
   const { userId, wordPack, boardSize, exclude, countOnly, ranked } = req.query;
   if (!userId) return res.status(400).json({ error: 'userId required' });
   const isRanked = ranked === 'false' ? false : true;
@@ -241,7 +241,7 @@ async function handleRandom(req: VercelRequest, res: VercelResponse, sql: Return
 
 // ==================== CLUE BY ID ====================
 
-async function handleClueById(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleClueById(req: VercelRequest, res: VercelResponse, sql: any) {
   const { id, stats, reveal } = req.query;
   if (!id || typeof id !== 'string') return res.status(400).json({ error: 'id required' });
 
@@ -356,7 +356,7 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: Retu
 
 // ==================== RESULTS ====================
 
-async function handleResults(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleResults(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method === 'GET') {
     const { userId } = req.query;
     if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
@@ -449,7 +449,7 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: Retur
 
 // ==================== RATINGS ====================
 
-async function handleRatings(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleRatings(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method === 'GET') {
     const { clueId, userId } = req.query;
     if (!clueId || !userId || typeof clueId !== 'string' || typeof userId !== 'string') {
@@ -486,7 +486,7 @@ async function handleRatings(req: VercelRequest, res: VercelResponse, sql: Retur
 
 // ==================== SESSION CLAIM / CHECK ====================
 
-async function handleClaimSession(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleClaimSession(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { userId, sessionId } = req.body;
   if (!userId || !sessionId) return res.status(400).json({ error: 'userId and sessionId required' });
@@ -503,7 +503,7 @@ async function handleClaimSession(req: VercelRequest, res: VercelResponse, sql: 
   }
 }
 
-async function handleCheckSession(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleCheckSession(req: VercelRequest, res: VercelResponse, sql: any) {
   const { userId, sessionId } = req.query;
   if (!userId || typeof userId !== 'string' || !sessionId || typeof sessionId !== 'string') {
     return res.status(400).json({ error: 'userId and sessionId required' });
@@ -520,7 +520,7 @@ async function handleCheckSession(req: VercelRequest, res: VercelResponse, sql: 
 
 // ==================== SAVE SESSION STATE ====================
 
-async function handleSaveState(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleSaveState(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { userId, sessionId, url, state } = req.body;
   if (!userId || !sessionId) return res.status(400).json({ error: 'userId and sessionId required' });
@@ -546,7 +546,7 @@ function generateServerSeed(): string {
   return `${datePart}-${randomPart}`;
 }
 
-async function handleCaptainGame(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleCaptainGame(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { userId, ranked, params } = req.body;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -599,7 +599,7 @@ async function handleCaptainGame(req: VercelRequest, res: VercelResponse, sql: R
   }
 }
 
-async function handleCaptainReshuffle(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleCaptainReshuffle(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: 'userId required' });
@@ -633,7 +633,7 @@ async function handleCaptainReshuffle(req: VercelRequest, res: VercelResponse, s
 
 // ==================== MIGRATE CLUE IDS ====================
 
-async function handleMigrateIds(res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleMigrateIds(res: VercelResponse, sql: any) {
   try {
     // Drop FK constraints so we can update clue IDs
     await sql`ALTER TABLE results DROP CONSTRAINT IF EXISTS results_clue_id_fkey`;
@@ -672,7 +672,7 @@ async function handleMigrateIds(res: VercelResponse, sql: ReturnType<typeof neon
 
 // ==================== MIGRATE RATINGS ====================
 
-async function handleRecalcAll(res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleRecalcAll(res: VercelResponse, sql: any) {
   try {
     // 1. Batch recompute all clue stats
     // Get all scores grouped by clue in one query
@@ -725,7 +725,7 @@ async function handleRecalcAll(res: VercelResponse, sql: ReturnType<typeof neon>
 
 // ==================== DB INIT ====================
 
-async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleInit(res: VercelResponse, sql: any) {
   try {
     await sql`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, created_at BIGINT NOT NULL, preferences JSONB DEFAULT '{}')`;
     await sql`CREATE TABLE IF NOT EXISTS clues (id TEXT PRIMARY KEY, word TEXT NOT NULL, number INT NOT NULL, board_seed TEXT NOT NULL, target_indices INT[] NOT NULL, created_at BIGINT NOT NULL, user_id TEXT NOT NULL REFERENCES users(id), word_pack TEXT NOT NULL, board_size TEXT NOT NULL, reshuffle_count INT DEFAULT 0)`;

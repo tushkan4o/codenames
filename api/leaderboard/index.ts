@@ -30,7 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 // ==================== LEADERBOARD ====================
 
-async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const { boardSize } = req.query;
@@ -116,7 +116,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
 
 // ==================== USER STATS ====================
 
-async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
+async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: any) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   // Player search for mention autocomplete

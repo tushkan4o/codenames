@@ -111,9 +111,7 @@ async function fetchProviderUser(provider: OAuthProvider, accessToken: string): 
 
 // --- Enrich user with OAuth status + casual stats ---
 
-type SqlFunction = ReturnType<typeof neon>;
-
-async function enrichUser(sql: SqlFunction, user: Record<string, unknown>) {
+async function enrichUser(sql: any, user: Record<string, unknown>) {
   const oauthRows = await sql`SELECT provider FROM oauth_accounts WHERE user_id = ${user.id as string}`;
   const hasOAuth = oauthRows.length > 0;
   const givenRows = await sql`SELECT COUNT(*) as c FROM clues WHERE user_id = ${user.id as string} AND ranked = false`;
@@ -182,7 +180,7 @@ async function handleCallback(req: VercelRequest, res: VercelResponse) {
   if (!tokenResult) return res.redirect(`${base}/login?oauth=error`);
   const providerUser = await fetchProviderUser(provider, tokenResult.accessToken);
   if (!providerUser) return res.redirect(`${base}/login?oauth=error`);
-  const sql = neon(process.env.DATABASE_URL!);
+  const sql = neon(process.env.DATABASE_URL!) as any;
 
   if (mode === 'link' && linkUserId) {
     try {
@@ -216,7 +214,7 @@ async function handleResolve(req: VercelRequest, res: VercelResponse) {
   if (!token) return res.status(400).json({ error: 'Token required' });
   const payload = verifyToken(token);
   if (!payload || payload.type !== 'success') return res.status(401).json({ error: 'Invalid or expired token' });
-  const sql = neon(process.env.DATABASE_URL!);
+  const sql = neon(process.env.DATABASE_URL!) as any;
   const rows = await sql`SELECT * FROM users WHERE id = ${payload.userId as string}`;
   if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
   const enriched = await enrichUser(sql, { ...rows[0], is_admin: rows[0].is_admin || false });
@@ -236,7 +234,7 @@ async function handleComplete(req: VercelRequest, res: VercelResponse) {
   if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(trimmed)) return res.status(400).json({ error: 'invalid_chars' });
   const id = trimmed.toLowerCase();
   const now = Date.now();
-  const sql = neon(process.env.DATABASE_URL!);
+  const sql = neon(process.env.DATABASE_URL!) as any;
   const existing = await sql`SELECT id FROM users WHERE id = ${id}`;
   if (existing.length > 0) return res.status(409).json({ error: 'name_taken' });
   try {
@@ -261,7 +259,7 @@ async function handleAccounts(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   const userId = req.query.userId as string;
   if (!userId) return res.status(400).json({ error: 'userId required' });
-  const sql = neon(process.env.DATABASE_URL!);
+  const sql = neon(process.env.DATABASE_URL!) as any;
   const rows = await sql`SELECT provider, provider_name, email, linked_at FROM oauth_accounts WHERE user_id = ${userId}`;
   res.json(rows.map((r) => ({ provider: r.provider, providerName: r.provider_name, email: r.email, linkedAt: Number(r.linked_at) })));
 }
@@ -271,7 +269,7 @@ async function handleUnlink(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { userId, provider } = req.body;
   if (!userId || !provider) return res.status(400).json({ error: 'userId and provider required' });
-  const sql = neon(process.env.DATABASE_URL!);
+  const sql = neon(process.env.DATABASE_URL!) as any;
   await sql`DELETE FROM oauth_accounts WHERE user_id = ${userId} AND provider = ${provider}`;
   res.json({ ok: true });
 }
@@ -285,7 +283,7 @@ async function handleRename(req: VercelRequest, res: VercelResponse) {
   if (trimmed.length < 2) return res.status(400).json({ error: 'name_too_short' });
   if (trimmed.length > 20) return res.status(400).json({ error: 'name_too_long' });
   if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(trimmed)) return res.status(400).json({ error: 'invalid_chars' });
-  const sql = neon(process.env.DATABASE_URL!);
+  const sql = neon(process.env.DATABASE_URL!) as any;
   const existing = await sql`SELECT id, display_name FROM users WHERE id = ${userId}`;
   if (existing.length === 0) return res.status(404).json({ error: 'User not found' });
   const oauthCheck = await sql`SELECT provider FROM oauth_accounts WHERE user_id = ${userId}`;
@@ -310,7 +308,7 @@ async function handleLogin(req: VercelRequest, res: VercelResponse) {
   if (!/^[a-zA-Zа-яА-ЯёЁ0-9 \-()[\]]+$/.test(trimmedName)) {
     return res.status(400).json({ error: 'invalid_chars' });
   }
-  const sql = neon(process.env.DATABASE_URL!);
+  const sql = neon(process.env.DATABASE_URL!) as any;
   const id = displayName.toLowerCase();
   const now = Date.now();
   const existing = await sql`SELECT * FROM users WHERE id = ${id}`;

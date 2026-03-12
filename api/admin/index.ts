@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { neon } from '@neondatabase/serverless';
 
-async function checkAdmin(sql: ReturnType<typeof neon>, adminId: string): Promise<boolean> {
+async function checkAdmin(sql: any, adminId: string): Promise<boolean> {
   const rows = await sql`SELECT is_admin FROM users WHERE id = ${adminId}` as Record<string, unknown>[];
   return rows.length > 0 && rows[0].is_admin === true;
 }
 
-async function deleteClueCascade(sql: ReturnType<typeof neon>, clueId: string) {
+async function deleteClueCascade(sql: any, clueId: string) {
   await sql`DELETE FROM comments WHERE clue_id = ${clueId}`;
   await sql`DELETE FROM reports WHERE clue_id = ${clueId}`;
   await sql`DELETE FROM ratings WHERE clue_id = ${clueId}`;
@@ -15,7 +15,7 @@ async function deleteClueCascade(sql: ReturnType<typeof neon>, clueId: string) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const sql = neon(process.env.DATABASE_URL!);
+  const sql = neon(process.env.DATABASE_URL!) as any;
   const { action, adminId } = req.query;
 
   // Init must run before admin check (it creates the is_admin column)
@@ -420,7 +420,7 @@ async function handleInit(_req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'DATABASE_URL not set' });
   }
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = neon(process.env.DATABASE_URL) as any;
     await sql`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, created_at BIGINT NOT NULL, preferences JSONB DEFAULT '{}')`;
     await sql`CREATE TABLE IF NOT EXISTS clues (id TEXT PRIMARY KEY, word TEXT NOT NULL, number INT NOT NULL, board_seed TEXT NOT NULL, target_indices INT[] NOT NULL, created_at BIGINT NOT NULL, user_id TEXT NOT NULL REFERENCES users(id), word_pack TEXT NOT NULL, board_size TEXT NOT NULL, reshuffle_count INT DEFAULT 0)`;
     await sql`CREATE TABLE IF NOT EXISTS results (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), guessed_indices INT[] NOT NULL, correct_count INT NOT NULL, total_targets INT NOT NULL, score INT NOT NULL, timestamp BIGINT NOT NULL, board_size TEXT, UNIQUE(clue_id, user_id))`;
