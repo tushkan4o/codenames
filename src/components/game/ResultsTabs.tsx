@@ -17,18 +17,20 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
   const numBins = 11;
   const bins = Array.from({ length: numBins }, (_, i) => scores.filter(s => s === i).length);
   const maxCount = Math.max(...bins, 1);
-  // Grid: 22 cols (0.5 step) x 14 rows (0.5 step), cellSize=15 → 330x210
+  // Grid: (22+2) cols x 14 rows, +1 cell padding left & right
   const cellSize = 15;
-  const gridCols = numBins * 2, gridRows = 14;
+  const padCells = 1; // 1 grid cell padding on each side
+  const gridCols = numBins * 2 + padCells * 2, gridRows = 14;
   const w = gridCols * cellSize, h = gridRows * cellSize;
   const binW = 2 * cellSize; // each score bin = 2 grid cells wide
+  const ox = padCells * cellSize; // chart x offset (left padding)
   const topPad = 2 * cellSize; // top padding so max bar doesn't touch frame
   const chartH = h - topPad; // usable chart height
 
-  // Step path
+  // Step path (offset by ox)
   let stepLine = '', stepArea = '';
   for (let i = 0; i < numBins; i++) {
-    const x0 = i * binW, x1 = (i + 1) * binW;
+    const x0 = ox + i * binW, x1 = ox + (i + 1) * binW;
     const barH = (bins[i] / maxCount) * chartH;
     const y = h - barH;
     if (i === 0) { stepLine = `M${x0},${y}`; stepArea = `M${x0},${h} L${x0},${y}`; }
@@ -36,10 +38,10 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
     stepLine += ` L${x1},${y}`;
     stepArea += ` L${x1},${y}`;
   }
-  stepArea += ` L${w},${h} Z`;
+  stepArea += ` L${ox + numBins * binW},${h} Z`;
 
   const playerX = playerScore !== undefined && playerScore >= 0 && playerScore <= 10
-    ? (playerScore + 0.5) * binW : null;
+    ? ox + (playerScore + 0.5) * binW : null;
 
   return (
     <div className="mt-2 mx-auto" style={{ maxWidth: 320 }}>
@@ -71,8 +73,8 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
           )}
         </svg>
       </div>
-      {/* X axis labels */}
-      <div className="flex mt-1">
+      {/* X axis labels — offset to match chart bins */}
+      <div className="flex mt-1" style={{ paddingLeft: `${(padCells / gridCols) * 100}%`, paddingRight: `${(padCells / gridCols) * 100}%` }}>
         {Array.from({ length: numBins }, (_, i) => (
           <div key={i} className="flex-1 text-center text-[10px] text-gray-400 font-medium">{i}</div>
         ))}
