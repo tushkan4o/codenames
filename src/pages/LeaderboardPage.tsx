@@ -48,6 +48,7 @@ interface ClueStatEntry {
   ratingsCount: number;
   avgRating: number;
   clueRating: number;
+  disabled: boolean;
 }
 
 interface OverallEntry {
@@ -426,6 +427,7 @@ export default function LeaderboardPage() {
                       <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_5rem_9rem_3.5rem_2rem_2rem] gap-x-2 items-center">
                         <span className="font-bold text-white uppercase text-sm truncate">
                           {c.word} <span className="text-amber-400 font-semibold">{c.number}</span>
+                          {c.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                         </span>
                         <button onClick={(e) => { e.stopPropagation(); openProfile(c.userId); }} className="text-sm text-board-blue hover:text-blue-300 transition-colors font-semibold truncate text-left hidden sm:block">{c.displayName}</button>
                         <span className="text-xs text-gray-500 text-center hidden sm:block">{c.createdAt > 0 ? formatDate(c.createdAt) : '—'}</span>

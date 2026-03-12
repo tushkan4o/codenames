@@ -39,13 +39,13 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
   // All data is precomputed — run all 4 queries in parallel
   const clueStatsQuery = hasBoardSize
     ? sql`SELECT c.id, c.word, c.number, c.user_id, c.ranked, c.created_at,
-        c.clue_rating, c.attempts, c.avg_score, c.ratings_count, c.avg_rating,
+        c.clue_rating, c.attempts, c.avg_score, c.ratings_count, c.avg_rating, c.disabled,
         u.display_name
       FROM clues c LEFT JOIN users u ON c.user_id = u.id
       WHERE c.board_size = ${boardSize}
       ORDER BY c.attempts DESC`
     : sql`SELECT c.id, c.word, c.number, c.user_id, c.ranked, c.created_at,
-        c.clue_rating, c.attempts, c.avg_score, c.ratings_count, c.avg_rating,
+        c.clue_rating, c.attempts, c.avg_score, c.ratings_count, c.avg_rating, c.disabled,
         u.display_name
       FROM clues c LEFT JOIN users u ON c.user_id = u.id
       ORDER BY c.attempts DESC`;
@@ -102,6 +102,7 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
     ratingsCount: Number(c.ratings_count) || 0,
     avgRating: Number(c.avg_rating) || 0,
     clueRating: Number(c.clue_rating) || 0,
+    disabled: c.disabled || false,
   }));
 
   res.json({ spymasters, guessers, clueStats, overall });
