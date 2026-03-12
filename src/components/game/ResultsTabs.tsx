@@ -36,7 +36,7 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
     const xRight = ox + i * binW + binW / 2;
     const y = getY(i);
     if (i === 0) {
-      stepLine = `M${xLeft},${y}`;
+      stepLine = `M${xLeft},${h} L${xLeft},${y}`;
       stepArea = `M${xLeft},${h + 1} L${xLeft},${y}`;
     } else {
       stepLine += ` L${xLeft},${y}`;
