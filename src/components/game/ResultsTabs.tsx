@@ -23,7 +23,7 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
   const gridCols = numBins * 2 + padCells * 2, gridRows = 14;
   const w = gridCols * cellSize, h = gridRows * cellSize;
   const binW = 2 * cellSize; // each score bin = 2 grid cells wide
-  const ox = padCells * cellSize; // chart x offset (left padding)
+  const ox = padCells * cellSize + cellSize; // chart x offset (left padding + 0.5 bin shift right)
   const topPad = 2 * cellSize; // top padding so max bar doesn't touch frame
   const chartH = h - topPad; // usable chart height
 
@@ -56,7 +56,7 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
       {/* Player label above frame */}
       {playerScore !== undefined && (
         <div className="mb-0.5 text-[11px] font-bold text-yellow-400"
-          style={{ paddingLeft: playerScore === 0 ? 0 : `calc(${(playerScore / numBins) * 100}% - 24px)` }}>
+          style={{ paddingLeft: playerScore === 0 ? `${(ox / w) * 100}%` : `calc(${((ox + playerScore * binW) / w) * 100}% - 24px)` }}>
           ваш счёт
         </div>
       )}
@@ -81,10 +81,10 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
           )}
         </svg>
       </div>
-      {/* X axis labels — offset to match chart bins */}
-      <div className="flex mt-1" style={{ paddingLeft: `${(padCells / gridCols) * 100}%`, paddingRight: `${(padCells / gridCols) * 100}%` }}>
+      {/* X axis labels — each label width = binW/totalW, centered on bin */}
+      <div className="flex mt-1">
         {Array.from({ length: numBins }, (_, i) => (
-          <div key={i} className="flex-1 text-center text-[10px] text-gray-400 font-medium">{i}</div>
+          <div key={i} className="text-center text-[10px] text-gray-400 font-medium" style={{ width: `${(binW / w) * 100}%`, marginLeft: i === 0 ? `${((ox - binW / 2) / w) * 100}%` : undefined }}>{i}</div>
         ))}
       </div>
     </div>
