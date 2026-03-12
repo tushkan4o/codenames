@@ -254,7 +254,7 @@ export default function LeaderboardPage() {
   const [expandedClueId, setExpandedClueId] = useState<string | null>(null);
 
   const thAccordion = 'py-1 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none whitespace-nowrap';
-  const ratingGrid = 'grid grid-cols-[1.5rem_1fr_4rem_4rem] sm:grid-cols-[1.5rem_1fr_4rem_4rem_4rem_4rem] gap-x-1';
+  const ratingGrid = 'grid grid-cols-[1.5rem_1fr_4rem_4rem] sm:grid-cols-[1.5rem_1fr_4rem_4rem_4rem_4rem] gap-x-3';
 
   const starIcon = rankedFilter === 'all' ? '★' : rankedFilter === 'ranked' ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>;
   const checkIcon = solvedFilter === 'all' ? '✓' : solvedFilter === 'solved' ? <span className="text-board-blue">✓</span> : <span className="text-gray-600">✓</span>;
