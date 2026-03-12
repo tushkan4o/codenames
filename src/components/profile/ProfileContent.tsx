@@ -752,7 +752,14 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                                 {t.profile.solve}
                               </button>
                             )}
-                            {user?.isAdmin && confirmDeleteClue !== clue.id && (
+                            {user?.isAdmin && confirmDeleteClue !== clue.id && (<>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleToggleDisabled(clue); }}
+                                className={`px-2 py-1 rounded text-sm font-bold transition-colors ${clue.disabled ? 'bg-board-red/60 hover:bg-board-red text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+                                title={clue.disabled ? 'Активировать' : 'Деактивировать'}
+                              >
+                                {clue.disabled ? '✗ OFF' : '✓ ON'}
+                              </button>
                               <button
                                 onClick={() => setConfirmDeleteClue(clue.id)}
                                 className="px-2 py-1 rounded bg-board-red/60 hover:bg-board-red text-white text-sm font-bold transition-colors"
@@ -760,7 +767,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                               >
                                 &times;
                               </button>
-                            )}
+                            </>)}
                           </div>
                         </div>
                         {user?.isAdmin && confirmDeleteClue === clue.id && (
