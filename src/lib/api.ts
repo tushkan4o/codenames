@@ -195,7 +195,7 @@ export const api = {
   },
 
   async getUserStats(userId: string): Promise<UserStats> {
-    return get(`/api/game?route=stats&userId=${encodeURIComponent(userId)}`);
+    return get(`/api/leaderboard?route=stats&userId=${encodeURIComponent(userId)}`);
   },
 
   async getClueCount(userId: string, wordPack?: string, boardSize?: BoardSize, ranked?: boolean): Promise<{ available: number; total: number }> {
@@ -212,7 +212,7 @@ export const api = {
   }> {
     const params = new URLSearchParams({ route: 'leaderboard' });
     if (boardSize) params.set('boardSize', boardSize);
-    return get(`/api/game?${params}`);
+    return get(`/api/leaderboard?${params}`);
   },
 
   async toggleClueDisabled(clueId: string, userId: string, disabled: boolean): Promise<void> {
@@ -305,83 +305,81 @@ export const api = {
 
   // Notifications
   async getNotifications(userId: string): Promise<{ id: number; type: string; actorId: string; actorName: string; clueId: string; clueWord: string; clueNumber: number | null; scoreInfo: { score: number; correctCount: number; totalTargets: number } | null; message: string | null; createdAt: number; read: boolean }[]> {
-    return get(`/api/game?route=notifications&userId=${encodeURIComponent(userId)}`);
+    return get(`/api/social?route=notifications&userId=${encodeURIComponent(userId)}`);
   },
 
-  async getAllNotifications(userId: string, opts?: { offset?: number; limit?: number; typeFilter?: string; actorFilter?: string }): Promise<{ notifications: { id: number; type: string; actorId: string; actorName: string; clueId: string; clueWord: string; clueNumber: number | null; scoreInfo: { score: number; correctCount: number; totalTargets: number } | null; message: string | null; createdAt: number; read: boolean }[]; total: number }> {
+  async getAllNotifications(userId: string, opts?: { offset?: number; limit?: number }): Promise<{ notifications: { id: number; type: string; actorId: string; actorName: string; clueId: string; clueWord: string; clueNumber: number | null; scoreInfo: { score: number; correctCount: number; totalTargets: number } | null; message: string | null; createdAt: number; read: boolean }[]; total: number }> {
     const params = new URLSearchParams({ route: 'notifications', userId, all: 'true' });
     if (opts?.offset) params.set('offset', String(opts.offset));
     if (opts?.limit) params.set('limit', String(opts.limit));
-    if (opts?.typeFilter) params.set('typeFilter', opts.typeFilter);
-    if (opts?.actorFilter) params.set('actorFilter', opts.actorFilter);
-    return get(`/api/game?${params}`);
+    return get(`/api/social?${params}`);
   },
 
   async markNotificationsRead(userId: string): Promise<void> {
-    await post('/api/game?route=notifications', { userId, action: 'read_all' });
+    await post('/api/social?route=notifications', { userId, action: 'read_all' });
   },
 
   async clearNotifications(userId: string): Promise<void> {
-    await post('/api/game?route=notifications', { userId, action: 'clear_all' });
+    await post('/api/social?route=notifications', { userId, action: 'clear_all' });
   },
 
   async deleteNotifications(userId: string, ids: number[]): Promise<void> {
-    await post('/api/game?route=notifications', { userId, action: 'delete_selected', ids });
+    await post('/api/social?route=notifications', { userId, action: 'delete_selected', ids });
   },
 
   // Subscriptions
   async checkSubscription(userId: string, targetId: string): Promise<{ subscribed: boolean }> {
-    return get(`/api/game?route=subscriptions&userId=${encodeURIComponent(userId)}&targetId=${encodeURIComponent(targetId)}`);
+    return get(`/api/social?route=subscriptions&userId=${encodeURIComponent(userId)}&targetId=${encodeURIComponent(targetId)}`);
   },
 
   async subscribe(subscriberId: string, targetId: string): Promise<void> {
-    await post('/api/game?route=subscriptions', { subscriberId, targetId });
+    await post('/api/social?route=subscriptions', { subscriberId, targetId });
   },
 
   async unsubscribe(subscriberId: string, targetId: string): Promise<void> {
-    await del(`/api/game?route=subscriptions&subscriberId=${encodeURIComponent(subscriberId)}&targetId=${encodeURIComponent(targetId)}`);
+    await del(`/api/social?route=subscriptions&subscriberId=${encodeURIComponent(subscriberId)}&targetId=${encodeURIComponent(targetId)}`);
   },
 
   // Player search (for mentions)
   async searchPlayers(query: string): Promise<{ id: string; displayName: string }[]> {
-    return get(`/api/game?route=stats&search=${encodeURIComponent(query)}`);
+    return get(`/api/leaderboard?route=stats&search=${encodeURIComponent(query)}`);
   },
 
   // Profile comments (wall)
   async getProfileComments(profileUserId: string): Promise<{ commentsDisabled: boolean; comments: { id: number; authorId: string; displayName: string; content: string; createdAt: number; replyToId: number | null; replyToDisplayName: string | null; replyToContent: string | null }[] }> {
-    return get(`/api/game?route=profile-comments&profileUserId=${encodeURIComponent(profileUserId)}`);
+    return get(`/api/social?route=profile-comments&profileUserId=${encodeURIComponent(profileUserId)}`);
   },
 
   async addProfileComment(profileUserId: string, authorId: string, content: string, replyToId?: number): Promise<{ ok: boolean; id: number }> {
-    return post('/api/game?route=profile-comments', { profileUserId, authorId, content, replyToId: replyToId || null });
+    return post('/api/social?route=profile-comments', { profileUserId, authorId, content, replyToId: replyToId || null });
   },
 
   async deleteProfileComment(id: number, userId: string): Promise<void> {
-    await del(`/api/game?route=profile-comments&id=${id}&userId=${encodeURIComponent(userId)}`);
+    await del(`/api/social?route=profile-comments&id=${id}&userId=${encodeURIComponent(userId)}`);
   },
 
   async toggleProfileComments(userId: string, disabled: boolean): Promise<void> {
-    await post('/api/game?route=profile-comments', { action: 'toggle_comments', userId, disabled });
+    await post('/api/social?route=profile-comments', { action: 'toggle_comments', userId, disabled });
   },
 
   // Comments
   async getCommentsByUser(userId: string): Promise<{ id: number; clueId: string; clueWord: string; content: string; createdAt: number }[]> {
-    return get(`/api/game?route=comments&userId=${encodeURIComponent(userId)}`);
+    return get(`/api/social?route=comments&userId=${encodeURIComponent(userId)}`);
   },
 
   async getComments(clueId: string): Promise<{ id: number; userId: string; displayName: string; content: string; createdAt: number; replyToId: number | null; replyToDisplayName: string | null; replyToContent: string | null }[]> {
-    return get(`/api/game?route=comments&clueId=${encodeURIComponent(clueId)}`);
+    return get(`/api/social?route=comments&clueId=${encodeURIComponent(clueId)}`);
   },
 
   async addComment(clueId: string, userId: string, content: string, replyToId?: number): Promise<{ ok: boolean; id: number }> {
-    return post('/api/game?route=comments', { clueId, userId, content, replyToId: replyToId || null });
+    return post('/api/social?route=comments', { clueId, userId, content, replyToId: replyToId || null });
   },
 
   async deleteComment(id: number, userId: string, isAdmin?: boolean): Promise<void> {
     if (isAdmin) {
-      await del(`/api/game?route=comments&id=${id}&adminId=${encodeURIComponent(userId)}`);
+      await del(`/api/social?route=comments&id=${id}&adminId=${encodeURIComponent(userId)}`);
     } else {
-      await del(`/api/game?route=comments&id=${id}&userId=${encodeURIComponent(userId)}`);
+      await del(`/api/social?route=comments&id=${id}&userId=${encodeURIComponent(userId)}`);
     }
   },
 
@@ -400,11 +398,11 @@ export const api = {
   },
 
   async updateProfile(userId: string, data: { bio?: string; country?: string }): Promise<void> {
-    await patch('/api/game?route=profile', { userId, ...data });
+    await patch('/api/social?route=profile', { userId, ...data });
   },
 
   async getNameHistory(userId: string): Promise<NameHistoryEntry[]> {
-    return get(`/api/game?route=nameHistory&userId=${encodeURIComponent(userId)}`);
+    return get(`/api/social?route=nameHistory&userId=${encodeURIComponent(userId)}`);
   },
 
   // Feedback

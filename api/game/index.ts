@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { neon } from '@neondatabase/serverless';
+import { computeClueRating, computeSolveRating, recalcClueStats, recalcUserStats } from '../_lib/ratings';
 const WORD_LIST_RU: string[] = ["АБАЖУР","АБОНЕМЕНТ","АБОРДАЖ","АБСЕНТ","АБСОЛЮТ","АВАРИЯ","АВТОГРАФ","АВТОМАТ","АВТОСЕРВИС","АД","АДРЕНАЛИН","АЗАРТ","АЗКАБАН","АИСТ","АЙСБЕРГ","АКАДЕМИЯ","АКВАЛАНГ","АКВАРЕЛЬ","АКВАРИУМ","АККАУНТ","АККОРД","АККУМУЛЯТОР","АКТ","АКУЛА","АКЦИЯ","АЛМАЗ","АЛТАРЬ","АЛФАВИТ","АЛХИМИЯ","АЛЬКАТРАС","АЛЬПИНИЗМ","АЛЬПЫ","АЛЬЯНС","АЛЯСКА","АМАЗОНКА","АМЕТИСТ","АММИАК","АМНИСТИЯ","АМПУТАЦИЯ","АНАБИОЗ","АНАЛИЗ","АНГАР","АНЕСТЕЗИЯ","АНЕСТЕТИК","АНКЕТА","АННИГИЛЯЦИЯ","АНОРЕКСИЯ","АНТАРКТИДА","АНТИБИОТИК","АНТИСАНИТАРИЯ","АНТОЛОГИЯ","АНТРАЦИТ","АНТРЕСОЛЬ","АПЕЛЛЯЦИЯ","АПЕЛЬСИН","АПОКАЛИПСИС","АППЕНДИЦИТ","АППЕТИТ","АПТЕКА","АРБУЗ","АРЕНА","АРЕНДА","АРЕСТ","АРИСТОКРАТИЯ","АРКА","АРКТИКА","АРМРЕСТЛИНГ","АРОМАТ","АРХИВ","АРХИПЕЛАГ","АССОРТИ","АСТЕРОИД","АСТРОЛОГИЯ","АСТРОНОМИЯ","АСТРОФИЗИКА","АСФАЛЬТ","АТЕИЗМ","АТЕЛЬЕ","АТЛАНТИДА","АТЛАС","АТМОСФЕРА","АТОМ","АТТЕСТАТ","АТТРАКЦИОН","АУДИТОРИЯ","АУТИЗМ","АФЕРА","АЦЕТОН","АЭРОБИКА","АЭРОДРОМ","АЭРОПОРТ","АЭРОХОККЕЙ","БАБОЧКА","БАГ","БАГАЖНИК","БАГГИ","БАЗА","БАЙКАЛ","БАКАЛЕЯ","БАКЛАЖАН","БАЛАНДА","БАЛАНС","БАЛЬЗАМ","БАНДИТИЗМ","БАНК","БАННЕР","БАРБЕКЮ","БАРЬЕР","БАСКЕТБОЛ","БАССЕЙН","БАТАРЕЯ","БАТУТ","БАШМАК","БАШНЯ","БАЯН","БЕЗДНА","БЕЗУМИЕ","БЕЛОК","БЕНЗИН","БЕНЗОПИЛА","БЕРЕЗА","БЕРКУТ","БЕСПОРЯДОК","БЕССМЕРТИЕ","БЕССОННИЦА","БЕШЕНСТВО","БИАТЛОН","БИБЛИОТЕКА","БИБЛИЯ","БИГУДИ","БИЗНЕС","БИЛБОРД","БИНОКЛЬ","БИОХИМИЯ","БИРЖА","БИССЕКТРИСА","БИФШТЕКС","БЛЕФ","БЛОК","БОГАТСТВО","БОГОМОЛ","БОГОСЛУЖЕНИЕ","БОГОХУЛЬСТВО","БОКС","БОЛИД","БОЛОТО","БОЛЬ","БОМБА","БОР","БОРДЮР","БОРЩ","БОУЛИНГ","БРА","БРАК","БРАТСТВО","БРАУЗЕР","БРЕВНО","БРЕД","БРИЛЛИАНТ","БРИТВА","БРИФИНГ","БРЮТ","БУДДИЗМ","БУДИЛЬНИК","БУЛАВА","БУЛЬВАР","БУМАЖНИК","БУМЕРАНГ","БУРГЕР","БУРДЖ-ХАЛИФА","БУРЕВЕСТНИК","БУСЫ","БУТЕРБРОД","БУХГАЛТЕРИЯ","БЮРОКРАТИЯ","БЮСТ","ВАЛЬС","ВАННА","ВАРЕНИК","ВЕГЕТАРИАНСТВО","ВЕЛОСИПЕД","ВЕНА","ВЕНЕРА","ВЕНЕЦИЯ","ВЕНИК","ВЕНТИЛЯТОР","ВЕРА","ВЕРДИКТ","ВЕРЕТЕНО","ВЕРТИКАЛЬ","ВЕРТОЛЕТ","ВЕРФЬ","ВЕРШИНА","ВЕСЕЛЬЕ","ВЕСНА","ВЕСТИБЮЛЬ","ВЕСЫ","ВЕТЕР","ВЕТКА","ВЕЧНОСТЬ","ВЗГЛЯД","ВЗРЫВ","ВЗЯТКА","ВИЗИТКА","ВИЛКА","ВИНТОВКА","ВИОЛОНЧЕЛЬ","ВИРУС","ВИСЕЛИЦА","ВИСКИ","ВИТРИНА","ВИХРЬ","ВКУС","ВЛАСТЬ","ВОДОРОСЛЬ","ВОЗВРАТ","ВОЗДУХ","ВОЗРОЖДЕНИЕ","ВОЙНА","ВОЛГА","ВОЛНА","ВОЛЯ","ВОРОН","ВОСКРЕШЕНИЕ","ВОССТАНОВЛЕНИЕ","ВОСХОД","ВПАДИНА","ВРАЖДЕБНОСТЬ","ВЫДУМКА","ВЫПИСКА","ВЫРЕЗКА","ВЫСТРЕЛ","ВЫШИВКА","ГААГА","ГАЗ","ГАЗЕЛЬ","ГАЛКА","ГАРЛЕМ","ГАРМОНИЯ","ГАРПУН","ГАСТРОНОМИЯ","ГАУПТВАХТА","ГВОЗДИКА","ГЕЛИЙ","ГЕЛЬ","ГЕН","ГЕРМЕТИК","ГЕРОИН","ГИЛЬДИЯ","ГИННЕСС","ГИПНОЗ","ГИПСОКАРТОН","ГИРЛЯНДА","ГИТАРА","ГЛИСТ","ГЛОССАРИЙ","ГЛЫБА","ГЛЮКОЗА","ГНЕЗДО","ГНОЙ","ГОЛЛИВУД","ГОЛОВА","ГОЛОВОЛОМКА","ГОЛОГРАММА","ГОЛЬФ","ГОНДОЛА","ГОРА","ГОРЕНИЕ","ГОРИЗОНТ","ГОРИЗОНТАЛЬ","ГОРМОН","ГОРН","ГОРНОСТАЙ","ГОРОСКОП","ГОРОШИНА","ГОРЧИЦА","ГОРЯЧКА","ГОТЭМ","ГРАВИТАЦИЯ","ГРЕБЕШОК","ГРЕЙПФРУТ","ГРЕХ","ГРЕЦИЯ","ГРЕЧКА","ГРИБ","ГРИЛЬ","ГРИФ","ГРОБ","ГРУЗ","ГРУСТЬ","ГРУША","ГРЯДКА","ГРЯЗЬ","ГУЛАГ","ГУСЕНИЦА","ГУСТОТА","ДАВЛЕНИЕ","ДАКТИЛОСКОПИЯ","ДАМБА","ДАРТС","ДВЕРЬ","ДВИГАТЕЛЬ","ДВИЖЕНИЕ","ДЕВСТВЕННОСТЬ","ДЕЖАВЮ","ДЕЗОДОРАНТ","ДЕКОРАЦИЯ","ДЕКРЕТ","ДЕЛЕГАЦИЯ","ДЕЛИКАТЕС","ДЕМЕНЦИЯ","ДЕНЬГИ","ДЕПО","ДЕПРЕССИЯ","ДЕРЕВНЯ","ДЕСЕРТ","ДЕСНА","ДЕТЕКТОР","ДЖЕКПОТ","ДЗЕН","ДЗЮДО","ДИАГНОЗ","ДИАДЕМА","ДИАЛЕКТ","ДИАМЕТР","ДИАФРАГМА","ДИВАН","ДИЕТА","ДИЛЕММА","ДИНАМИКА","ДИНАМИТ","ДИНОЗАВР","ДИСК","ДИСКОТЕКА","ДИСПЕТЧЕРСКАЯ","ДИСТАНЦИЯ","ДИСТРОФИЯ","ДОБАВКА","ДОГОВОР","ДОЖДЬ","ДОКЛАД","ДОКУМЕНТ","ДОМИНО","ДОНОРСТВО","ДОПРОС","ДОРОГА","ДОСКА","ДРАМА","ДРЕВЕСИНА","ДРОБЬ","ДУБ","ДУБАЙ","ДУБЛОН","ДУШ","ДУША","ДЫНЯ","ДЫХАНИЕ","ЕВРО","ЕГИПЕТ","ЕДИНОРОГ","ЖАРА","ЖЕЛЕ","ЖЕЛЕЗО","ЖЕЛТОК","ЖЕМЧУЖИНА","ЖЕРТВОПРИНОШЕНИЕ","ЖЕСТ","ЖЕСТОКОСТЬ","ЖИВОПИСЬ","ЖИВОТ","ЖИРАФ","ЖУРНАЛИСТИКА","ЗАБОР","ЗАВЕДЕНИЕ","ЗАВИСИМОСТЬ","ЗАКАТ","ЗАКЛИНАНИЕ","ЗАКОН","ЗАКОНОДАТЕЛЬСТВО","ЗАМОК","ЗАНОЗА","ЗАПОВЕДЬ","ЗАПРАВКА","ЗАРАЖЕНИЕ","ЗАРАЗА","ЗАРЯД","ЗАТМЕНИЕ","ЗАЩИТА","ЗВЕЗДА","ЗВЕНО","ЗВЕРОБОЙ","ЗЕБРА","ЗЕЛЕНКА","ЗЕЛЕНЬ","ЗЕМЛЕРОЙКА","ЗЕМЛЯ","ЗЕНИТ","ЗЕРКАЛО","ЗЕФИР","ЗЛО","ЗМЕЯ","ЗОЛОТО","ЗОМБИРОВАНИЕ","ЗРЕНИЕ","ЗУБ","ИГЛА","ИЗУМРУД","ИЗЮМ","ИКОНА","ИКРА","ИМБИРЬ","ИМИТАЦИЯ","ИМПЕРИАЛИЗМ","ИМПЛАНТ","ИНВЕНТАРЬ","ИНДИКАТОР","ИНДОНЕЗИЯ","ИНДУЛЬГЕНЦИЯ","ИНЖЕНЕРИЯ","ИНКВИЗИЦИЯ","ИНСТИНКТ","ИНСУЛЬТ","ИНТЕЛЛЕКТ","ИНФАРКТ","ИНФЕКЦИЯ","ИНЦЕСТ","ИНЪЕКЦИЯ","ИПОТЕКА","ИСК","ИСКАЖЕНИЕ","ИСКРА","ИСЛАМ","ИСТЕРИЯ","ИСТОРИЯ","ЙОД","КАБАН","КАБЕЛЬ","КАБРИОЛЕТ","КАДЕНЦИЯ","КАЗАРМА","КАКАДУ","КАКАО","КАКТУС","КАЛЕЙДОСКОП","КАЛЬКУЛЯТОР","КАМЕНЬ","КАМЕРА","КАМЕРТОН","КАМИН","КАНАЛ","КАНАЛИЗАЦИЯ","КАНАПЕ","КАНДЕЛЯБР","КАНИСТРА","КАПИТОЛИЙ","КАПОТ","КАПОЭЙРА","КАПЮШОН","КАРАБИН","КАРАКАТИЦА","КАРАМЕЛЬ","КАРАУЛ","КАРЕ","КАРМАН","КАРНИЗ","КАРТА","КАРФАГЕН","КАРЬЕР","КАТАКЛИЗМ","КАТАСТРОФА","КАТАФАЛК","КАТОК","КАТОЛИЧЕСТВО","КАЧЕСТВО","КВАДРАТ","КВАРТИРА","КВАС","КВЕСТ","КЕНГУРУ","КЕРАМИКА","КЕТЧУП","КИБЕРПАНК","КИБЕРСПОРТ","КИВИ","КИЛИМАНДЖАРО","КИНЖАЛ","КИРПИЧ","КИСЛОТА","КИСТЬ","КИТАЙ","КИШКА","КЛАД","КЛЕВЕР","КЛЕМЕНТИН","КЛЕТКА","КЛОНИРОВАНИЕ","КЛУБ","КЛЮЧ","КЛЯТВА","КНОПКА","КНЯЖЕСТВО","КОВЧЕГ","КОДЕКС","КОДИРОВКА","КОЖА","КОЗА","КОЗЕЛ","КОЗЕРОГ","КОКАИН","КОКОН","КОКОС","КОКТЕЙЛЬ","КОЛБА","КОЛБАСА","КОЛДОВСТВО","КОЛЕБАНИЕ","КОЛЕСНИЦА","КОЛЕСО","КОЛИЗЕЙ","КОЛЛАБОРАЦИЯ","КОЛЛАЖ","КОЛОДА","КОЛОНИЯ","КОЛОННА","КОЛЬЕ","КОЛЬЦО","КОЛЯСКА","КОМА","КОМАНДИРОВКА","КОМБИНЕЗОН","КОМЕДИЯ","КОМЕТА","КОМПАНИЯ","КОМПОСТ","КОМПОСТЕР","КОМПРОМИСС","КОМФОРТ","КОНДЕНСАТ","КОНДИЦИОНЕР","КОНСПЕКТ","КОНСПИРАЦИЯ","КОНСТИТУЦИЯ","КОНТОРА","КОНФЛИКТ","КОНЬ","КООПЕРАТИВ","КООРДИНАТА","КОПТИЛЬНЯ","КОПЫТО","КОПЬЕ","КОРА","КОРАЛЛ","КОРАН","КОРЕНЬ","КОРЗИНА","КОРИАНДР","КОРИДОР","КОРМ","КОРОБКА","КОРОВА","КОРОЕД","КОРОЛЕВСТВО","КОРПОРАЦИЯ","КОРТ","КОСА","КОСМЕТИЧКА","КОСМОЛЕТ","КОСМОС","КОСТЬ","КОСТЮМ","КОТЛЕТА","КОТТЕДЖ","КОФЕ","КОФЕИН","КОШКА","КОЭФФИЦИЕНТ","КРАН","КРАПИВА","КРАТЕР","КРЕАТИВ","КРЕДИТ","КРЕМ","КРЕМАТОРИЙ","КРЕМЛЬ","КРЕПЕЖ","КРЕСТ","КРИОКАМЕРА","КРИПТОЛОГИЯ","КРИСТАЛЛ","КРОВАТЬ","КРОВОТЕЧЕНИЕ","КРУГ","КРЫЛО","КРЫША","КРЮЧОК","КУБ","КУКУРУЗНИК","КУЛАК","КУЛЕК","КУЛЬТ","КУЛЬТУРА","КУПАНИЕ","КУРС","КУРЯТНИК","ЛАБИРИНТ","ЛАВКА","ЛАГУНА","ЛАЗАНЬЯ","ЛАМПОЧКА","ЛАНДЫШ","ЛАПША","ЛАС-ВЕГАС","ЛАСКА","ЛАТЕКС","ЛАТУНЬ","ЛАТЫНЬ","ЛЕВИТАЦИЯ","ЛЕД","ЛЕЗВИЕ","ЛЕКАРСТВО","ЛЕОПАРД","ЛЕС","ЛЕСОПИЛКА","ЛИВЕНЬ","ЛИЗИНГ","ЛИКЕР","ЛИМИТ","ЛИМОН","ЛИМОНАД","ЛИМУЗИН","ЛИНЕЙКА","ЛИНЗА","ЛИНИЯ","ЛИНОЛЕУМ","ЛИПА","ЛИРА","ЛИСТ","ЛИСТВА","ЛИСТОЕД","ЛИТЕРАТУРА","ЛИФТ","ЛОБОТОМИЯ","ЛОГИКА","ЛОГИСТИКА","ЛОДКА","ЛОНДОН","ЛОТЕРЕЯ","ЛОФТ","ЛУВР","ЛУЖАЙКА","ЛУК","ЛУНА","ЛУНОХОД","ЛУЧ","ЛЫСИНА","ЛЬВИЦА","ЛЮБОВЬ","ЛЮСТРАЦИЯ","МАВЗОЛЕЙ","МАГНЕТИЗМ","МАГНИТОЛА","МАДАГАСКАР","МАЗОХИЗМ","МАЙОНЕЗ","МАЙЯ","МАЛИНА","МАНИПУЛЯЦИЯ","МАНТИЯ","МАРИХУАНА","МАРКЕТИНГ","МАРС","МАРШРУТ","МАСКАРАД","МАСЛЕНИЦА","МАСЛО","МАСОНСТВО","МАСТУРБАЦИЯ","МАТ","МАТРИЦА","МАХАОН","МАЯК","МАЯТНИК","МЕДАЛЬОН","МЕДОЕД","МЕЛОЧНОСТЬ","МЕМБРАНА","МЕНСТРУАЦИЯ","МЕРЗОСТЬ","МЕТАФИЗИКА","МЕТЕОР","МЕТЕОРИЗМ","МЕТЕОРИТ","МЕТРОНОМ","МЕХАНИЗМ","МЕШОК","МИГАЛКА","МИЗОФОБИЯ","МИКРОВОЛНОВКА","МИКРОСКОП","МИНА","МИР","МИСТИКА","МИШЕНЬ","МИШУРА","МОВЕТОН","МОГИЛА","МОГИЛЬНИК","МОДЕРАЦИЯ","МОЗАИКА","МОЛЕКУЛА","МОЛИТВА","МОЛЛЮСК","МОЛНИЯ","МОЛОКО","МОЛОЧАЙ","МОЛЬ","МОНОПОЛИЯ","МОРАТОРИЙ","МОРКОВЬ","МОРС","МОСТ","МОТОР","МОХ","МОЦАРЕЛЛА","МУКА","МУРАВЬЕД","МУРЕНА","МУСОР","МУССОН","МУСТАНГ","МУХОМОР","МУШКА","МЫШЦА","МЫШЬ","МЯСО","МЯСОРУБКА","МЯТА","НАВОДНЕНИЕ","НАГАСАКИ","НАГРАДА","НАКИДКА","НАКОНЕЧНИК","НАЛОГ","НАПЕРСТОК","НАРУШЕНИЕ","НАРЦИССИЗМ","НАРЯД","НАСЕЛЕНИЕ","НАСЛАЖДЕНИЕ","НАСМОРК","НАСОС","НАСТОЙКА","НАСТРОЙКА","НАТЮРМОРТ","НАУКА","НАХОДКА","НЕВЕСОМОСТЬ","НЕВИДИМОСТЬ","НЕЙРОХИРУРГИЯ","НЕКРОЗ","НЕКРОМАНТИЯ","НЕОТЛОЖКА","НЕПТУН","НЕРВ","НЕФТЬ","НИКТОФОБИЯ","НИМБ","НИРВАНА","НИЩЕТА","НЛО","НОВОСТЬ","НОЖКА","НОЖНИЦЫ","НОЗОФИЛИЯ","НОМЕР","НОРИ","НОРКА","НОСОК","НОТА","НОУТБУК","НОЧЬ","НЬЮ-ЙОРК","ОАЗИС","ОБИТЕЛЬ","ОБМОРОЖЕНИЕ","ОБОНЯНИЕ","ОБОЧИНА","ОБРАБОТКА","ОБРАЗ","ОБРАЗЕЦ","ОБРЕЗ","ОБРЕЗАНИЕ","ОБРЯД","ОБСЕРВАТОРИЯ","ОБУВЬ","ОБЫСК","ОВЕН","ОВСЯНКА","ОВЦА","ОВЦЕБЫК","ОГОНЬ","ОГОРОД","ОГРАЖДЕНИЕ","ОГРАНИЧЕНИЕ","ОГУРЕЦ","ОДЕЖДА","ОДИНОЧЕСТВО","ОДУВАНЧИК","ОЖЕРЕЛЬЕ","ОЖИДАНИЕ","ОКЕАН","ОКО","ОКОНЧАНИЕ","ОКТОБЕРФЕСТ","ОКУНЬ","ОЛЕНЬ","ОЛИГАРХИЯ","ОЛИМП","ОПАСНОСТЬ","ОПЕРА","ОПЕРАЦИЯ","ОПЕРЕНИЕ","ОПЕЧАТКА","ОПТИКА","ОПУШКА","ОПЫТ","ОРГАЗМ","ОРГАН","ОРИГАМИ","ОРНАМЕНТ","ОРНИТОЛОГИЯ","ОРХИДЕЯ","ОСАДА","ОСАДКИ","ОСЕНЬ","ОСТАНКИ","ОСТАНОВКА","ОСЦИЛЛОГРАФ","ОСЬМИНОГ","ОТВРАЩЕНИЕ","ОТГОЛОСОК","ОТКЛОНЕНИЕ","ОТОПЛЕНИЕ","ОТПЕЧАТОК","ОТПУСК","ОТРАЖЕНИЕ","ОТРЫЖКА","ОТТЕНОК","ОФЕРТА","ОФШОР","ОЧАГ","ОЧЕРЕДЬ","ОЧИСТИТЕЛЬ","ОЧКИ","ПАЗЛ","ПАКЕТ","ПАЛОМНИЧЕСТВО","ПАЛУБА","ПАЛЬМА","ПАМЯТНИК","ПАНАЦЕЯ","ПАНДА","ПАНДЕМИЯ","ПАНЕЛЬ","ПАНИКА","ПАНОРАМА","ПАНТЕОН","ПАНТЕРА","ПАПОРОТНИК","ПАРАЗИТИЗМ","ПАРАНОЙЯ","ПАРАШЮТ","ПАРИЖ","ПАРКУР","ПАРМЕЗАН","ПАРУС","ПАСХА","ПАТ","ПАТЕНТ","ПАУЗА","ПАЦИФИЗМ","ПАЧКА","ПЕГАС","ПЕДАЛЬ","ПЕЙДЖЕР","ПЕКИН","ПЕЛЬМЕНЬ","ПЕНСИЯ","ПЕНТАГОН","ПЕНЬ","ПЕРГАМЕНТ","ПЕРЕГОРОДКА","ПЕРЕДАЧА","ПЕРЕЕЗД","ПЕРЕКАТИ-ПОЛЕ","ПЕРЕКРЕСТОК","ПЕРЕЛОМ","ПЕРЕРОЖДЕНИЕ","ПЕРЕСМЕШНИК","ПЕРЕЦ","ПЕРИОД","ПЕРО","ПЕРФЕКЦИОНИЗМ","ПЕРЧАТКА","ПЕСОК","ПЕТУХ","ПЕЧЕНЬЕ","ПИВОВАРНЯ","ПИКАНТНОСТЬ","ПИКНИК","ПИЛОТКА","ПИНБОЛ","ПИНГВИН","ПИРАМИДА","ПИСК","ПИСЬМО","ПИТАНИЕ","ПЛАЗМА","ПЛАТА","ПЛАТЬЕ","ПЛАЦЕБО","ПЛАЧ","ПЛЕНКА","ПЛЕЧО","ПЛИНТУС","ПЛИТА","ПЛОМБА","ПЛОТИНА","ПЛОТЬ","ПЛОЩАДЬ","ПЛЯЖ","ПОБЕДА","ПОВЕСТКА","ПОГЛОЩЕНИЕ","ПОДВАЛ","ПОДГУЗНИК","ПОДЗЕМЕЛЬЕ","ПОДКОВА","ПОДЛОДКА","ПОДНОЖКА","ПОДСНЕЖНИК","ПОИСК","ПОКЕР","ПОКРЫВАЛО","ПОКРЫШКА","ПОКУПКА","ПОЛЕТ","ПОЛИГОН","ПОЛКА","ПОЛЛЮЦИЯ","ПОЛОВИНА","ПОЛОСА","ПОЛОТНО","ПОЛЬЗА","ПОЛЯРНОСТЬ","ПОМЕСТЬЕ","ПОМЕТ","ПОМИДОР","ПОПКОРН","ПОРА","ПОРАЖЕНИЕ","ПОРОДА","ПОРТАЛ","ПОРЯДОК","ПОСВЯЩЕНИЕ","ПОСОЛЬСТВО","ПОСТ","ПОСТЕЛЬ","ПОСЫЛКА","ПОТ","ПОТАСОВКА","ПОТОЛОК","ПРАВОСЛАВИЕ","ПРАВОСУДИЕ","ПРАХ","ПРЕЗЕРВАТИВ","ПРЕСТОЛ","ПРИБЫЛЬ","ПРИГОВОР","ПРИЗВАНИЕ","ПРИЗЕМЛЕНИЕ","ПРИТЧА","ПРОБОИНА","ПРОВЕТРИВАНИЕ","ПРОВОД","ПРОЕКТ","ПРОИГРЫШ","ПРОИЗВОДСТВО","ПРОКЛАДКА","ПРОКРАСТИНАЦИЯ","ПРОЛОГ","ПРОЛОНГАЦИЯ","ПРОМАХ","ПРОРОЧЕСТВО","ПРОСЛУШКА","ПРОСПЕКТ","ПРОСТРАЦИЯ","ПРОСТЫНЯ","ПРОТИВОГАЗ","ПРОТОКОЛ","ПРОФИЛЬ","ПРОЦЕНТ","ПРОЦЕССОР","ПРЫЖОК","ПРЫЩ","ПРЯДЬ","ПРЯНИК","ПСАЛОМ","ПСИХИАТРИЯ","ПТЕРОДАКТИЛЬ","ПУДРА","ПУЗО","ПУРПУР","ПУСТОТА","ПУХ","ПУШИНКА","ПУШКА","ПЯТНО","РАДАР","РАДИАЦИЯ","РАДУГА","РАЗВЕТВЛЕНИЕ","РАЗВИТИЕ","РАЗВОРОТ","РАЗРЕЗ","РАЗРЯД","РАЗУМ","РАЗЪЕМ","РАЙ","РАК","РАКЕТА","РАКОВИНА","РАРИТЕТ","РАСТВОРИТЕЛЬ","РАСЩЕЛИНА","РАТУША","РЕАНИМАЦИЯ","РЕБРО","РЕВОЛЬВЕР","РЕГЕНЕРАЦИЯ","РЕГЛАМЕНТ","РЕГРЕСС","РЕГУЛЯТОР","РЕДКОСТЬ","РЕЗИНА","РЕЗИНКА","РЕЗОНАНС","РЕЗЮМЕ","РЕИНКАРНАЦИЯ","РЕКВИЕМ","РЕКЛАМА","РЕЛИКВИЯ","РЕМЕНЬ","РЕМЕСЛО","РЕНЕССАНС","РЕСТАВРАЦИЯ","РЕФЛЕКС","РЕФОРМА","РЕЦЕПТ","РИМ","РИО-ДЕ-ЖАНЕЙРО","РИТУАЛ","РИФ","РОВ","РОЖДЕСТВО","РОЗА","РОМАН","РОСТ","РУДА","РУКАВ","РУКОЯТЬ","РУЛЕТКА","РУЛЬ","РУЧЕЙ","РУЧКА","РЫБА-МОЛОТ","РЫНОК","РЫСЬ","РЫЧАГ","РЮКЗАК","РЯЖЕНКА","РЯСА","САДИЗМ","САЙТ","САЛАТ","САМОГОН","САНИ","САНСАРА","САНТЕХНИКА","САРКОФАГ","САТУРН","САУНДТРЕК","САХАРА","СБОРНИК","СБЫТ","СВАДЬБА","СВЕКЛА","СВЕТ","СВЕТОФОР","СВЕЧА","СВИТОК","СВЯЗЬ","СДЕЛКА","СЕДЛО","СЕКВОЙЯ","СЕКРЕТ","СЕКТА","СЕКТОР","СЕМЕСТР","СЕМЯ","СЕНОВАЛ","СЕНСОР","СЕПИЯ","СЕРДЦЕ","СЕРЕБРО","СЕРИЯ","СЕРПАНТИН","СЕТЧАТКА","СЕТЬ","СИГНАЛ","СИГНАЛИЗАЦИЯ","СИДЕНИЕ","СИДР","СИЛУЭТ","СИМБИОЗ","СИМВОЛ","СИМВОЛИКА","СИМПТОМ","СИМУЛЯЦИЯ","СИНДРОМ","СИНЕВА","СИНЯК","СИРЕНА","СИРОП","СКАЗКА","СКАМЕЙКА","СКАНЕР","СКАРАБЕЙ","СКАТ","СКАЧОК","СКЕЙТБОРД","СКЕЛЕТ","СКЛЕП","СКЛОН","СКОЛОПЕНДРА","СКОРЛУПА","СКРИЖАЛЬ","СЛЕД","СЛЕЗА","СЛИЗЕНЬ","СЛУХ","СЛЮНА","СМЕРТЬ","СМОКИНГ","СНАБЖЕНИЕ","СНАДОБЬЕ","СНАРЯЖЕНИЕ","СНИМОК","СНОУБОРД","СОБАЧКА","СОБОР","СОВОК","СОЗВЕЗДИЕ","СОЛНЦЕ","СОЛЬ","СОМБРЕРО","СОПЛЯ","СОРЕВНОВАНИЕ","СОСНА","СОСТАВ","СОУС","СОЦИОПАТИЯ","СОЮЗ","СПАРИВАНИЕ","СПАРРИНГ","СПАРТА","СПЕРМАТОЗОИД","СПЕЦИЯ","СПИЧКА","СПРАВОЧНИК","СРАЖЕНИЕ","СРОК","ССЫЛКА","СТАВКА","СТАЛАГНАТ","СТАЛАКТИТ","СТАЛЬ","СТАРОСТЬ","СТАРТАП","СТАТЬЯ","СТЕКЛО","СТЕРЖЕНЬ","СТИРКА","СТИХ","СТИХИЯ","СТОЛЕТИЕ","СТОЛЕШНИЦА","СТОУНХЕНДЖ","СТРАЙК","СТРАТЕГИЯ","СТРАХОВКА","СТРЕЛА","СТРЕСС","СТРОЙКА","СУБОРДИНАЦИЯ","СУБСТАНЦИЯ","СУД","СУИЦИД","СУНДУК","СУП","СУХАРЬ","СУШКА","СФИНКС","СЧЕТ","СЧЕТЧИК","СЫРОСТЬ","ТАЗ","ТАЙМ","ТАЙНА","ТАЙНИК","ТАКСА","ТАМАГОЧИ","ТАНГО","ТАНДЕМ","ТАНК","ТАНЦПОЛ","ТАРАКАН","ТАРАНТУЛ","ТАРЕЛКА","ТАРИФ","ТАТУИРОВКА","ТЕАТР","ТЕКТОНИК","ТЕЛЕВИЗОР","ТЕЛЕКИНЕЗ","ТЕЛЕПАТИЯ","ТЕЛЕПОРТ","ТЕЛЕСКОП","ТЕМНИЦА","ТЕНЬ","ТЕПЛОВИЗОР","ТЕПЛОТА","ТЕРАПИЯ","ТЕРМИТ","ТЕРМИТНИК","ТЕРРОРИЗМ","ТЕСТИРОВАНИЕ","ТЕТИВА","ТЕХНИКА","ТЕЧЕНИЕ","ТИТАНИК","ТОКИО","ТОНКОСТЬ","ТОПЛИВО","ТОПОР","ТОРГОВЛЯ","ТОЧКА","ТРАГЕДИЯ","ТРАЕКТОРИЯ","ТРАМПЛИН","ТРАНЗАКЦИЯ","ТРАНКВИЛИЗАТОР","ТРАНСПОРТИРОВКА","ТРАПЕЗА","ТРАФИК","ТРАХЕЯ","ТРЕНИЕ","ТРЕПАНАЦИЯ","ТРЕУГОЛЬНИК","ТРИУМФ","ТРОИЦА","ТРОТУАР","ТРОЯ","ТРУБА","ТРУСОСТЬ","ТРЮМО","ТРЯПКА","ТУБЕРКУЛЕЗ","ТУМАН","ТУМБОЧКА","ТУННЕЛЬ","ТУРНИР","ТЬМА","ТЮЛЬ","ТЮРЬМА","УВЕЧЬЕ","УГОЛЬ","УГОРЬ","УЖАС","УКСУС","УЛИКА","УЛИЦА","УЛЬТРАМАРИН","УЛЬТРАФИОЛЕТ","УНИЧТОЖЕНИЕ","УПРАВЛЕНИЕ","УПРУГОСТЬ","УРАГАН","УРАЛ","УРАН","УРОБОРОС","УРОВЕНЬ","УСАДЬБА","УСКОРЕНИЕ","УСЛУГА","УТКА","УФОЛОГИЯ","ФАЗА","ФАКЕЛ","ФАЛАНГА","ФАНТАСТИКА","ФАРШИРОВКА","ФЕН","ФЕНИКС","ФЕОДАЛИЗМ","ФЕТИШ","ФЕХТОВАНИЕ","ФИКЦИЯ","ФИЛАДЕЛЬФИЯ","ФИНИК","ФИТИЛЬ","ФИТНЕС","ФИШИНГ","ФИШКА","ФЛАКОН","ФЛАМИНГО","ФЛЕШ-РОЯЛЬ","ФОКУС","ФОН","ФОРТ","ФОРТ-НОКС","ФОРТОЧКА","ФРЕШ","ФРИКАДЕЛЬКА","ФРИСТАЙЛ","ФУА-ГРА","ФУДЗИЯМА","ФУНДАМЕНТ","ФУТБОЛ","ХАМЕЛЕОН","ХАОС","ХИЖИНА","ХИРОСИМА","ХЛЕВ","ХЛОПОК","ХЛОРГЕКСИДИН","ХОГВАРТС","ХОЛОД","ХОТ-ДОГ","ХРАМ","ХРИСТИАНСТВО","ХРОМОСОМА","ХЭЛЛОУИН","ЦВЕТОКОРРЕКЦИЯ","ЦЕЗИЙ","ЦЕНА","ЦЕНТР","ЦЕПЬ","ЦЕРБЕР","ЦИВИЛИЗАЦИЯ","ЦИКЛ","ЦИЛИНДР","ЦИРКУЛЬ","ЦИТАДЕЛЬ","ЦУНАМИ","ЧАЙ","ЧАСТИЦА","ЧАСТОТА","ЧАХОТКА","ЧЕК","ЧЕРВЬ","ЧЕРНИКА","ЧЕРНОБЫЛЬ","ЧЕРНОКНИЖНИЧЕСТВО","ЧЕРНОТА","ЧЕРТОВЩИНА","ЧЕСНОК","ЧЕСОТКА","ЧЕТВЕРТЬ","ЧИЛИ","ЧИСТИЛИЩЕ","ЧИСТОТА","ЧРЕВОУГОДИЕ","ЧУГУН","ЧУМА","ЧУРЧХЕЛА","ШАБАШ","ШАМАНИЗМ","ШАМПУНЬ","ШАНТАЖ","ШАР","ШАССИ","ШАХМАТЫ","ШАШКА","ШАШКИ","ШВЕЙЦАРИЯ","ШЕДЕВР","ШЕЛКОПРЯД","ШЕРШЕНЬ","ШИЗОФРЕНИЯ","ШИНА","ШИРИНКА","ШИФРОВАНИЕ","ШИШКА","ШКАТУЛКА","ШЛЮЗ","ШЛЯПКА","ШМЕЛЬ","ШНУР","ШОКОЛАД","ШОССЕ","ШПАГАТ","ШПИОНАЖ","ШРАМ","ШТОРМ","ШУБА","ШУМ","ЭВАКУАЦИЯ","ЭВЕРЕСТ","ЭКЗОРЦИЗМ","ЭКРАН","ЭКСПЕРТИЗА","ЭКСПОРТ","ЭКСТРЕМИЗМ","ЭЛЕКТРИЧЕСТВО","ЭЛЕКТРОБУС","ЭЛЕКТРОСАМОКАТ","ЭЛЕКТРОФОРЕЗ","ЭЛИКСИР","ЭЛЬДОРАДО","ЭНЦИКЛОПЕДИЯ","ЭПИДЕМИЯ","ЭПИЦЕНТР","ЭРА","ЭРИТРОЦИТ","ЭСКАЛАТОР","ЭФИР","ЭХО","ЯБЛОЧКО","ЯГУАР","ЯДРО","ЯЗВА","ЯЗЫК","ЯЙЦЕКЛЕТКА","ЯЙЦО","ЯНТАРЬ","ЯРЛЫК","ЯРОСТЬ","ЯЩЕРИЦА","ЯЩИК"];
 
 // --- Server-side board generation (mirrors src/lib/boardGenerator.ts) ---
@@ -87,14 +88,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'clue': return handleClueById(req, res, sql);
     case 'results': return handleResults(req, res, sql);
     case 'ratings': return handleRatings(req, res, sql);
-    case 'comments': return handleComments(req, res, sql);
-    case 'notifications': return handleNotifications(req, res, sql);
-    case 'subscriptions': return handleSubscriptions(req, res, sql);
-    case 'profile-comments': return handleProfileComments(req, res, sql);
-    case 'leaderboard': return handleLeaderboard(req, res, sql);
-    case 'stats': return handleUserStats(req, res, sql);
-    case 'profile': return handleProfile(req, res, sql);
-    case 'nameHistory': return handleNameHistory(req, res, sql);
     case 'claim-session': return handleClaimSession(req, res, sql);
     case 'check-session': return handleCheckSession(req, res, sql);
     case 'save-state': return handleSaveState(req, res, sql);
@@ -107,149 +100,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'debug': return res.json({ route, method: req.method, query: req.query, url: req.url });
     default: return res.status(400).json({ error: 'Unknown route' });
   }
-}
-
-// ==================== RATING FORMULAS ====================
-
-function percentile(arr: number[], p: number): number {
-  if (arr.length === 0) return 0;
-  const sorted = [...arr].sort((a, b) => a - b);
-  const idx = (p / 100) * (sorted.length - 1);
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  if (lo === hi) return sorted[lo];
-  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
-}
-
-/** Clue rating = P75(scores)*20 + avg(scores)*20 - reshuffles*10, rounded to integer */
-function computeClueRating(scores: number[], reshuffleCount: number = 0): number {
-  if (scores.length === 0) return 0;
-  const p75 = percentile(scores, 75);
-  const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
-  return Math.round(p75 * 20 + avg * 20 - reshuffleCount * 10);
-}
-
-/** Captain rating = avg(clue ratings of ranked clues), rounded to integer */
-function computeCaptainRating(clueRatings: number[]): number {
-  if (clueRatings.length === 0) return 0;
-  const avg = clueRatings.reduce((s, v) => s + v, 0) / clueRatings.length;
-  return Math.round(avg);
-}
-
-/** Solve rating for a single solve = 120 + score*40 - clueRating */
-function computeSolveRating(score: number, clueRating: number): number {
-  return Math.round(120 + score * 40 - clueRating);
-}
-
-/** Scout rating = avg(solveRatings), rounded to integer */
-function computeScoutRating(solveRatings: number[]): number {
-  if (solveRatings.length === 0) return 0;
-  return Math.round(solveRatings.reduce((s, v) => s + v, 0) / solveRatings.length);
-}
-
-/** Overall = captain*0.5 + scout*0.5, or solo rating if only one role */
-function computeOverallRating(captainRating: number, scoutRating: number, hasCaptain: boolean, hasScout: boolean): number {
-  if (hasCaptain && hasScout) return Math.round(captainRating * 0.5 + scoutRating * 0.5);
-  if (hasCaptain) return captainRating;
-  return scoutRating;
-}
-
-// ==================== PRECOMPUTED RATING HELPERS ====================
-
-/** Recompute and store all stats for a single clue */
-async function recalcClueStats(sql: ReturnType<typeof neon>, clueId: string): Promise<void> {
-  const resultRows = await sql`SELECT score FROM results WHERE clue_id = ${clueId} AND (disabled IS NOT TRUE)`;
-  const scores = resultRows.map((r: Record<string, unknown>) => Number(r.score) || 0);
-  const clueRow = await sql`SELECT reshuffle_count FROM clues WHERE id = ${clueId}` as Record<string, unknown>[];
-  const reshuffleCount = clueRow.length > 0 ? Number(clueRow[0].reshuffle_count) || 0 : 0;
-  const clueRating = computeClueRating(scores, reshuffleCount);
-  const attempts = resultRows.length;
-  const avgScore = attempts > 0 ? scores.reduce((s, v) => s + v, 0) / attempts : 0;
-  const ratingRows = await sql`SELECT rating FROM ratings WHERE clue_id = ${clueId}`;
-  const ratingsCount = ratingRows.length;
-  const avgRating = ratingsCount > 0
-    ? ratingRows.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.rating) || 0), 0) / ratingsCount : 0;
-  await sql`UPDATE clues SET
-    clue_rating = ${clueRating}, attempts = ${attempts},
-    avg_score = ${Math.round(avgScore * 10) / 10},
-    ratings_count = ${ratingsCount},
-    avg_rating = ${Math.round(avgRating * 10) / 10}
-    WHERE id = ${clueId}`;
-  // Recompute solve_rating for all results of this clue (120 + score*40 - clueRating)
-  await sql`UPDATE results SET solve_rating = (120 + COALESCE(score, 0) * 40 - ${clueRating})::int WHERE clue_id = ${clueId}`;
-}
-
-/** Recompute and store all stats + ratings for a single user */
-async function recalcUserStats(sql: ReturnType<typeof neon>, userId: string): Promise<void> {
-  // Clue stats
-  const clueRows = await sql`SELECT id, number, ranked FROM clues WHERE user_id = ${userId}`;
-  const cluesGiven = clueRows.length;
-  const avgWordsPerClue = cluesGiven > 0
-    ? clueRows.reduce((s: number, c: Record<string, unknown>) => s + (Number(c.number) || 0), 0) / cluesGiven : 0;
-
-  // Avg score others got on this user's clues
-  let avgScoreOnClues = 0;
-  if (cluesGiven > 0) {
-    const clueIds = clueRows.map((c: Record<string, unknown>) => c.id as string);
-    const othersRows = await sql`SELECT COALESCE(AVG(score), 0) as avg FROM results WHERE clue_id = ANY(${clueIds}) AND user_id != ${userId} AND (disabled IS NOT TRUE)`;
-    avgScoreOnClues = Number(othersRows[0].avg) || 0;
-  }
-
-  // Solve stats
-  const solveRows = await sql`SELECT score, guessed_indices, clue_id FROM results WHERE user_id = ${userId} AND (disabled IS NOT TRUE)`;
-  const cluesSolved = solveRows.length;
-  const avgWordsPicked = cluesSolved > 0
-    ? solveRows.reduce((s: number, r: Record<string, unknown>) => s + ((r.guessed_indices as number[])?.length || 0), 0) / cluesSolved : 0;
-  const avgScore = cluesSolved > 0
-    ? solveRows.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / cluesSolved : 0;
-
-  // Captain rating: based on user's ranked clues
-  const rankedClueIds = clueRows
-    .filter((c: Record<string, unknown>) => c.ranked !== false)
-    .map((c: Record<string, unknown>) => c.id as string);
-  const rankedCluesGiven = rankedClueIds.length;
-  let captainRating = 0;
-  if (rankedCluesGiven > 0) {
-    const ratedClues = await sql`SELECT id, clue_rating FROM clues WHERE id = ANY(${rankedClueIds}) AND clue_rating > 0`;
-    const clueRatings = ratedClues.map((c: Record<string, unknown>) => Number(c.clue_rating) || 0);
-    captainRating = computeCaptainRating(clueRatings);
-  }
-
-  // Scout rating: based on user's solves of ranked clues by OTHER users
-  let scoutRating = 0;
-  let rankedCluesSolved = 0;
-  if (cluesSolved > 0) {
-    const solvedClueIds = [...new Set(solveRows.map((r: Record<string, unknown>) => r.clue_id as string))];
-    const solvedClueRows = await sql`SELECT id, clue_rating, ranked, user_id FROM clues WHERE id = ANY(${solvedClueIds})`;
-    const rankedOtherClueMap = new Map<string, number>();
-    for (const c of solvedClueRows) {
-      if (c.ranked !== false && (c.user_id as string) !== userId) {
-        rankedOtherClueMap.set(c.id as string, Number(c.clue_rating) || 0);
-      }
-    }
-    const rankedOtherSolves = solveRows.filter((r: Record<string, unknown>) => rankedOtherClueMap.has(r.clue_id as string));
-    rankedCluesSolved = rankedOtherSolves.length;
-    if (rankedCluesSolved > 0) {
-      const solveRatings = rankedOtherSolves.map((r: Record<string, unknown>) =>
-        computeSolveRating(Number(r.score) || 0, rankedOtherClueMap.get(r.clue_id as string) || 0)
-      );
-      scoutRating = computeScoutRating(solveRatings);
-    }
-  }
-
-  const overallRating = computeOverallRating(captainRating, scoutRating, captainRating > 0, scoutRating > 0);
-
-  await sql`UPDATE users SET
-    captain_rating = ${captainRating}, scout_rating = ${scoutRating},
-    overall_rating = ${overallRating}, ranked_clues_given = ${rankedCluesGiven},
-    ranked_clues_solved = ${rankedCluesSolved},
-    clues_given = ${cluesGiven},
-    avg_words_per_clue = ${Math.round(avgWordsPerClue * 10) / 10},
-    avg_score_on_clues = ${Math.round(avgScoreOnClues * 10) / 10},
-    clues_solved = ${cluesSolved},
-    avg_words_picked = ${Math.round(avgWordsPicked * 10) / 10},
-    avg_score = ${Math.round(avgScore * 10) / 10}
-    WHERE id = ${userId}`;
 }
 
 // ==================== CLUES ====================
@@ -365,11 +215,10 @@ async function handleRandom(req: VercelRequest, res: VercelResponse, sql: Return
     }
 
     const pickedId = candidates[0];
-    const rows = await sql`SELECT * FROM clues WHERE id = ${pickedId}`;
+    const rows = await sql`SELECT c.*, u.display_name FROM clues c LEFT JOIN users u ON c.user_id = u.id WHERE c.id = ${pickedId}`;
     if (rows.length === 0) return res.json(null);
     const row = rows[0];
-    const authorRows = await sql`SELECT display_name FROM users WHERE id = ${row.user_id as string}`;
-    const userDisplayName = authorRows.length > 0 ? (authorRows[0].display_name as string) : (row.user_id as string);
+    const userDisplayName = (row.display_name as string) || (row.user_id as string);
     const boardData = generateBoardData(
       row.board_seed as string, row.board_size as string,
       row.red_count as number | null, row.blue_count as number | null, row.assassin_count as number | null,
@@ -534,56 +383,60 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: Retur
     const result = req.body;
     if (!result?.clueId || !result?.userId) return res.status(400).json({ error: 'Invalid result data' });
     try {
-      const clueRows = await sql`SELECT target_indices, null_indices, ranked FROM clues WHERE id = ${result.clueId}`;
+      // Single query for all clue data needed throughout this handler
+      const clueRows = await sql`SELECT target_indices, null_indices, ranked, clue_rating, user_id, word FROM clues WHERE id = ${result.clueId}`;
       if (clueRows.length === 0) return res.status(404).json({ error: 'Clue not found' });
-      // Server-side ranked access check
-      if (clueRows[0].ranked !== false) {
-        const oauthRows = await sql`SELECT provider FROM oauth_accounts WHERE user_id = ${result.userId}`;
-        const givenRows = await sql`SELECT COUNT(*) as c FROM clues WHERE user_id = ${result.userId} AND ranked = false`;
-        const solvedRows = await sql`SELECT COUNT(*) as c FROM results r JOIN clues cl ON r.clue_id = cl.id WHERE r.user_id = ${result.userId} AND cl.ranked = false`;
-        const hasOAuth = oauthRows.length > 0;
-        const casualGiven = Number(givenRows[0].c);
-        const casualSolved = Number(solvedRows[0].c);
-        if (!hasOAuth || casualGiven < 1 || casualSolved < 5) {
+      const clue = clueRows[0];
+      const targetIndices: number[] = clue.target_indices as number[];
+      const nullIndices: number[] = (clue.null_indices as number[]) || [];
+      const clueAuthorId = clue.user_id as string;
+
+      // Server-side ranked access check (single query instead of 3)
+      if (clue.ranked !== false) {
+        const accessRows = await sql`SELECT
+          EXISTS(SELECT 1 FROM oauth_accounts WHERE user_id = ${result.userId}) as has_oauth,
+          (SELECT COUNT(*)::int FROM clues WHERE user_id = ${result.userId} AND ranked = false) as casual_given,
+          (SELECT COUNT(*)::int FROM results r JOIN clues cl ON r.clue_id = cl.id WHERE r.user_id = ${result.userId} AND cl.ranked = false) as casual_solved`;
+        const acc = (accessRows as Record<string, unknown>[])[0];
+        if (!acc.has_oauth || Number(acc.casual_given) < 1 || Number(acc.casual_solved) < 5) {
           return res.status(403).json({ error: 'ranked_access_denied' });
         }
       }
-      const targetIndices: number[] = clueRows[0].target_indices as number[];
-      const nullIndices: number[] = (clueRows[0].null_indices as number[]) || [];
+
       const guessedSet = new Set(result.guessedIndices as number[]);
       const correctCount = targetIndices.filter((i: number) => guessedSet.has(i)).length;
+      const clueRating = Number(clue.clue_rating) || 0;
+      const solveRating = computeSolveRating(result.score, clueRating);
+
       await sql`INSERT INTO users (id, display_name, created_at)
         VALUES (${result.userId}, ${result.userId}, ${result.timestamp})
         ON CONFLICT (id) DO NOTHING`;
-      const crRows = await sql`SELECT clue_rating FROM clues WHERE id = ${result.clueId}` as Record<string, unknown>[];
-      const clueRating = crRows.length > 0 ? Number(crRows[0].clue_rating) || 0 : 0;
-      const solveRating = computeSolveRating(result.score, clueRating);
       await sql`INSERT INTO results (clue_id, user_id, guessed_indices, correct_count, total_targets, score, timestamp, board_size, solve_rating)
         VALUES (${result.clueId}, ${result.userId}, ${result.guessedIndices}, ${correctCount}, ${targetIndices.length}, ${result.score}, ${result.timestamp}, ${result.boardSize || null}, ${solveRating})`;
-      // Update clue attempts + avg_score immediately
-      await sql`UPDATE clues SET
-        attempts = (SELECT COUNT(*) FROM results WHERE clue_id = ${result.clueId} AND disabled IS NOT TRUE),
-        avg_score = ROUND((SELECT COALESCE(AVG(score), 0) FROM results WHERE clue_id = ${result.clueId} AND disabled IS NOT TRUE)::numeric, 1)
-        WHERE id = ${result.clueId}`;
+      // Recalc clue stats + rating immediately (also updates all solve_ratings for this clue)
+      await recalcClueStats(sql, result.clueId);
       // Notify clue author about new solve
-      let clueAuthorId: string | null = null;
       try {
-        const clueInfo = await sql`SELECT user_id, word FROM clues WHERE id = ${result.clueId}`;
-        if (clueInfo.length > 0) {
-          clueAuthorId = clueInfo[0].user_id as string;
-          if (clueAuthorId !== result.userId) {
-            const scoreInfo = JSON.stringify({ score: result.score, correctCount, totalTargets: targetIndices.length });
-            await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, score_info, created_at)
-              VALUES (${clueAuthorId}, 'new_solve', ${result.userId}, ${result.clueId}, ${clueInfo[0].word}, ${scoreInfo}, ${Date.now()})`;
-          }
+        if (clueAuthorId !== result.userId) {
+          const scoreInfo = JSON.stringify({ score: result.score, correctCount, totalTargets: targetIndices.length });
+          await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, score_info, created_at)
+            VALUES (${clueAuthorId}, 'new_solve', ${result.userId}, ${result.clueId}, ${clue.word}, ${scoreInfo}, ${Date.now()})`;
         }
       } catch { /* notifications are best-effort */ }
+      // Recalc user ratings for solver and clue author
+      try {
+        await recalcUserStats(sql, result.userId);
+        if (clueAuthorId !== result.userId) {
+          await recalcUserStats(sql, clueAuthorId);
+        }
+      } catch { /* best-effort, cron will fix */ }
       return res.json({ ok: true, targetIndices, nullIndices });
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err && (err as Record<string, unknown>).code === '23505') {
-        const clueRows = await sql`SELECT target_indices, null_indices FROM clues WHERE id = ${result.clueId}`;
-        const targetIndices = clueRows.length > 0 ? clueRows[0].target_indices : [];
-        const nullIndices = clueRows.length > 0 ? (clueRows[0].null_indices || []) : [];
+        // Duplicate solve — re-fetch targets (clue var out of scope in catch)
+        const dupeRows = await sql`SELECT target_indices, null_indices FROM clues WHERE id = ${result.clueId}`;
+        const targetIndices = dupeRows.length > 0 ? dupeRows[0].target_indices : [];
+        const nullIndices = dupeRows.length > 0 ? (dupeRows[0].null_indices || []) : [];
         return res.json({ ok: true, duplicate: true, targetIndices, nullIndices });
       }
       const message = err instanceof Error ? err.message : String(err);
@@ -629,495 +482,6 @@ async function handleRatings(req: VercelRequest, res: VercelResponse, sql: Retur
     VALUES (${clueId}, ${userId}, ${rating})
     ON CONFLICT (clue_id, user_id) DO UPDATE SET rating = ${rating}`;
   res.json({ ok: true });
-}
-
-// ==================== COMMENTS ====================
-
-async function handleComments(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
-  if (req.method === 'GET') {
-    // Comments by user (for profile)
-    const { userId: commentUserId } = req.query;
-    if (commentUserId && typeof commentUserId === 'string') {
-      const rows = await sql`SELECT c.id, c.clue_id, c.content, c.created_at, cl.word as clue_word
-        FROM comments c LEFT JOIN clues cl ON c.clue_id = cl.id
-        WHERE c.user_id = ${commentUserId} ORDER BY c.created_at DESC`;
-      return res.json(rows.map((r: Record<string, unknown>) => ({
-        id: Number(r.id), clueId: r.clue_id as string, clueWord: (r.clue_word as string) || '',
-        content: r.content as string, createdAt: Number(r.created_at),
-      })));
-    }
-
-    const { clueId } = req.query;
-    if (!clueId || typeof clueId !== 'string') return res.status(400).json({ error: 'clueId required' });
-    const rows = await sql`SELECT c.id, c.user_id, c.content, c.created_at, c.reply_to_id, u.display_name,
-      rc.user_id as reply_user_id, ru.display_name as reply_display_name, rc.content as reply_content
-      FROM comments c LEFT JOIN users u ON c.user_id = u.id
-      LEFT JOIN comments rc ON c.reply_to_id = rc.id
-      LEFT JOIN users ru ON rc.user_id = ru.id
-      WHERE c.clue_id = ${clueId} ORDER BY c.created_at DESC`;
-    return res.json(rows.map((r: Record<string, unknown>) => ({
-      id: Number(r.id), userId: r.user_id as string, displayName: (r.display_name as string) || (r.user_id as string),
-      content: r.content as string, createdAt: Number(r.created_at),
-      replyToId: r.reply_to_id ? Number(r.reply_to_id) : null,
-      replyToDisplayName: (r.reply_display_name as string) || null,
-      replyToContent: (r.reply_content as string) || null,
-    })));
-  }
-
-  if (req.method === 'POST') {
-    const { clueId, userId, content, replyToId } = req.body;
-    if (!clueId || !userId || !content?.trim()) return res.status(400).json({ error: 'clueId, userId, content required' });
-    const now = Date.now();
-    const trimmed = content.trim();
-    const replyId = replyToId ? Number(replyToId) : null;
-    const rows = await sql`INSERT INTO comments (clue_id, user_id, content, created_at, reply_to_id) VALUES (${clueId}, ${userId}, ${trimmed}, ${now}, ${replyId}) RETURNING id`;
-    // Notifications: notify clue author + mentioned users
-    try {
-      const clueInfo = await sql`SELECT user_id, word FROM clues WHERE id = ${clueId}`;
-      const notifiedSet = new Set<string>();
-      // Notify clue author about new comment
-      if (clueInfo.length > 0 && clueInfo[0].user_id !== userId) {
-        notifiedSet.add(clueInfo[0].user_id as string);
-        await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, message, created_at)
-          VALUES (${clueInfo[0].user_id}, 'new_comment', ${userId}, ${clueId}, ${clueInfo[0].word}, ${trimmed}, ${now})`;
-      }
-      // Notify mentioned users (@[nickname] bracket format + legacy @nickname)
-      const bracketMentions = trimmed.match(/@\[([^\]]+)\]/g);
-      const legacyMentions = trimmed.replace(/@\[[^\]]+\]/g, '').match(/@([\wа-яА-ЯёЁ\-()]+)/g);
-      const mentions = [...(bracketMentions || []), ...(legacyMentions || [])];
-      if (mentions.length > 0) {
-        const names = mentions.map((m: string) => m.startsWith('@[') ? m.slice(2, -1) : m.slice(1)).filter(Boolean);
-        for (const name of names) {
-          const userRows = await sql`SELECT id FROM users WHERE display_name = ${name}`;
-          if (userRows.length > 0) {
-            const mentionedId = userRows[0].id as string;
-            if (mentionedId !== userId && !notifiedSet.has(mentionedId)) {
-              notifiedSet.add(mentionedId);
-              await sql`INSERT INTO notifications (user_id, type, actor_id, clue_id, clue_word, message, created_at)
-                Values (${mentionedId}, 'mention', ${userId}, ${clueId}, ${clueInfo.length > 0 ? clueInfo[0].word : null}, ${trimmed}, ${now})`;
-            }
-          }
-        }
-      }
-    } catch { /* notifications are best-effort */ }
-    return res.json({ ok: true, id: Number(rows[0].id) });
-  }
-
-  if (req.method === 'DELETE') {
-    const { id, adminId, userId } = req.query;
-    if (!id) return res.status(400).json({ error: 'id required' });
-    // Admin can delete any comment
-    if (adminId && typeof adminId === 'string') {
-      const adminRows = await sql`SELECT is_admin FROM users WHERE id = ${adminId}`;
-      if (adminRows.length === 0 || !adminRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
-      await sql`DELETE FROM comments WHERE id = ${Number(id)}`;
-      return res.json({ ok: true });
-    }
-    // Author can delete own comment
-    if (userId && typeof userId === 'string') {
-      const result = await sql`DELETE FROM comments WHERE id = ${Number(id)} AND user_id = ${userId}`;
-      if (result.length === 0 && (result as unknown as { count?: number }).count === 0) return res.status(403).json({ error: 'Not your comment' });
-      return res.json({ ok: true });
-    }
-    return res.status(400).json({ error: 'adminId or userId required' });
-  }
-
-  return res.status(405).json({ error: 'Method not allowed' });
-}
-
-// ==================== NOTIFICATIONS ====================
-
-// ==================== SUBSCRIPTIONS ====================
-
-async function handleSubscriptions(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
-  if (req.method === 'GET') {
-    const { userId, targetId } = req.query;
-    if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
-    if (targetId && typeof targetId === 'string') {
-      const rows = await sql`SELECT id FROM subscriptions WHERE subscriber_id = ${userId} AND target_id = ${targetId}` as Record<string, unknown>[];
-      return res.json({ subscribed: rows.length > 0 });
-    }
-    const rows = await sql`SELECT s.target_id, u.display_name FROM subscriptions s LEFT JOIN users u ON s.target_id = u.id WHERE s.subscriber_id = ${userId} ORDER BY s.created_at DESC`;
-    return res.json(rows.map((r: Record<string, unknown>) => ({ targetId: r.target_id, displayName: (r.display_name as string) || r.target_id })));
-  }
-
-  if (req.method === 'POST') {
-    const { subscriberId, targetId } = req.body;
-    if (!subscriberId || !targetId) return res.status(400).json({ error: 'subscriberId and targetId required' });
-    if (subscriberId === targetId) return res.status(400).json({ error: 'Cannot subscribe to yourself' });
-    await sql`INSERT INTO subscriptions (subscriber_id, target_id, created_at) VALUES (${subscriberId}, ${targetId}, ${Date.now()}) ON CONFLICT (subscriber_id, target_id) DO NOTHING`;
-    return res.json({ ok: true });
-  }
-
-  if (req.method === 'DELETE') {
-    const { subscriberId, targetId } = req.query;
-    if (!subscriberId || !targetId) return res.status(400).json({ error: 'subscriberId and targetId required' });
-    await sql`DELETE FROM subscriptions WHERE subscriber_id = ${subscriberId as string} AND target_id = ${targetId as string}`;
-    return res.json({ ok: true });
-  }
-
-  return res.status(405).json({ error: 'Method not allowed' });
-}
-
-// ==================== NOTIFICATIONS ====================
-
-async function handleNotifications(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
-  const mapRow = (r: Record<string, unknown>) => {
-    const scoreInfo = r.score_info ? JSON.parse(r.score_info as string) : null;
-    return {
-      id: Number(r.id), type: r.type as string, actorId: r.actor_id as string,
-      actorName: (r.actor_name as string) || (r.actor_id as string),
-      clueId: r.clue_id as string, clueWord: r.clue_word as string,
-      clueNumber: r.clue_number != null ? Number(r.clue_number) : null,
-      scoreInfo, message: (r.message as string) || null,
-      createdAt: Number(r.created_at), read: r.read as boolean,
-    };
-  };
-
-  if (req.method === 'GET') {
-    const { userId, all, typeFilter, actorFilter } = req.query;
-    if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
-
-    // Full paginated fetch for notifications page
-    if (all === 'true') {
-      const offset = Number(req.query.offset) || 0;
-      const limit = Math.min(Number(req.query.limit) || 50, 200);
-      const tf = typeof typeFilter === 'string' && typeFilter ? typeFilter : null;
-      const af = typeof actorFilter === 'string' && actorFilter ? `%${actorFilter.toLowerCase()}%` : null;
-
-      let rows: Record<string, unknown>[];
-      let countRows: Record<string, unknown>[];
-
-      if (tf && af) {
-        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name, c.number as clue_number
-          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id LEFT JOIN clues c ON c.id = n.clue_id
-          WHERE n.user_id = ${userId} AND n.type = ${tf} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})
-          ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
-        countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
-          WHERE n.user_id = ${userId} AND n.type = ${tf} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})` as Record<string, unknown>[];
-      } else if (tf) {
-        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name, c.number as clue_number
-          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id LEFT JOIN clues c ON c.id = n.clue_id
-          WHERE n.user_id = ${userId} AND n.type = ${tf}
-          ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
-        countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n WHERE n.user_id = ${userId} AND n.type = ${tf}` as Record<string, unknown>[];
-      } else if (af) {
-        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name, c.number as clue_number
-          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id LEFT JOIN clues c ON c.id = n.clue_id
-          WHERE n.user_id = ${userId} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})
-          ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
-        countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n LEFT JOIN users u ON n.actor_id = u.id
-          WHERE n.user_id = ${userId} AND (LOWER(u.display_name) LIKE ${af} OR LOWER(n.actor_id) LIKE ${af})` as Record<string, unknown>[];
-      } else {
-        rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name, c.number as clue_number
-          FROM notifications n LEFT JOIN users u ON n.actor_id = u.id LEFT JOIN clues c ON c.id = n.clue_id
-          WHERE n.user_id = ${userId}
-          ORDER BY n.created_at DESC LIMIT ${limit} OFFSET ${offset}` as Record<string, unknown>[];
-        countRows = await sql`SELECT COUNT(*)::int as total FROM notifications n WHERE n.user_id = ${userId}` as Record<string, unknown>[];
-      }
-
-      return res.json({ notifications: rows.map(mapRow), total: Number(countRows[0]?.total) || 0 });
-    }
-
-    // Default: last 50 for bell dropdown
-    const rows = await sql`SELECT n.id, n.type, n.actor_id, n.clue_id, n.clue_word, n.score_info, n.message, n.created_at, n.read, u.display_name as actor_name, c.number as clue_number
-      FROM notifications n LEFT JOIN users u ON n.actor_id = u.id LEFT JOIN clues c ON c.id = n.clue_id
-      WHERE n.user_id = ${userId} ORDER BY n.created_at DESC LIMIT 50` as Record<string, unknown>[];
-    return res.json(rows.map(mapRow));
-  }
-
-  if (req.method === 'POST') {
-    const { userId, action } = req.body;
-    if (!userId) return res.status(400).json({ error: 'userId required' });
-    if (action === 'read_all') {
-      await sql`UPDATE notifications SET read = true WHERE user_id = ${userId}`;
-      return res.json({ ok: true });
-    }
-    if (action === 'read' && req.body.id) {
-      await sql`UPDATE notifications SET read = true WHERE id = ${Number(req.body.id)} AND user_id = ${userId}`;
-      return res.json({ ok: true });
-    }
-    if (action === 'clear_all') {
-      await sql`DELETE FROM notifications WHERE user_id = ${userId}`;
-      return res.json({ ok: true });
-    }
-    if (action === 'delete_selected') {
-      const ids: number[] = req.body.ids;
-      if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: 'ids array required' });
-      await sql`DELETE FROM notifications WHERE id = ANY(${ids}) AND user_id = ${userId}`;
-      return res.json({ ok: true, deleted: ids.length });
-    }
-    return res.status(400).json({ error: 'Unknown action' });
-  }
-
-  return res.status(405).json({ error: 'Method not allowed' });
-}
-
-// ==================== PROFILE COMMENTS ====================
-
-async function handleProfileComments(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
-  if (req.method === 'GET') {
-    const { profileUserId } = req.query;
-    if (!profileUserId || typeof profileUserId !== 'string') return res.status(400).json({ error: 'profileUserId required' });
-    // Check if comments are disabled (graceful fallback if column doesn't exist yet)
-    let commentsDisabled = false;
-    try {
-      const userRows = await sql`SELECT comments_disabled FROM users WHERE id = ${profileUserId}`;
-      commentsDisabled = userRows.length > 0 && !!userRows[0].comments_disabled;
-    } catch { /* column may not exist yet */ }
-    const rows = await sql`SELECT pc.id, pc.author_id, pc.content, pc.created_at, pc.reply_to_id, u.display_name,
-      rpc.author_id as reply_author_id, ru.display_name as reply_display_name, rpc.content as reply_content
-      FROM profile_comments pc LEFT JOIN users u ON pc.author_id = u.id
-      LEFT JOIN profile_comments rpc ON pc.reply_to_id = rpc.id
-      LEFT JOIN users ru ON rpc.author_id = ru.id
-      WHERE pc.profile_user_id = ${profileUserId} ORDER BY pc.created_at DESC`;
-    return res.json({ commentsDisabled, comments: rows.map((r: Record<string, unknown>) => ({
-      id: Number(r.id), authorId: r.author_id as string, displayName: (r.display_name as string) || (r.author_id as string),
-      content: r.content as string, createdAt: Number(r.created_at),
-      replyToId: r.reply_to_id ? Number(r.reply_to_id) : null,
-      replyToDisplayName: (r.reply_display_name as string) || null,
-      replyToContent: (r.reply_content as string) || null,
-    })) });
-  }
-
-  if (req.method === 'POST') {
-    const { profileUserId, authorId, content, replyToId, action } = req.body;
-    // Toggle comments on/off
-    if (action === 'toggle_comments') {
-      const { userId, disabled } = req.body;
-      if (!userId) return res.status(400).json({ error: 'userId required' });
-      try {
-        await sql`UPDATE users SET comments_disabled = ${!!disabled} WHERE id = ${userId}`;
-      } catch {
-        // Column may not exist — create it and retry
-        await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS comments_disabled BOOLEAN DEFAULT false`;
-        await sql`UPDATE users SET comments_disabled = ${!!disabled} WHERE id = ${userId}`;
-      }
-      return res.json({ ok: true });
-    }
-    if (!profileUserId || !authorId || !content?.trim()) return res.status(400).json({ error: 'profileUserId, authorId, content required' });
-    // Check if comments are disabled (allow profile owner to still comment)
-    if (profileUserId !== authorId) {
-      try {
-        const disabledRows = await sql`SELECT comments_disabled FROM users WHERE id = ${profileUserId}`;
-        if (disabledRows.length > 0 && disabledRows[0].comments_disabled) {
-          return res.status(403).json({ error: 'Comments disabled' });
-        }
-      } catch { /* column may not exist yet — allow comment */ }
-    }
-    const now = Date.now();
-    const trimmed = content.trim();
-    const replyId = replyToId ? Number(replyToId) : null;
-    const rows = await sql`INSERT INTO profile_comments (profile_user_id, author_id, content, created_at, reply_to_id) VALUES (${profileUserId}, ${authorId}, ${trimmed}, ${now}, ${replyId}) RETURNING id`;
-    // Notify profile owner about new comment (if not self)
-    try {
-      if (profileUserId !== authorId) {
-        await sql`INSERT INTO notifications (user_id, type, actor_id, message, created_at)
-          VALUES (${profileUserId}, 'profile_comment', ${authorId}, ${trimmed}, ${now})`;
-      }
-    } catch { /* best-effort */ }
-    return res.json({ ok: true, id: Number(rows[0].id) });
-  }
-
-  if (req.method === 'DELETE') {
-    const { id, adminId, userId } = req.query;
-    if (!id) return res.status(400).json({ error: 'id required' });
-    // Admin can delete any
-    if (adminId && typeof adminId === 'string') {
-      const adminRows = await sql`SELECT is_admin FROM users WHERE id = ${adminId}`;
-      if (adminRows.length === 0 || !adminRows[0].is_admin) return res.status(403).json({ error: 'Not admin' });
-      await sql`DELETE FROM profile_comments WHERE id = ${Number(id)}`;
-      return res.json({ ok: true });
-    }
-    // Author can delete own, or profile owner can delete any on their profile
-    if (userId && typeof userId === 'string') {
-      // Try delete own comment first
-      const own = await sql`DELETE FROM profile_comments WHERE id = ${Number(id)} AND author_id = ${userId} RETURNING id`;
-      if (own.length > 0) return res.json({ ok: true });
-      // Try delete as profile owner
-      const asOwner = await sql`DELETE FROM profile_comments WHERE id = ${Number(id)} AND profile_user_id = ${userId} RETURNING id`;
-      if (asOwner.length > 0) return res.json({ ok: true });
-      return res.status(403).json({ error: 'Not authorized' });
-    }
-    return res.status(400).json({ error: 'adminId or userId required' });
-  }
-
-  return res.status(405).json({ error: 'Method not allowed' });
-}
-
-// ==================== LEADERBOARD ====================
-
-async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-
-  const { boardSize } = req.query;
-  const hasBoardSize = boardSize && typeof boardSize === 'string';
-
-  // All data is precomputed — pure SELECTs only
-  const spymasterRows = await sql`
-    SELECT id as user_id, display_name, captain_rating, ranked_clues_given as clues_given,
-      avg_words_per_clue as avg_words, avg_score_on_clues as avg_score
-    FROM users WHERE clues_given > 0 ORDER BY captain_rating DESC`;
-
-  const spymasters = spymasterRows.map((s: Record<string, unknown>) => ({
-    userId: s.user_id as string,
-    displayName: s.display_name as string,
-    cluesGiven: Number(s.clues_given),
-    avgWordsPerClue: Number(s.avg_words) || 0,
-    avgScoreOnClues: Number(s.avg_score) || 0,
-    captainRating: Number(s.captain_rating) || 0,
-  }));
-
-  const guesserRows = await sql`
-    SELECT id as user_id, display_name, scout_rating, ranked_clues_solved as clues_solved,
-      avg_words_picked as avg_picked, avg_score
-    FROM users WHERE clues_solved > 0 ORDER BY scout_rating DESC`;
-
-  const guessers = guesserRows.map((g: Record<string, unknown>) => ({
-    userId: g.user_id as string,
-    displayName: g.display_name as string,
-    cluesSolved: Number(g.clues_solved),
-    avgWordsPicked: Number(g.avg_picked) || 0,
-    avgScore: Number(g.avg_score) || 0,
-    scoutRating: Number(g.scout_rating) || 0,
-  }));
-
-  const overallRows = await sql`
-    SELECT id as user_id, display_name, captain_rating, scout_rating, overall_rating as rating,
-      ranked_clues_given, ranked_clues_solved
-    FROM users WHERE (clues_given + clues_solved) > 0 ORDER BY overall_rating DESC`;
-
-  const overall = overallRows.map((o: Record<string, unknown>) => ({
-    userId: o.user_id as string,
-    displayName: o.display_name as string,
-    rankedCluesGiven: Number(o.ranked_clues_given) || 0,
-    rankedCluesSolved: Number(o.ranked_clues_solved) || 0,
-    rating: Number(o.rating) || 0,
-  }));
-
-  // ClueStats: read precomputed columns from clues table
-  const clueStatsRows = hasBoardSize
-    ? await sql`
-        SELECT c.id, c.word, c.number, c.user_id, c.ranked, c.created_at,
-          c.clue_rating, c.attempts, c.avg_score, c.ratings_count, c.avg_rating,
-          u.display_name
-        FROM clues c LEFT JOIN users u ON c.user_id = u.id
-        WHERE c.board_size = ${boardSize}
-        ORDER BY c.attempts DESC`
-    : await sql`
-        SELECT c.id, c.word, c.number, c.user_id, c.ranked, c.created_at,
-          c.clue_rating, c.attempts, c.avg_score, c.ratings_count, c.avg_rating,
-          u.display_name
-        FROM clues c LEFT JOIN users u ON c.user_id = u.id
-        ORDER BY c.attempts DESC`;
-
-  const clueStats = clueStatsRows.map((c: Record<string, unknown>) => ({
-    id: c.id as string,
-    word: c.word as string,
-    number: Number(c.number),
-    userId: c.user_id as string,
-    displayName: (c.display_name as string) || (c.user_id as string),
-    ranked: c.ranked ?? true,
-    attempts: Number(c.attempts) || 0,
-    avgScore: Number(c.avg_score) || 0,
-    createdAt: Number(c.created_at) || 0,
-    ratingsCount: Number(c.ratings_count) || 0,
-    avgRating: Number(c.avg_rating) || 0,
-    clueRating: Number(c.clue_rating) || 0,
-  }));
-
-  res.json({ spymasters, guessers, clueStats, overall });
-}
-
-// ==================== USER STATS ====================
-
-async function handleUserStats(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-
-  // Player search for mention autocomplete
-  const { search } = req.query;
-  if (search && typeof search === 'string') {
-    const pattern = `%${search}%`;
-    const rows = await sql`SELECT id, display_name FROM users WHERE display_name ILIKE ${pattern} LIMIT 10`;
-    return res.json(rows.map((r: Record<string, unknown>) => ({ id: r.id as string, displayName: r.display_name as string })));
-  }
-
-  const { userId } = req.query;
-  if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
-
-  // Single query — all stats are precomputed
-  const userRows = await sql`SELECT display_name, avatar_url, bio, country,
-    captain_rating, scout_rating, overall_rating, ranked_clues_given, ranked_clues_solved,
-    clues_given, avg_words_per_clue, avg_score_on_clues,
-    clues_solved, avg_words_picked, avg_score
-    FROM users WHERE id = ${userId}`;
-  const u = userRows.length > 0 ? userRows[0] : null;
-
-  res.json({
-    displayName: u ? (u.display_name as string) : userId,
-    cluesGiven: u ? Number(u.clues_given) || 0 : 0,
-    avgWordsPerClue: u ? Number(u.avg_words_per_clue) || 0 : 0,
-    avgScoreOnClues: u ? Number(u.avg_score_on_clues) || 0 : 0,
-    cluesSolved: u ? Number(u.clues_solved) || 0 : 0,
-    avgWordsPicked: u ? Number(u.avg_words_picked) || 0 : 0,
-    avgScore: u ? Number(u.avg_score) || 0 : 0,
-    rankedCluesGiven: u ? Number(u.ranked_clues_given) || 0 : 0,
-    rankedCluesSolved: u ? Number(u.ranked_clues_solved) || 0 : 0,
-    overallRating: u ? Number(u.overall_rating) || 0 : 0,
-    captainRating: u ? Number(u.captain_rating) || 0 : 0,
-    scoutRating: u ? Number(u.scout_rating) || 0 : 0,
-    ...(u?.avatar_url ? { avatarUrl: u.avatar_url as string } : {}),
-    ...(u?.bio ? { bio: u.bio as string } : {}),
-    ...(u?.country ? { country: u.country as string } : {}),
-  });
-}
-
-// ==================== PROFILE (bio, country) ====================
-
-async function handleProfile(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
-  if (req.method === 'GET') {
-    const { userId } = req.query;
-    if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
-    const rows = await sql`SELECT display_name, avatar_url, bio, country FROM users WHERE id = ${userId}`;
-    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
-    const u = rows[0];
-    return res.json({
-      displayName: u.display_name,
-      avatarUrl: u.avatar_url || null,
-      bio: u.bio || '',
-      country: u.country || '',
-    });
-  }
-
-  if (req.method === 'PATCH') {
-    const { userId, bio, country } = req.body || {};
-    if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
-    const existing = await sql`SELECT id FROM users WHERE id = ${userId}`;
-    if (existing.length === 0) return res.status(404).json({ error: 'User not found' });
-    if (typeof bio === 'string') {
-      const trimmedBio = bio.trim().slice(0, 200);
-      await sql`UPDATE users SET bio = ${trimmedBio} WHERE id = ${userId}`;
-    }
-    if (typeof country === 'string') {
-      await sql`UPDATE users SET country = ${country.trim().slice(0, 10)} WHERE id = ${userId}`;
-    }
-    return res.json({ ok: true });
-  }
-
-  return res.status(405).json({ error: 'Method not allowed' });
-}
-
-// ==================== NAME HISTORY ====================
-
-async function handleNameHistory(req: VercelRequest, res: VercelResponse, sql: ReturnType<typeof neon>) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-  const { userId } = req.query;
-  if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
-  const rows = await sql`SELECT old_name, changed_at FROM name_history WHERE user_id = ${userId} ORDER BY changed_at DESC LIMIT 50`;
-  return res.json(rows.map((r: Record<string, unknown>) => ({
-    oldName: r.old_name as string,
-    changedAt: Number(r.changed_at),
-  })));
 }
 
 // ==================== SESSION CLAIM / CHECK ====================
@@ -1310,16 +674,41 @@ async function handleMigrateIds(res: VercelResponse, sql: ReturnType<typeof neon
 
 async function handleRecalcAll(res: VercelResponse, sql: ReturnType<typeof neon>) {
   try {
-    // 1. Recompute all stats for all clues
-    const clues = await sql`SELECT id FROM clues`;
+    // 1. Batch recompute all clue stats
+    // Get all scores grouped by clue in one query
+    const scoreRows = await sql`SELECT clue_id, array_agg(score ORDER BY score) as scores FROM results WHERE disabled IS NOT TRUE GROUP BY clue_id` as Record<string, unknown>[];
+    const scoreMap = new Map<string, number[]>();
+    for (const r of scoreRows) {
+      scoreMap.set(r.clue_id as string, (r.scores as number[]).map(Number));
+    }
+    // Get all clue reshuffles
+    const clueRows = await sql`SELECT id, reshuffle_count FROM clues` as Record<string, unknown>[];
+    // Get all user ratings grouped by clue
+    const ratingRows = await sql`SELECT clue_id, COUNT(*)::int as cnt, ROUND(AVG(rating)::numeric, 1) as avg FROM ratings GROUP BY clue_id` as Record<string, unknown>[];
+    const ratingMap = new Map<string, { count: number; avg: number }>();
+    for (const r of ratingRows) {
+      ratingMap.set(r.clue_id as string, { count: Number(r.cnt), avg: Number(r.avg) });
+    }
+
     let cluesUpdated = 0;
-    for (const c of clues) {
-      await recalcClueStats(sql, c.id as string);
+    for (const c of clueRows) {
+      const clueId = c.id as string;
+      const scores = scoreMap.get(clueId) || [];
+      const reshuffleCount = Number(c.reshuffle_count) || 0;
+      const clueRating = computeClueRating(scores, reshuffleCount);
+      const attempts = scores.length;
+      const avgScore = attempts > 0 ? scores.reduce((s, v) => s + v, 0) / attempts : 0;
+      const ri = ratingMap.get(clueId);
+      const ratingsCount = ri?.count || 0;
+      const avgRating = ri?.avg || 0;
+      await sql`UPDATE clues SET clue_rating = ${clueRating}, attempts = ${attempts}, avg_score = ${Math.round(avgScore * 10) / 10}, ratings_count = ${ratingsCount}, avg_rating = ${avgRating} WHERE id = ${clueId}`;
+      // Update solve_ratings for all results of this clue
+      await sql`UPDATE results SET solve_rating = (120 + COALESCE(score, 0) * 40 - ${clueRating})::int WHERE clue_id = ${clueId}`;
       cluesUpdated++;
     }
 
-    // 2. Recompute user ratings for all users who have any ranked activity
-    const users = await sql`SELECT id FROM users`;
+    // 2. Recompute user ratings for all users
+    const users = await sql`SELECT id FROM users` as Record<string, unknown>[];
     let usersUpdated = 0;
     for (const u of users) {
       await recalcUserStats(sql, u.id as string);
