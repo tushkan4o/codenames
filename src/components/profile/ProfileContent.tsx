@@ -705,7 +705,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                         <span className="text-sm text-gray-400 text-center">{cStats && cStats.attempts > 0 ? cStats.clueRating : '—'}</span>
                         <span className="text-sm text-center">{clue.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
-                          {(isOwnProfile || user?.isAdmin) ? (
+                          {isOwnProfile ? (
                             <button
                               onClick={(e) => { e.stopPropagation(); handleToggleDisabled(clue); }}
                               className={`font-bold transition-colors ${clue.disabled ? 'text-board-red hover:text-red-300' : 'text-board-blue hover:text-blue-300'}`}
@@ -824,15 +824,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                         <span className="text-sm text-gray-400 text-center">{entry.result.solveRating ? entry.result.solveRating : '—'}</span>
                         <span className="text-sm text-center">{entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
-                          {user?.isAdmin ? (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleToggleResultDisabled(entry); }}
-                              className={`font-bold transition-colors ${entry.result.disabled ? 'text-board-red hover:text-red-300' : 'text-board-blue hover:text-blue-300'}`}
-                              title={entry.result.disabled ? 'Активировать' : 'Деактивировать'}
-                            >
-                              {entry.result.disabled ? '✗' : '✓'}
-                            </button>
-                          ) : canView ? (
+                          {canView ? (
                             <span className="text-board-blue">✓</span>
                           ) : (
                             <span className="text-gray-500">–</span>
@@ -873,7 +865,14 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                                 {t.profile.solve}
                               </button>
                             )}
-                            {user?.isAdmin && confirmDeleteSolved !== solvedKey && (
+                            {user?.isAdmin && confirmDeleteSolved !== solvedKey && (<>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleToggleResultDisabled(entry); }}
+                                className={`px-2 py-1 rounded text-sm font-bold transition-colors ${entry.result.disabled ? 'bg-board-red/60 hover:bg-board-red text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+                                title={entry.result.disabled ? 'Активировать' : 'Деактивировать'}
+                              >
+                                {entry.result.disabled ? '✗ OFF' : '✓ ON'}
+                              </button>
                               <button
                                 onClick={() => setConfirmDeleteSolved(solvedKey)}
                                 className="px-2 py-1 rounded bg-board-red/60 hover:bg-board-red text-white text-sm font-bold transition-colors"
@@ -881,7 +880,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                               >
                                 &times;
                               </button>
-                            )}
+                            </>)}
                           </div>
                         </div>
                         {user?.isAdmin && confirmDeleteSolved === solvedKey && (
