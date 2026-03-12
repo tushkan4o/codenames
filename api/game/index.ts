@@ -777,6 +777,10 @@ async function handleInit(res: VercelResponse, sql: ReturnType<typeof neon>) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS clues_solved INT DEFAULT 0`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_words_picked REAL DEFAULT 0`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_score REAL DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ranked_avg_words REAL DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ranked_zero_pct REAL DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ranked_avg_picked REAL DEFAULT 0`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS ranked_black_pct REAL DEFAULT 0`;
     await sql`ALTER TABLE results ADD COLUMN IF NOT EXISTS solve_rating INT DEFAULT 0`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS attempts INT DEFAULT 0`;
     await sql`ALTER TABLE clues ADD COLUMN IF NOT EXISTS avg_score REAL DEFAULT 0`;

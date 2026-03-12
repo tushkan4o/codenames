@@ -85,7 +85,7 @@ export async function recalcUserStats(sql: ReturnType<typeof neon>, userId: stri
   // Fetch clue and solve data in parallel (independent queries)
   const [clueRows, solveRows] = await Promise.all([
     sql`SELECT id, number, ranked FROM clues WHERE user_id = ${userId}`,
-    sql`SELECT score, guessed_indices, clue_id FROM results WHERE user_id = ${userId} AND (disabled IS NOT TRUE)`,
+    sql`SELECT r.score, r.guessed_indices, r.clue_id FROM results r WHERE r.user_id = ${userId} AND (r.disabled IS NOT TRUE)`,
   ]) as [Record<string, unknown>[], Record<string, unknown>[]];
 
   const cluesGiven = clueRows.length;
@@ -105,11 +105,15 @@ export async function recalcUserStats(sql: ReturnType<typeof neon>, userId: stri
   const avgScore = cluesSolved > 0
     ? solveRows.reduce((s: number, r: Record<string, unknown>) => s + (Number(r.score) || 0), 0) / cluesSolved : 0;
 
-  // Captain rating: based on user's ranked clues
-  const rankedClueIds = clueRows
-    .filter((c: Record<string, unknown>) => c.ranked !== false)
-    .map((c: Record<string, unknown>) => c.id as string);
+  // Ranked captain stats: avg words excluding 0-clues, % zeros
+  const rankedClues = clueRows.filter((c: Record<string, unknown>) => c.ranked !== false);
+  const rankedClueIds = rankedClues.map((c: Record<string, unknown>) => c.id as string);
   const rankedCluesGiven = rankedClueIds.length;
+  const rankedNonZeroClues = rankedClues.filter((c: Record<string, unknown>) => Number(c.number) > 0);
+  const rankedAvgWords = rankedNonZeroClues.length > 0
+    ? rankedNonZeroClues.reduce((s: number, c: Record<string, unknown>) => s + (Number(c.number) || 0), 0) / rankedNonZeroClues.length : 0;
+  const rankedZeroPct = rankedCluesGiven > 0
+    ? (rankedCluesGiven - rankedNonZeroClues.length) / rankedCluesGiven : 0;
   let captainRating = 0;
   if (rankedCluesGiven > 0) {
     const ratedClues = await sql`SELECT id, clue_rating FROM clues WHERE id = ANY(${rankedClueIds}) AND clue_rating > 0`;
@@ -120,13 +124,17 @@ export async function recalcUserStats(sql: ReturnType<typeof neon>, userId: stri
   // Scout rating: based on user's solves of ranked clues by OTHER users
   let scoutRating = 0;
   let rankedCluesSolved = 0;
+  let rankedAvgPicked = 0;
+  let rankedBlackPct = 0;
   if (cluesSolved > 0) {
     const solvedClueIds = [...new Set(solveRows.map((r: Record<string, unknown>) => r.clue_id as string))];
-    const solvedClueRows = await sql`SELECT id, clue_rating_base, ranked, user_id FROM clues WHERE id = ANY(${solvedClueIds})`;
+    const solvedClueRows = await sql`SELECT id, clue_rating_base, ranked, user_id, null_indices FROM clues WHERE id = ANY(${solvedClueIds})`;
     const rankedOtherClueMap = new Map<string, number>();
+    const nullIndicesMap = new Map<string, number[]>();
     for (const c of solvedClueRows) {
       if (c.ranked !== false && (c.user_id as string) !== userId) {
         rankedOtherClueMap.set(c.id as string, Number(c.clue_rating_base) || 0);
+        nullIndicesMap.set(c.id as string, (c.null_indices as number[]) || []);
       }
     }
     const rankedOtherSolves = solveRows.filter((r: Record<string, unknown>) => rankedOtherClueMap.has(r.clue_id as string));
@@ -136,6 +144,19 @@ export async function recalcUserStats(sql: ReturnType<typeof neon>, userId: stri
         computeSolveRating(Number(r.score) || 0, rankedOtherClueMap.get(r.clue_id as string) || 0)
       );
       scoutRating = computeScoutRating(solveRatings);
+      // Ranked avg words picked
+      rankedAvgPicked = rankedOtherSolves.reduce((s: number, r: Record<string, unknown>) =>
+        s + ((r.guessed_indices as number[])?.length || 0), 0) / rankedCluesSolved;
+      // Ranked % black: solves where guessed_indices includes an assassin (null_indices)
+      let blackCount = 0;
+      for (const r of rankedOtherSolves) {
+        const guessed = (r.guessed_indices as number[]) || [];
+        const nulls = nullIndicesMap.get(r.clue_id as string) || [];
+        if (nulls.length > 0 && guessed.some((idx: number) => nulls.includes(idx))) {
+          blackCount++;
+        }
+      }
+      rankedBlackPct = blackCount / rankedCluesSolved;
     }
   }
 
@@ -150,6 +171,10 @@ export async function recalcUserStats(sql: ReturnType<typeof neon>, userId: stri
     avg_score_on_clues = ${Math.round(avgScoreOnClues * 10) / 10},
     clues_solved = ${cluesSolved},
     avg_words_picked = ${Math.round(avgWordsPicked * 10) / 10},
-    avg_score = ${Math.round(avgScore * 10) / 10}
+    avg_score = ${Math.round(avgScore * 10) / 10},
+    ranked_avg_words = ${Math.round(rankedAvgWords * 10) / 10},
+    ranked_zero_pct = ${Math.round(rankedZeroPct * 1000) / 10},
+    ranked_avg_picked = ${Math.round(rankedAvgPicked * 10) / 10},
+    ranked_black_pct = ${Math.round(rankedBlackPct * 1000) / 10}
     WHERE id = ${userId}`;
 }

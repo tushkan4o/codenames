@@ -52,10 +52,12 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
 
   const [spymasterRows, guesserRows, overallRows, clueStatsRows] = await Promise.all([
     sql`SELECT id as user_id, display_name, captain_rating, ranked_clues_given as clues_given,
-      avg_words_per_clue as avg_words, avg_score_on_clues as avg_score
+      avg_words_per_clue as avg_words, avg_score_on_clues as avg_score,
+      ranked_avg_words, ranked_zero_pct
       FROM users WHERE clues_given > 0 ORDER BY captain_rating DESC`,
     sql`SELECT id as user_id, display_name, scout_rating, ranked_clues_solved as clues_solved,
-      avg_words_picked as avg_picked, avg_score
+      avg_words_picked as avg_picked, avg_score,
+      ranked_avg_picked, ranked_black_pct
       FROM users WHERE clues_solved > 0 ORDER BY scout_rating DESC`,
     sql`SELECT id as user_id, display_name, captain_rating, scout_rating, overall_rating as rating,
       ranked_clues_given, ranked_clues_solved
@@ -70,6 +72,8 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
     avgWordsPerClue: Number(s.avg_words) || 0,
     avgScoreOnClues: Number(s.avg_score) || 0,
     captainRating: Number(s.captain_rating) || 0,
+    rankedAvgWords: Number(s.ranked_avg_words) || 0,
+    rankedZeroPct: Number(s.ranked_zero_pct) || 0,
   }));
 
   const guessers = guesserRows.map((g: Record<string, unknown>) => ({
@@ -79,6 +83,8 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: R
     avgWordsPicked: Number(g.avg_picked) || 0,
     avgScore: Number(g.avg_score) || 0,
     scoutRating: Number(g.scout_rating) || 0,
+    rankedAvgPicked: Number(g.ranked_avg_picked) || 0,
+    rankedBlackPct: Number(g.ranked_black_pct) || 0,
   }));
 
   const overall = overallRows.map((o: Record<string, unknown>) => ({

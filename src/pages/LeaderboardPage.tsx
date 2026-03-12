@@ -24,6 +24,8 @@ interface SpymasterEntry {
   avgWordsPerClue: number;
   avgScoreOnClues: number;
   captainRating: number;
+  rankedAvgWords: number;
+  rankedZeroPct: number;
 }
 
 interface GuesserEntry {
@@ -33,6 +35,8 @@ interface GuesserEntry {
   avgWordsPicked: number;
   avgScore: number;
   scoutRating: number;
+  rankedAvgPicked: number;
+  rankedBlackPct: number;
 }
 
 interface ClueStatEntry {
@@ -90,9 +94,9 @@ export default function LeaderboardPage() {
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>('all');
   const [unfinishedModal, setUnfinishedModal] = useState<{ savedClueId: string; targetClueId: string } | null>(null);
 
-  const [spySort, setSpySort] = useState<'captainRating' | 'cluesGiven' | 'avgWordsPerClue' | null>('captainRating');
+  const [spySort, setSpySort] = useState<'captainRating' | 'cluesGiven' | 'rankedAvgWords' | 'rankedZeroPct' | null>('captainRating');
   const [spyDir, setSpyDir] = useState<SortDir>('desc');
-  const [guesserSort, setGuesserSort] = useState<'scoutRating' | 'cluesSolved' | 'avgWordsPicked' | null>('scoutRating');
+  const [guesserSort, setGuesserSort] = useState<'scoutRating' | 'cluesSolved' | 'rankedAvgPicked' | 'rankedBlackPct' | null>('scoutRating');
   const [guesserDir, setGuesserDir] = useState<SortDir>('desc');
   const [overallSort, setOverallSort] = useState<'rating' | 'rankedCluesGiven' | 'rankedCluesSolved' | null>('rating');
   const [overallDir, setOverallDir] = useState<SortDir>('desc');
@@ -324,11 +328,12 @@ export default function LeaderboardPage() {
           ) : (
             <>
               <div className="overflow-y-hidden" style={{ scrollbarGutter: 'stable' }}>
-                <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 py-1 items-center">
+                <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_5rem_4.5rem_5.5rem] gap-x-1 pl-2 py-1 items-center">
                   <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                   <span className={thAccordion}>{t.leaderboard.player}</span>
                   <span className={`${thAccordion} text-center`} onClick={() => toggleSpySort('cluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="cluesGiven" activeField={spySort} dir={spyDir} /></span>
-                  <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleSpySort('avgWordsPerClue')}>{t.leaderboard.avgWordsPerClue}<SortArrow field="avgWordsPerClue" activeField={spySort} dir={spyDir} /></span>
+                  <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleSpySort('rankedAvgWords')}>{t.leaderboard.avgWordsPerClue}<SortArrow field="rankedAvgWords" activeField={spySort} dir={spyDir} /></span>
+                  <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleSpySort('rankedZeroPct')}>{t.leaderboard.zeroPct}<SortArrow field="rankedZeroPct" activeField={spySort} dir={spyDir} /></span>
                   <span className={`${thAccordion} text-center`} onClick={() => toggleSpySort('captainRating')}>{t.leaderboard.overallRating}<SortArrow field="captainRating" activeField={spySort} dir={spyDir} /></span>
                 </div>
               </div>
@@ -340,11 +345,12 @@ export default function LeaderboardPage() {
                       onClick={() => openProfile(s.userId)}
                       className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
                     >
-                      <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 items-center">
+                      <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_5rem_4.5rem_5.5rem] gap-x-1 items-center">
                         <span className="text-gray-500 text-sm text-center">{s.cluesGiven >= 3 ? (i + 1) : '—'}</span>
                         <span className="font-semibold text-sm text-white truncate">{s.displayName}</span>
                         <span className="text-sm text-gray-400 text-center">{s.cluesGiven}</span>
-                        <span className="text-sm text-gray-400 text-center hidden sm:block">{s.avgWordsPerClue.toFixed(1)}</span>
+                        <span className="text-sm text-gray-400 text-center hidden sm:block">{s.rankedAvgWords > 0 ? s.rankedAvgWords.toFixed(1) : '—'}</span>
+                        <span className="text-sm text-gray-400 text-center hidden sm:block">{s.rankedZeroPct > 0 ? `${s.rankedZeroPct.toFixed(0)}%` : '—'}</span>
                         <span className={`text-sm font-bold text-center ${s.cluesGiven >= 3 ? 'text-amber-400' : 'text-gray-500'}`}>
                           {s.cluesGiven >= 3 ? (s.captainRating || '—') : s.captainRating ? `${s.captainRating}?` : '—'}
                         </span>
@@ -363,11 +369,12 @@ export default function LeaderboardPage() {
           ) : (
             <>
               <div className="overflow-y-hidden" style={{ scrollbarGutter: 'stable' }}>
-                <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 py-1 items-center">
+                <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_5rem_4.5rem_5.5rem] gap-x-1 pl-2 py-1 items-center">
                   <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                   <span className={thAccordion}>{t.leaderboard.player}</span>
                   <span className={`${thAccordion} text-center`} onClick={() => toggleGuesserSort('cluesSolved')}>{t.leaderboard.cluesSolved}<SortArrow field="cluesSolved" activeField={guesserSort} dir={guesserDir} /></span>
-                  <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleGuesserSort('avgWordsPicked')}>{t.leaderboard.avgWordsPicked}<SortArrow field="avgWordsPicked" activeField={guesserSort} dir={guesserDir} /></span>
+                  <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleGuesserSort('rankedAvgPicked')}>{t.leaderboard.avgWordsPicked}<SortArrow field="rankedAvgPicked" activeField={guesserSort} dir={guesserDir} /></span>
+                  <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleGuesserSort('rankedBlackPct')}>{t.leaderboard.blackPct}<SortArrow field="rankedBlackPct" activeField={guesserSort} dir={guesserDir} /></span>
                   <span className={`${thAccordion} text-center`} onClick={() => toggleGuesserSort('scoutRating')}>{t.leaderboard.overallRating}<SortArrow field="scoutRating" activeField={guesserSort} dir={guesserDir} /></span>
                 </div>
               </div>
@@ -379,11 +386,12 @@ export default function LeaderboardPage() {
                       onClick={() => openProfile(g.userId)}
                       className="bg-gray-800/60 border border-gray-700/30 rounded-lg pl-2 pr-0 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
                     >
-                      <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 items-center">
+                      <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_5rem_4.5rem_5.5rem] gap-x-1 items-center">
                         <span className="text-gray-500 text-sm text-center">{g.cluesSolved >= 3 ? (i + 1) : '—'}</span>
                         <span className="font-semibold text-sm text-white truncate">{g.displayName}</span>
                         <span className="text-sm text-gray-400 text-center">{g.cluesSolved}</span>
-                        <span className="text-sm text-gray-400 text-center hidden sm:block">{g.avgWordsPicked.toFixed(1)}</span>
+                        <span className="text-sm text-gray-400 text-center hidden sm:block">{g.rankedAvgPicked > 0 ? g.rankedAvgPicked.toFixed(1) : '—'}</span>
+                        <span className="text-sm text-gray-400 text-center hidden sm:block">{g.rankedBlackPct > 0 ? `${g.rankedBlackPct.toFixed(0)}%` : '—'}</span>
                         <span className={`text-sm font-bold text-center ${g.cluesSolved >= 3 ? 'text-amber-400' : 'text-gray-500'}`}>
                           {g.cluesSolved >= 3 ? g.scoutRating : g.scoutRating ? `${g.scoutRating}?` : '—'}
                         </span>

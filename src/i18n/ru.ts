@@ -174,6 +174,8 @@ export const ru = {
     avgScoreOnClues: 'Рейтинг',
     cluesSolved: 'Отгадано',
     avgWordsPicked: 'Ср. слов',
+    zeroPct: '% нулей',
+    blackPct: '% черных',
     avgScore: 'Рейтинг',
     overall: 'Общий',
     overallRating: 'Рейтинг',
