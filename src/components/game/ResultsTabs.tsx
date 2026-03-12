@@ -27,18 +27,20 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
   const topPad = 2 * cellSize; // top padding so max bar doesn't touch frame
   const chartH = h - topPad; // usable chart height
 
-  // Step path (offset by ox)
+  // Step path: start from -0.5 (half bin before 0), use y=h+1 for empty bins to hide line below bottom
+  const startX = ox - binW / 2; // -0.5 bin offset
   let stepLine = '', stepArea = '';
   for (let i = 0; i < numBins; i++) {
-    const x0 = ox + i * binW, x1 = ox + (i + 1) * binW;
-    const barH = (bins[i] / maxCount) * chartH;
-    const y = h - barH;
+    const x0 = startX + i * binW, x1 = startX + (i + 1) * binW;
+    const isEmpty = bins[i] === 0;
+    const barH = isEmpty ? 0 : (bins[i] / maxCount) * chartH;
+    const y = isEmpty ? h + 1 : h - barH; // push empty bins below visible area
     if (i === 0) { stepLine = `M${x0},${y}`; stepArea = `M${x0},${h} L${x0},${y}`; }
     else { stepLine += ` L${x0},${y}`; stepArea += ` L${x0},${y}`; }
     stepLine += ` L${x1},${y}`;
     stepArea += ` L${x1},${y}`;
   }
-  stepArea += ` L${ox + numBins * binW},${h} Z`;
+  stepArea += ` L${startX + numBins * binW},${h} Z`;
 
   const playerX = playerScore !== undefined && playerScore >= 0 && playerScore <= 10
     ? ox + (playerScore + 0.5) * binW : null;
