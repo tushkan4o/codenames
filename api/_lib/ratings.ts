@@ -12,12 +12,17 @@ export function percentile(arr: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
-/** Clue rating = P75(scores)*20 + avg(scores)*20 - reshuffles*10, rounded to integer */
-export function computeClueRating(scores: number[], reshuffleCount: number = 0): number {
+/** Clue rating base (without reshuffle penalty) = P75(scores)*20 + avg(scores)*20 */
+export function computeClueRatingBase(scores: number[]): number {
   if (scores.length === 0) return 0;
   const p75 = percentile(scores, 75);
   const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
-  return Math.round(p75 * 20 + avg * 20 - reshuffleCount * 10);
+  return Math.round(p75 * 20 + avg * 20);
+}
+
+/** Clue rating = base - reshuffles*10 (penalizes captain for reshuffles) */
+export function computeClueRating(scores: number[], reshuffleCount: number = 0): number {
+  return Math.round(computeClueRatingBase(scores) - reshuffleCount * 10);
 }
 
 /** Captain rating = avg(clue ratings of ranked clues), rounded to integer */
@@ -57,6 +62,7 @@ export async function recalcClueStats(sql: ReturnType<typeof neon>, clueId: stri
   ]) as [Record<string, unknown>[], Record<string, unknown>[], Record<string, unknown>[]];
   const scores = resultRows.map((r) => Number(r.score) || 0);
   const reshuffleCount = clueRow.length > 0 ? Number(clueRow[0].reshuffle_count) || 0 : 0;
+  const clueRatingBase = computeClueRatingBase(scores);
   const clueRating = computeClueRating(scores, reshuffleCount);
   const attempts = resultRows.length;
   const avgScore = attempts > 0 ? scores.reduce((s, v) => s + v, 0) / attempts : 0;
@@ -64,13 +70,14 @@ export async function recalcClueStats(sql: ReturnType<typeof neon>, clueId: stri
   const avgRating = ratingsCount > 0
     ? ratingRows.reduce((s: number, r) => s + (Number(r.rating) || 0), 0) / ratingsCount : 0;
   await sql`UPDATE clues SET
-    clue_rating = ${clueRating}, attempts = ${attempts},
+    clue_rating = ${clueRating}, clue_rating_base = ${clueRatingBase},
+    attempts = ${attempts},
     avg_score = ${Math.round(avgScore * 10) / 10},
     ratings_count = ${ratingsCount},
     avg_rating = ${Math.round(avgRating * 10) / 10}
     WHERE id = ${clueId}`;
-  // Recompute solve_rating for all results of this clue (120 + score*40 - clueRating)
-  await sql`UPDATE results SET solve_rating = (120 + COALESCE(score, 0) * 40 - ${clueRating})::int WHERE clue_id = ${clueId}`;
+  // Recompute solve_rating using base rating (without reshuffle penalty)
+  await sql`UPDATE results SET solve_rating = (120 + COALESCE(score, 0) * 40 - ${clueRatingBase})::int WHERE clue_id = ${clueId}`;
 }
 
 /** Recompute and store all stats + ratings for a single user */
@@ -115,11 +122,11 @@ export async function recalcUserStats(sql: ReturnType<typeof neon>, userId: stri
   let rankedCluesSolved = 0;
   if (cluesSolved > 0) {
     const solvedClueIds = [...new Set(solveRows.map((r: Record<string, unknown>) => r.clue_id as string))];
-    const solvedClueRows = await sql`SELECT id, clue_rating, ranked, user_id FROM clues WHERE id = ANY(${solvedClueIds})`;
+    const solvedClueRows = await sql`SELECT id, clue_rating_base, ranked, user_id FROM clues WHERE id = ANY(${solvedClueIds})`;
     const rankedOtherClueMap = new Map<string, number>();
     for (const c of solvedClueRows) {
       if (c.ranked !== false && (c.user_id as string) !== userId) {
-        rankedOtherClueMap.set(c.id as string, Number(c.clue_rating) || 0);
+        rankedOtherClueMap.set(c.id as string, Number(c.clue_rating_base) || 0);
       }
     }
     const rankedOtherSolves = solveRows.filter((r: Record<string, unknown>) => rankedOtherClueMap.has(r.clue_id as string));
