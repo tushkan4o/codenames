@@ -49,14 +49,14 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
   stepArea += ` L${lastXR},${h + 1} Z`;
 
   const playerX = playerScore !== undefined && playerScore >= 0 && playerScore <= 10
-    ? ox + (playerScore + 0.5) * binW : null;
+    ? ox + playerScore * binW : null;
 
   return (
     <div className="mt-2 mx-auto" style={{ maxWidth: 320 }}>
       {/* Player label above frame */}
       {playerScore !== undefined && (
         <div className="mb-0.5 text-[11px] font-bold text-yellow-400"
-          style={{ paddingLeft: playerScore === 0 ? 0 : `calc(${((playerScore + 0.5) / numBins) * 100}% - 24px)` }}>
+          style={{ paddingLeft: playerScore === 0 ? 0 : `calc(${(playerScore / numBins) * 100}% - 24px)` }}>
           ваш счёт
         </div>
       )}
