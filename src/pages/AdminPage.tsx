@@ -59,6 +59,11 @@ export default function AdminPage() {
   const [resultDir, setResultDir] = useState<SortDir>('desc');
   const [resultSearch, setResultSearch] = useState('');
 
+  // Display limits (show 100 rows at a time, client-side)
+  const [cluesLimit, setCluesLimit] = useState(100);
+  const [usersLimit, setUsersLimit] = useState(100);
+  const [feedbackLimit, setFeedbackLimit] = useState(100);
+
   const [resultModalClue, setResultModalClue] = useState<Clue | null>(null);
   const [resultModalResult, setResultModalResult] = useState<GuessResult | undefined>(undefined);
 
@@ -155,11 +160,13 @@ export default function AdminPage() {
   function toggleSort(field: SortField) {
     if (sortField === field) setSortDir((d) => d === 'desc' ? 'asc' : 'desc');
     else { setSortField(field); setSortDir('desc'); }
+    setCluesLimit(100);
   }
 
   function toggleUserSort(field: UserSortField) {
     if (userSort === field) setUserDir((d) => d === 'desc' ? 'asc' : 'desc');
     else { setUserSort(field); setUserDir('desc'); }
+    setUsersLimit(100);
   }
 
   function toggleResultSort(field: ResultSortField) {
@@ -352,12 +359,12 @@ export default function AdminPage() {
           </svg>
         </button>
 
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <span className="text-lg font-extrabold text-white">{t.admin.title}</span>
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <span className="text-base sm:text-lg font-extrabold text-white">{t.admin.title}</span>
           <button
             onClick={handleRecalcAll}
             disabled={recalcLoading}
-            className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-colors ${
+            className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg font-bold text-xs transition-colors ${
               recalcStatus === 'ok' ? 'bg-green-700 text-white' :
               recalcStatus === 'error' ? 'bg-board-red text-white' :
               recalcLoading ? 'bg-gray-700 text-gray-400' :
@@ -366,27 +373,29 @@ export default function AdminPage() {
           >
             {recalcLoading ? '...' : recalcStatus === 'ok' ? 'OK' : recalcStatus === 'error' ? 'ERR' : 'Recalc'}
           </button>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-3 mb-4">
           <button
             onClick={() => setAdminTab('clues')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${adminTab === 'clues' ? 'bg-board-red text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+            className={`px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${adminTab === 'clues' ? 'bg-board-red text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.admin.cluesTab} ({clues.length})
           </button>
           <button
             onClick={() => setAdminTab('results')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${adminTab === 'results' ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+            className={`px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${adminTab === 'results' ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.admin.resultsTab} ({resultsTotal || results.length})
           </button>
           <button
             onClick={() => setAdminTab('users')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${adminTab === 'users' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+            className={`px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${adminTab === 'users' ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.admin.usersTab} ({users.length})
           </button>
           <button
             onClick={() => setAdminTab('feedback')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${adminTab === 'feedback' ? 'bg-green-700 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+            className={`px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition-colors ${adminTab === 'feedback' ? 'bg-green-700 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
           >
             {t.admin.feedbackTab} ({feedbackItems.length})
           </button>
@@ -405,7 +414,7 @@ export default function AdminPage() {
             type="text"
             placeholder={t.admin.search}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setCluesLimit(100); }}
             className="w-full bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
           />
         </div>
@@ -428,14 +437,14 @@ export default function AdminPage() {
         </div>
 
         <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
-          {sorted.map((clue) => (
+          {sorted.slice(0, cluesLimit).map((clue) => (
             <div key={clue.id}>
               <div
                 onClick={() => handleViewClue(clue)}
                 className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
               >
-                <div className="grid grid-cols-2 md:grid-cols-[1.5fr_1fr_2rem_4.5rem_4rem_1fr_3rem_2rem_2rem] gap-2 items-center">
-                  <span className="font-bold text-white uppercase text-sm">
+                <div className="grid grid-cols-[1fr_auto_auto] md:grid-cols-[1.5fr_1fr_2rem_4.5rem_4rem_1fr_3rem_2rem_2rem] gap-x-2 items-center">
+                  <span className="font-bold text-white uppercase text-sm truncate">
                     {clue.word} <span className="text-amber-400 font-semibold">{clue.number}</span>
                     {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                     {clue.redCount != null && (
@@ -443,8 +452,9 @@ export default function AdminPage() {
                         {clue.redCount}/{clue.blueCount}/{clue.assassinCount}
                       </span>
                     )}
+                    <span className="md:hidden text-xs text-gray-500 font-normal normal-case ml-1">— {clue.displayName}</span>
                   </span>
-                  <span className="text-sm truncate">
+                  <span className="hidden md:block text-sm truncate">
                     <button
                       onClick={(e) => { e.stopPropagation(); openProfile(clue.userId); }}
                       className="text-board-blue hover:text-blue-300 transition-colors"
@@ -452,14 +462,14 @@ export default function AdminPage() {
                       {clue.displayName}
                     </button>
                   </span>
-                  <span className="text-sm text-center">{clue.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
-                  <span className="text-sm text-center text-gray-400">{clue.attempts || '—'}</span>
-                  <span className="text-sm text-center text-gray-400">{clue.avgScore > 0 ? clue.avgScore.toFixed(1) : '—'}</span>
-                  <span className="text-gray-400 text-sm text-center">
+                  <span className="hidden md:block text-sm text-center">{clue.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
+                  <span className="hidden md:block text-sm text-center text-gray-400">{clue.attempts || '—'}</span>
+                  <span className="hidden md:block text-sm text-center text-gray-400">{clue.avgScore > 0 ? clue.avgScore.toFixed(1) : '—'}</span>
+                  <span className="hidden md:block text-gray-400 text-sm text-center">
                     {formatDateTime(clue.createdAt)}
                   </span>
                   <span
-                    className={`text-sm font-semibold text-center ${
+                    className={`hidden md:block text-sm font-semibold text-center ${
                       clue.reportCount > 0 ? 'text-board-red' : 'text-gray-500'
                     }`}
                   >
@@ -489,6 +499,14 @@ export default function AdminPage() {
               </div>
             </div>
           ))}
+          {sorted.length > cluesLimit && (
+            <button
+              onClick={() => setCluesLimit((l) => l + 100)}
+              className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              Показать ещё ({sorted.length - cluesLimit})
+            </button>
+          )}
         </div>
         </div>)}
 
@@ -526,13 +544,14 @@ export default function AdminPage() {
                 onClick={() => handleViewResult(r)}
                 className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
               >
-                <div className="grid grid-cols-2 md:grid-cols-[1.5fr_1fr_4.5rem_2rem_1fr_2rem_2rem] gap-2 items-center">
-                  <span className="font-bold text-white uppercase text-sm">
+                <div className="grid grid-cols-[1fr_auto_auto] md:grid-cols-[1.5fr_1fr_4.5rem_2rem_1fr_2rem_2rem] gap-x-2 items-center">
+                  <span className="font-bold text-white uppercase text-sm truncate">
                     {r.clueWord || r.clueId.slice(0, 12)}
                     {r.clueNumber != null && <span className="ml-1 text-amber-400 font-semibold">{r.clueNumber}</span>}
                     {r.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
+                    <span className="md:hidden text-xs text-gray-500 font-normal normal-case ml-1">— {r.userId}</span>
                   </span>
-                  <span className="text-sm truncate">
+                  <span className="hidden md:block text-sm truncate">
                     <button
                       onClick={(e) => { e.stopPropagation(); openProfile(r.userId); }}
                       className="text-board-blue hover:text-blue-300 transition-colors"
@@ -540,12 +559,12 @@ export default function AdminPage() {
                       {r.userId}
                     </button>
                   </span>
-                  <span className="text-sm text-center font-bold text-white">
+                  <span className="hidden md:block text-sm text-center font-bold text-white">
                     {r.score}
                     <span className="text-gray-500 font-normal ml-0.5 text-xs">({r.correctCount}/{r.totalTargets})</span>
                   </span>
-                  <span className="text-sm text-center">{r.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
-                  <span className="text-gray-400 text-sm text-center">{formatDateTime(r.timestamp)}</span>
+                  <span className="hidden md:block text-sm text-center">{r.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
+                  <span className="hidden md:block text-gray-400 text-sm text-center">{formatDateTime(r.timestamp)}</span>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -586,7 +605,7 @@ export default function AdminPage() {
               type="text"
               placeholder="Поиск по имени..."
               value={userSearch}
-              onChange={(e) => setUserSearch(e.target.value)}
+              onChange={(e) => { setUserSearch(e.target.value); setUsersLimit(100); }}
               className="w-full bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
             />
           </div>
@@ -607,7 +626,7 @@ export default function AdminPage() {
           </div>
 
           <div className="space-y-1 overflow-y-auto flex-1 min-h-0">
-            {sortedUsers.map((u) => {
+            {sortedUsers.slice(0, usersLimit).map((u) => {
               const isExpanded = expandedUserId === u.id;
               return (
                 <div key={u.id}>
@@ -615,16 +634,17 @@ export default function AdminPage() {
                     onClick={() => setExpandedUserId(isExpanded ? null : u.id)}
                     className={`bg-gray-800/60 border rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                   >
-                    <div className="grid grid-cols-2 md:grid-cols-[1.5fr_4.5rem_4.5rem_4rem_1fr_1fr_2rem] gap-2 items-center">
+                    <div className="grid grid-cols-[1fr_auto] md:grid-cols-[1.5fr_4.5rem_4.5rem_4rem_1fr_1fr_2rem] gap-x-2 items-center">
                       <span className="text-sm truncate">
                         <span className="font-semibold text-white">{u.displayName}</span>
                         {u.isAdmin && <span className="ml-1 text-[0.6rem] text-board-blue font-bold">ADM</span>}
+                        <span className="md:hidden text-xs text-gray-500 font-normal ml-1">({u.cluesGiven}/{u.cluesSolved})</span>
                       </span>
-                      <span className="text-sm text-center text-gray-300">{u.cluesGiven}</span>
-                      <span className="text-sm text-center text-gray-300">{u.cluesSolved}</span>
-                      <span className="text-sm text-center text-gray-300">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</span>
-                      <span className="text-sm text-center text-gray-500">{formatDateTime(u.createdAt)}</span>
-                      <span className="text-sm text-center text-gray-400">{formatDateTime(u.lastActivity)}</span>
+                      <span className="hidden md:block text-sm text-center text-gray-300">{u.cluesGiven}</span>
+                      <span className="hidden md:block text-sm text-center text-gray-300">{u.cluesSolved}</span>
+                      <span className="hidden md:block text-sm text-center text-gray-300">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</span>
+                      <span className="hidden md:block text-sm text-center text-gray-500">{formatDateTime(u.createdAt)}</span>
+                      <span className="hidden md:block text-sm text-center text-gray-400">{formatDateTime(u.lastActivity)}</span>
                       {!u.isAdmin ? (
                         <button
                           onClick={(e) => { e.stopPropagation(); setExpandedUserId(u.id); setConfirmDeleteUserId(u.id); }}
@@ -723,6 +743,14 @@ export default function AdminPage() {
                 </div>
               );
             })}
+            {sortedUsers.length > usersLimit && (
+              <button
+                onClick={() => setUsersLimit((l) => l + 100)}
+                className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Показать ещё ({sortedUsers.length - usersLimit})
+              </button>
+            )}
           </div>
         </div>)}
 
@@ -735,7 +763,7 @@ export default function AdminPage() {
             {feedbackItems.length === 0 && (
               <p className="text-gray-500 text-sm">{t.admin.noFeedback}</p>
             )}
-            {feedbackItems.map((item) => (
+            {feedbackItems.slice(0, feedbackLimit).map((item) => (
               <div key={item.id} className="bg-gray-800/60 border border-gray-700/30 rounded-lg p-4">
                 <div className="flex justify-between text-xs text-gray-500 mb-2">
                   <span>
@@ -761,6 +789,14 @@ export default function AdminPage() {
                 )}
               </div>
             ))}
+            {feedbackItems.length > feedbackLimit && (
+              <button
+                onClick={() => setFeedbackLimit((l) => l + 100)}
+                className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Показать ещё ({feedbackItems.length - feedbackLimit})
+              </button>
+            )}
           </div>
         </div>)}
       </div>
