@@ -11,7 +11,7 @@ export default function ProfilePage() {
   const profileId = paramUserId || user?.id || '';
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-dvh flex flex-col overflow-hidden">
       <NavBar />
       <div className="max-w-2xl mx-auto px-4 pt-4 flex flex-col flex-1 min-h-0 w-full">
         <div className="flex items-center gap-2 mb-3">

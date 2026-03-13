@@ -340,7 +340,7 @@ export default function AdminPage() {
   const thClass = 'py-1 text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-white transition-colors select-none';
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-dvh flex flex-col overflow-hidden">
       <NavBar />
       <div className="max-w-5xl mx-auto px-4 pt-4 flex flex-col flex-1 min-h-0 w-full relative">
         <button

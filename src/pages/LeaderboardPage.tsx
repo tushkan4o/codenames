@@ -262,7 +262,7 @@ export default function LeaderboardPage() {
   const checkTitle = solvedFilter === 'all' ? 'Все подсказки (решённые и не решённые)' : solvedFilter === 'solved' ? 'Решённые' : 'Нерешённые';
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-dvh flex flex-col overflow-hidden">
       <NavBar />
       <div className="max-w-2xl mx-auto px-4 pt-4 flex flex-col flex-1 min-h-0 w-full relative overflow-x-hidden">
         <button
@@ -287,7 +287,7 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <>
-              <div className="overflow-y-hidden" style={{ scrollbarGutter: 'stable' }}>
+              <div className="overflow-y-hidden">
                 <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 py-1 items-center">
                   <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                   <span className={thAccordion}>{t.leaderboard.player}</span>
@@ -297,7 +297,7 @@ export default function LeaderboardPage() {
                   <span className={`${thAccordion} text-center`} onClick={() => toggleOverallSort('rating')}>{t.leaderboard.overallRating}<SortArrow field="rating" activeField={overallSort} dir={overallDir} /></span>
                 </div>
               </div>
-              <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+              <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="space-y-1">
                   {sortedOverall.map((o, i) => (
                     <div
@@ -328,7 +328,7 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <>
-              <div className="overflow-y-hidden" style={{ scrollbarGutter: 'stable' }}>
+              <div className="overflow-y-hidden">
                 <div className={`${ratingGrid} pl-2 py-1 items-center`}>
                   <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                   <span className={thAccordion}>{t.leaderboard.player}</span>
@@ -338,7 +338,7 @@ export default function LeaderboardPage() {
                   <span className={`${thAccordion} text-center`} onClick={() => toggleSpySort('captainRating')}>{t.leaderboard.overallRating}<SortArrow field="captainRating" activeField={spySort} dir={spyDir} /></span>
                 </div>
               </div>
-              <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+              <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="space-y-1">
                   {sortedSpymasters.map((s, i) => (
                     <div
@@ -369,7 +369,7 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <>
-              <div className="overflow-y-hidden" style={{ scrollbarGutter: 'stable' }}>
+              <div className="overflow-y-hidden">
                 <div className={`${ratingGrid} pl-2 py-1 items-center`}>
                   <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                   <span className={thAccordion}>{t.leaderboard.player}</span>
@@ -379,7 +379,7 @@ export default function LeaderboardPage() {
                   <span className={`${thAccordion} text-center`} onClick={() => toggleGuesserSort('scoutRating')}>{t.leaderboard.overallRating}<SortArrow field="scoutRating" activeField={guesserSort} dir={guesserDir} /></span>
                 </div>
               </div>
-              <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+              <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="space-y-1">
                   {sortedGuessers.map((g, i) => (
                     <div
@@ -410,7 +410,7 @@ export default function LeaderboardPage() {
             <p className="text-center text-gray-500">{t.leaderboard.noData}</p>
           ) : (
             <>
-              <div className="overflow-y-hidden" style={{ scrollbarGutter: 'stable' }}>
+              <div className="overflow-y-hidden">
                 <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_5rem_9rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
                   <span className={thAccordion} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></span>
                   <span className={`${thAccordion} text-left hidden sm:block`}>{t.leaderboard.author}</span>
@@ -420,7 +420,7 @@ export default function LeaderboardPage() {
                   <span className={`${thAccordion} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
                 </div>
               </div>
-              <div className="overflow-y-auto flex-1 min-h-0" style={{ scrollbarGutter: 'stable' }}>
+              <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="space-y-1">
               {sortedClues.map((c, i) => {
                 const isOwn = c.userId === user?.id;
