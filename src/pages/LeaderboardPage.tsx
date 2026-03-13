@@ -442,7 +442,7 @@ export default function LeaderboardPage() {
                         <span className="text-xs text-gray-500 text-center hidden sm:block">{c.createdAt > 0 ? formatDate(c.createdAt) : '—'}</span>
                         <span className="text-sm text-center">{c.attempts > 0
                           ? c.attempts >= 3
-                            ? <span className="text-gray-400">{c.clueRating}</span>
+                            ? <span className={c.ranked ? 'text-amber-400 font-bold' : 'text-gray-400'}>{c.clueRating}</span>
                             : <span className="text-gray-500">{c.clueRating}?</span>
                           : <span className="text-gray-400">—</span>}</span>
                         <span className="text-sm text-center">{c.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>

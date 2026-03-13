@@ -704,7 +704,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                         <span className="text-xs text-gray-500 text-center hidden sm:block">{clue.createdAt > 0 ? formatDate(clue.createdAt) : '—'}</span>
                         <span className="text-sm text-center">{cStats && cStats.attempts > 0
                           ? cStats.attempts >= 3
-                            ? <span className="text-gray-400">{cStats.clueRating}</span>
+                            ? <span className={clue.ranked !== false ? 'text-amber-400 font-bold' : 'text-gray-400'}>{cStats.clueRating}</span>
                             : <span className="text-gray-500">{cStats.clueRating}?</span>
                           : <span className="text-gray-400">—</span>}</span>
                         <span className="text-sm text-center">{clue.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
@@ -834,7 +834,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                         </span>}
                         <span className="text-sm text-center">{entry.result.solveRating
                           ? (cStats && cStats.attempts >= 3
-                            ? <span className="text-gray-400">{entry.result.solveRating}</span>
+                            ? <span className={entry.clue?.ranked !== false ? 'text-amber-400 font-bold' : 'text-gray-400'}>{entry.result.solveRating}</span>
                             : <span className="text-gray-500">{entry.result.solveRating}?</span>)
                           : <span className="text-gray-400">—</span>}</span>
                         <span className="text-sm text-center">{entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
