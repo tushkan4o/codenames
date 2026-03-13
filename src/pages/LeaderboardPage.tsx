@@ -156,10 +156,12 @@ export default function LeaderboardPage() {
   }
 
   function cycleRankedFilter() {
+    setClueLimit(50);
     setRankedFilter((f) => f === 'all' ? 'ranked' : f === 'ranked' ? 'casual' : 'all');
   }
 
   function cycleSolvedFilter() {
+    setClueLimit(50);
     setSolvedFilter((f) => f === 'all' ? 'solved' : f === 'solved' ? 'unsolved' : 'all');
   }
 
@@ -208,6 +210,7 @@ export default function LeaderboardPage() {
   }, [filteredClues, clueSort, clueDir]);
 
   function toggleSpySort(field: NonNullable<typeof spySort>) {
+    setSpyLimit(50);
     if (spySort === field) {
       if (spyDir === 'desc') setSpyDir('asc');
       else { setSpySort(null); setSpyDir('desc'); }
@@ -215,6 +218,7 @@ export default function LeaderboardPage() {
   }
 
   function toggleGuesserSort(field: NonNullable<typeof guesserSort>) {
+    setGuesserLimit(50);
     if (guesserSort === field) {
       if (guesserDir === 'desc') setGuesserDir('asc');
       else { setGuesserSort(null); setGuesserDir('desc'); }
@@ -222,6 +226,7 @@ export default function LeaderboardPage() {
   }
 
   function toggleOverallSort(field: NonNullable<typeof overallSort>) {
+    setOverallLimit(50);
     if (overallSort === field) {
       if (overallDir === 'desc') setOverallDir('asc');
       else { setOverallSort(null); setOverallDir('desc'); }
@@ -242,6 +247,7 @@ export default function LeaderboardPage() {
   }, [overall, overallSort, overallDir]);
 
   function toggleClueSort(field: NonNullable<typeof clueSort>) {
+    setClueLimit(50);
     if (clueSort === field) {
       if (clueDir === 'desc') setClueDir('asc');
       else { setClueSort(null); setClueDir('desc'); }
@@ -250,6 +256,11 @@ export default function LeaderboardPage() {
 
   const tabBtnClass = (active: boolean) =>
     `px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg font-bold text-[0.65rem] sm:text-sm transition-colors ${active ? 'bg-board-blue text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`;
+
+  const [overallLimit, setOverallLimit] = useState(50);
+  const [spyLimit, setSpyLimit] = useState(50);
+  const [guesserLimit, setGuesserLimit] = useState(50);
+  const [clueLimit, setClueLimit] = useState(50);
 
   const [expandedClueId, setExpandedClueId] = useState<string | null>(null);
 
@@ -299,7 +310,7 @@ export default function LeaderboardPage() {
               </div>
               <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="space-y-1">
-                  {sortedOverall.map((o, i) => (
+                  {sortedOverall.slice(0, overallLimit).map((o, i) => (
                     <div
                       key={o.userId}
                       onClick={() => openProfile(o.userId)}
@@ -317,6 +328,14 @@ export default function LeaderboardPage() {
                       </div>
                     </div>
                   ))}
+                  {sortedOverall.length > overallLimit && (
+                    <button
+                      onClick={() => setOverallLimit((l) => l + 50)}
+                      className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                    >
+                      Показать ещё ({sortedOverall.length - overallLimit})
+                    </button>
+                  )}
                 </div>
               </div>
             </>
@@ -340,7 +359,7 @@ export default function LeaderboardPage() {
               </div>
               <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="space-y-1">
-                  {sortedSpymasters.map((s, i) => (
+                  {sortedSpymasters.slice(0, spyLimit).map((s, i) => (
                     <div
                       key={s.userId}
                       onClick={() => openProfile(s.userId)}
@@ -358,6 +377,14 @@ export default function LeaderboardPage() {
                       </div>
                     </div>
                   ))}
+                  {sortedSpymasters.length > spyLimit && (
+                    <button
+                      onClick={() => setSpyLimit((l) => l + 50)}
+                      className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                    >
+                      Показать ещё ({sortedSpymasters.length - spyLimit})
+                    </button>
+                  )}
                 </div>
               </div>
             </>
@@ -381,7 +408,7 @@ export default function LeaderboardPage() {
               </div>
               <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="space-y-1">
-                  {sortedGuessers.map((g, i) => (
+                  {sortedGuessers.slice(0, guesserLimit).map((g, i) => (
                     <div
                       key={g.userId}
                       onClick={() => openProfile(g.userId)}
@@ -399,6 +426,14 @@ export default function LeaderboardPage() {
                       </div>
                     </div>
                   ))}
+                  {sortedGuessers.length > guesserLimit && (
+                    <button
+                      onClick={() => setGuesserLimit((l) => l + 50)}
+                      className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                    >
+                      Показать ещё ({sortedGuessers.length - guesserLimit})
+                    </button>
+                  )}
                 </div>
               </div>
             </>
@@ -422,7 +457,7 @@ export default function LeaderboardPage() {
               </div>
               <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="space-y-1">
-              {sortedClues.map((c, i) => {
+              {sortedClues.slice(0, clueLimit).map((c, i) => {
                 const isOwn = c.userId === user?.id;
                 const solved = mySolvedClueIds.has(c.id);
                 const isExpanded = expandedClueId === c.id;
@@ -511,6 +546,14 @@ export default function LeaderboardPage() {
                   </div>
                 );
               })}
+              {sortedClues.length > clueLimit && (
+                <button
+                  onClick={() => setClueLimit((l) => l + 50)}
+                  className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  Показать ещё ({sortedClues.length - clueLimit})
+                </button>
+              )}
               </div>
               </div>
             </>

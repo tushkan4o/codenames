@@ -21,6 +21,12 @@ function formatDateTime(ts: number): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function formatDateTimeShort(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function SortArrow({ field, activeField, dir }: { field: string; activeField: string; dir: SortDir }) {
   if (field !== activeField) return <span className="ml-0.5 invisible text-[0.5em]">{'\u25BC'}</span>;
   return <span className="ml-0.5 text-gray-400 text-[0.5em]">{dir === 'desc' ? '\u25BC' : '\u25B2'}</span>;
@@ -62,6 +68,7 @@ export default function AdminPage() {
   // Display limits (show 100 rows at a time, client-side)
   const [cluesLimit, setCluesLimit] = useState(100);
   const [usersLimit, setUsersLimit] = useState(100);
+  const [resultsLimit, setResultsLimit] = useState(100);
   const [feedbackLimit, setFeedbackLimit] = useState(100);
 
   const [resultModalClue, setResultModalClue] = useState<Clue | null>(null);
@@ -184,6 +191,7 @@ export default function AdminPage() {
 
   function handleResultSearchChange(value: string) {
     setResultSearch(value);
+    setResultsLimit(100);
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     searchTimerRef.current = setTimeout(() => {
       fetchResultsReset();
@@ -538,7 +546,7 @@ export default function AdminPage() {
           </div>
 
           <div ref={resultsContainerRef} onScroll={handleResultsScroll} className="space-y-1 overflow-y-auto flex-1 min-h-0">
-            {results.map((r, i) => (
+            {results.slice(0, resultsLimit).map((r, i) => (
               <div
                 key={`${r.clueId}-${r.userId}-${r.timestamp}-${i}`}
                 onClick={() => handleViewResult(r)}
@@ -584,10 +592,18 @@ export default function AdminPage() {
                 </div>
               </div>
             ))}
+            {results.length > resultsLimit && (
+              <button
+                onClick={() => setResultsLimit((l) => l + 100)}
+                className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Показать ещё ({results.length - resultsLimit})
+              </button>
+            )}
             {resultsLoading && (
               <div className="text-center py-3 text-gray-500 text-sm">Загрузка...</div>
             )}
-            {!resultsLoading && resultsHasMore && (
+            {!resultsLoading && resultsHasMore && results.length <= resultsLimit && (
               <button
                 onClick={() => fetchResults(false)}
                 className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
@@ -644,7 +660,7 @@ export default function AdminPage() {
                       <span className="hidden md:block text-sm text-center text-gray-300">{u.cluesSolved}</span>
                       <span className="hidden md:block text-sm text-center text-gray-300">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</span>
                       <span className="hidden md:block text-sm text-center text-gray-500">{formatDateTime(u.createdAt)}</span>
-                      <span className="hidden md:block text-sm text-center text-gray-400">{formatDateTime(u.lastActivity)}</span>
+                      <span className="hidden md:block text-sm text-center text-gray-400">{formatDateTimeShort(u.lastActivity)}</span>
                       {!u.isAdmin ? (
                         <button
                           onClick={(e) => { e.stopPropagation(); setExpandedUserId(u.id); setConfirmDeleteUserId(u.id); }}

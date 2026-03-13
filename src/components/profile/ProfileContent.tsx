@@ -75,6 +75,8 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [solvedSort, setSolvedSort] = useState<SolvedSortField | null>('date');
   const [solvedDir, setSolvedDir] = useState<SortDir>('desc');
 
+  const [givenLimit, setGivenLimit] = useState(50);
+  const [solvedLimit, setSolvedLimit] = useState(50);
   const [expandedGivenId, setExpandedGivenId] = useState<string | null>(null);
   const [expandedSolvedKey, setExpandedSolvedKey] = useState<string | null>(null);
 
@@ -378,10 +380,12 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   }
 
   function cycleRankedFilter() {
+    setGivenLimit(50); setSolvedLimit(50);
     setRankedFilter((f) => f === 'all' ? 'ranked' : f === 'ranked' ? 'casual' : 'all');
   }
 
   function cycleSolvedFilter() {
+    setGivenLimit(50); setSolvedLimit(50);
     setSolvedFilter((f) => f === 'all' ? 'solved' : f === 'solved' ? 'unsolved' : 'all');
   }
 
@@ -441,6 +445,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
 
 
   function toggleGivenSort(field: GivenSortField) {
+    setGivenLimit(50);
     if (givenSort === field) {
       if (givenDir === 'desc') setGivenDir('asc');
       else { setGivenSort(null); setGivenDir('desc'); }
@@ -448,6 +453,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   }
 
   function toggleSolvedSort(field: SolvedSortField) {
+    setSolvedLimit(50);
     if (solvedSort === field) {
       if (solvedDir === 'desc') setSolvedDir('asc');
       else { setSolvedSort(null); setSolvedDir('desc'); }
@@ -730,7 +736,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
               </div>
               <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="space-y-1">
-              {sortedGiven.map((clue) => {
+              {sortedGiven.slice(0, givenLimit).map((clue) => {
                 const isOwn = clue.userId === user?.id;
                 const solved = mySolvedClueIds.has(clue.id);
                 const cStats = clueStatsMap[clue.id];
@@ -834,6 +840,14 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   </div>
                 );
               })}
+              {sortedGiven.length > givenLimit && (
+                <button
+                  onClick={() => setGivenLimit((l) => l + 50)}
+                  className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  Показать ещё ({sortedGiven.length - givenLimit})
+                </button>
+              )}
               </div>
               </div>
             </>
@@ -858,7 +872,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
               </div>
               <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="space-y-1">
-              {sortedSolved.map((entry, i) => {
+              {sortedSolved.slice(0, solvedLimit).map((entry, i) => {
                 const solvedKey = `${entry.result.clueId}-${entry.result.timestamp}`;
                 const isExpanded = expandedSolvedKey === solvedKey;
                 const canView = canViewClue(entry.result.clueId, entry.clue?.userId);
@@ -958,6 +972,14 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   </div>
                 );
               })}
+              {sortedSolved.length > solvedLimit && (
+                <button
+                  onClick={() => setSolvedLimit((l) => l + 50)}
+                  className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  Показать ещё ({sortedSolved.length - solvedLimit})
+                </button>
+              )}
               </div>
               </div>
             </>
