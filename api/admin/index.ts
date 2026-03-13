@@ -470,6 +470,10 @@ async function handleInit(_req: VercelRequest, res: VercelResponse) {
     await sql`CREATE TABLE IF NOT EXISTS subscriptions (id SERIAL PRIMARY KEY, subscriber_id TEXT NOT NULL REFERENCES users(id), target_id TEXT NOT NULL REFERENCES users(id), created_at BIGINT NOT NULL, UNIQUE(subscriber_id, target_id))`;
     await sql`CREATE INDEX IF NOT EXISTS idx_subscriptions_target ON subscriptions(target_id)`;
     await sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS score_info TEXT`;
+    // Blocked users
+    await sql`CREATE TABLE IF NOT EXISTS blocked_users (id SERIAL PRIMARY KEY, blocker_id TEXT NOT NULL REFERENCES users(id), blocked_id TEXT NOT NULL REFERENCES users(id), created_at BIGINT NOT NULL, UNIQUE(blocker_id, blocked_id))`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_blocked_blocker ON blocked_users(blocker_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_blocked_blocked ON blocked_users(blocked_id)`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {
