@@ -166,9 +166,13 @@ async function handleRandom(req: VercelRequest, res: VercelResponse, sql: any) {
   const isRanked = ranked === 'false' ? false : true;
 
   try {
-    const solvedRows = await sql`SELECT clue_id FROM results WHERE user_id = ${userId as string}` as Record<string, unknown>[];
+    const [solvedRows, blockedRows] = await Promise.all([
+      sql`SELECT clue_id FROM results WHERE user_id = ${userId as string}`,
+      sql`SELECT blocked_id AS uid FROM blocked_users WHERE blocker_id = ${userId as string} UNION SELECT blocker_id AS uid FROM blocked_users WHERE blocked_id = ${userId as string}`,
+    ]) as [Record<string, unknown>[], Record<string, unknown>[]];
     const solvedIds = solvedRows.map((r: Record<string, unknown>) => r.clue_id as string);
     const solvedSet = new Set(solvedIds);
+    const blockedUserIds = new Set(blockedRows.map((r: Record<string, unknown>) => r.uid as string));
 
     if (countOnly === 'true') {
       let clueRows;
@@ -183,7 +187,7 @@ async function handleRandom(req: VercelRequest, res: VercelResponse, sql: any) {
       }
       const totalCount = clueRows.length;
       const availableCount = clueRows.filter((r: Record<string, unknown>) =>
-        r.user_id !== (userId as string) && !solvedSet.has(r.id as string)
+        r.user_id !== (userId as string) && !solvedSet.has(r.id as string) && !blockedUserIds.has(r.user_id as string)
       ).length;
       return res.json({ available: availableCount, total: totalCount });
     }
@@ -194,17 +198,19 @@ async function handleRandom(req: VercelRequest, res: VercelResponse, sql: any) {
     // Fetch all candidate IDs (lightweight query, no full rows)
     let idRows;
     if (wordPack && boardSize) {
-      idRows = await sql`SELECT id FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
+      idRows = await sql`SELECT id, user_id FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
     } else if (wordPack) {
-      idRows = await sql`SELECT id FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
+      idRows = await sql`SELECT id, user_id FROM clues WHERE user_id != ${userId as string} AND word_pack = ${wordPack as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
     } else if (boardSize) {
-      idRows = await sql`SELECT id FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
+      idRows = await sql`SELECT id, user_id FROM clues WHERE user_id != ${userId as string} AND board_size = ${boardSize as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
     } else {
-      idRows = await sql`SELECT id FROM clues WHERE user_id != ${userId as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
+      idRows = await sql`SELECT id, user_id FROM clues WHERE user_id != ${userId as string} AND (disabled IS NOT TRUE) AND ranked = ${isRanked}`;
     }
 
-    // Filter out excluded + solved, then shuffle deterministically per user
-    const candidates = idRows.map((r: Record<string, unknown>) => r.id as string).filter(id => !excludeSet.has(id));
+    // Filter out excluded, solved, and blocked users, then shuffle deterministically
+    const candidates = (idRows as Record<string, unknown>[])
+      .filter((r) => !excludeSet.has(r.id as string) && !blockedUserIds.has(r.user_id as string))
+      .map((r) => r.id as string);
     if (candidates.length === 0) return res.json(null);
 
     // Deterministic shuffle seeded by userId — each user gets a stable personal order
@@ -331,6 +337,11 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: any)
             correctCount: Number(resultRows[0].correct_count),
             totalTargets: Number(resultRows[0].total_targets),
           };
+        }
+        // Block check: if no existing result and user is blocked, deny access
+        if (!existingResult) {
+          const blockRows = await sql`SELECT id FROM blocked_users WHERE (blocker_id = ${queryUserId} AND blocked_id = ${row.user_id as string}) OR (blocker_id = ${row.user_id as string} AND blocked_id = ${queryUserId})`;
+          if (blockRows.length > 0) return res.json({ blocked: true });
         }
       }
     }
@@ -801,6 +812,10 @@ async function handleInit(res: VercelResponse, sql: any) {
     await sql`UPDATE notifications n SET message = (SELECT content FROM comments cm WHERE cm.clue_id = n.clue_id AND cm.user_id = n.actor_id ORDER BY cm.created_at DESC LIMIT 1) WHERE n.type IN ('new_comment', 'mention') AND n.message IS NULL AND n.clue_id IS NOT NULL`;
     // Backfill: populate score_info for old new_solve notifications from results table
     await sql`UPDATE notifications n SET score_info = (SELECT json_build_object('score', r.score, 'correctCount', r.correct_count, 'totalTargets', r.total_targets)::text FROM results r WHERE r.clue_id = n.clue_id AND r.user_id = n.actor_id LIMIT 1) WHERE n.type = 'new_solve' AND n.score_info IS NULL AND n.clue_id IS NOT NULL`;
+    // Blocked users
+    await sql`CREATE TABLE IF NOT EXISTS blocked_users (id SERIAL PRIMARY KEY, blocker_id TEXT NOT NULL REFERENCES users(id), blocked_id TEXT NOT NULL REFERENCES users(id), created_at BIGINT NOT NULL, UNIQUE(blocker_id, blocked_id))`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_blocked_blocker ON blocked_users(blocker_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_blocked_blocked ON blocked_users(blocked_id)`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

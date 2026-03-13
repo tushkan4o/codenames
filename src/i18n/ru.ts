@@ -225,6 +225,8 @@ export const ru = {
     toggleComments: 'Вкл/выкл комментарии',
     subscribe: 'Подписаться',
     unsubscribe: 'Отписаться',
+    block: 'Заблокировать',
+    unblock: 'Разблокировать',
   },
   rating: {
     rateClue: 'Оцените подсказку:',

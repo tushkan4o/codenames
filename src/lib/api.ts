@@ -340,6 +340,19 @@ export const api = {
     await del(`/api/social?route=subscriptions&subscriberId=${encodeURIComponent(subscriberId)}&targetId=${encodeURIComponent(targetId)}`);
   },
 
+  // Block/unblock
+  async checkBlocked(userId: string, targetId: string): Promise<{ blocked: boolean }> {
+    return get(`/api/social?route=blocks&userId=${encodeURIComponent(userId)}&targetId=${encodeURIComponent(targetId)}`);
+  },
+
+  async blockUser(blockerId: string, blockedId: string): Promise<void> {
+    await post('/api/social?route=blocks', { blockerId, blockedId });
+  },
+
+  async unblockUser(blockerId: string, blockedId: string): Promise<void> {
+    await del(`/api/social?route=blocks&blockerId=${encodeURIComponent(blockerId)}&blockedId=${encodeURIComponent(blockedId)}`);
+  },
+
   // Player search (for mentions)
   async searchPlayers(query: string): Promise<{ id: string; displayName: string }[]> {
     return get(`/api/leaderboard?route=stats&search=${encodeURIComponent(query)}`);

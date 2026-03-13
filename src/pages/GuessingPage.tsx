@@ -101,6 +101,13 @@ export default function GuessingPage() {
       setConflictingGuess(null);
       setLoading(true);
       const found = await api.getClueById(clueId, false, user?.id);
+      // Block check: server returns { blocked: true } if user is blocked
+      if (found && (found as any).blocked) {
+        setClue(null);
+        setLoading(false);
+        setShowNoClues(true);
+        return;
+      }
       setClue(found);
       // Track this clue in session for deterministic cycle
       if (found) setSeenClueIds(prev => prev.includes(clueId) ? prev : [...prev, clueId]);

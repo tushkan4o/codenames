@@ -101,6 +101,10 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [subscribed, setSubscribed] = useState(false);
   const [subLoading, setSubLoading] = useState(false);
 
+  // Block state
+  const [blocked, setBlocked] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+
   // Load profile data only when profileId changes (not on user/settings updates)
   useEffect(() => {
     if (!profileId) return;
@@ -116,6 +120,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     setConfirmDeleteSolved(null);
     setProfileComments([]);
     setSubscribed(false);
+    setBlocked(false);
 
     api.getUserStats(profileId).then(setStats);
     api.getProfileComments(profileId).then((data) => {
@@ -148,10 +153,11 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     });
   }, [profileId]);
 
-  // Check subscription status for other profiles
+  // Check subscription and block status for other profiles
   useEffect(() => {
     if (user && !isOwnProfile && profileId) {
       api.checkSubscription(user.id, profileId).then(({ subscribed }) => setSubscribed(subscribed)).catch(() => {});
+      api.checkBlocked(user.id, profileId).then(({ blocked }) => setBlocked(blocked)).catch(() => {});
     }
   }, [user, profileId, isOwnProfile]);
 
@@ -312,6 +318,20 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       setSubscribed(!subscribed);
     } catch (err) { console.error(err); }
     finally { setSubLoading(false); }
+  }
+
+  async function handleToggleBlock() {
+    if (!user || isOwnProfile || blockLoading) return;
+    setBlockLoading(true);
+    try {
+      if (blocked) {
+        await api.unblockUser(user.id, profileId);
+      } else {
+        await api.blockUser(user.id, profileId);
+      }
+      setBlocked(!blocked);
+    } catch (err) { console.error(err); }
+    finally { setBlockLoading(false); }
   }
 
   async function handleShowNameHistory() {
@@ -501,7 +521,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   >
                     {stats?.displayName || profileId}
                   </h1>
-                  {!isOwnProfile && user && (
+                  {!isOwnProfile && user && (<>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleToggleSubscription(); }}
                       disabled={subLoading}
@@ -513,7 +533,18 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                       </svg>
                     </button>
-                  )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleToggleBlock(); }}
+                      disabled={blockLoading}
+                      className={`p-1.5 rounded-lg transition-all shrink-0 ${blocked ? 'text-board-red bg-board-red/15' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700/50'}`}
+                      title={blocked ? t.profile.unblock : t.profile.block}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                      </svg>
+                    </button>
+                  </>)}
                 </div>
                 {/* Name history popover (other profiles) */}
                 {showNameHistory && !isOwnProfile && (

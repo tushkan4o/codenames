@@ -17,6 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'profile-comments': return handleProfileComments(req, res, sql);
     case 'profile': return handleProfile(req, res, sql);
     case 'nameHistory': return handleNameHistory(req, res, sql);
+    case 'blocks': return handleBlocks(req, res, sql);
     default: return res.status(400).json({ error: 'Unknown route' });
   }
 }
@@ -378,4 +379,38 @@ async function handleNameHistory(req: VercelRequest, res: VercelResponse, sql: a
     oldName: r.old_name as string,
     changedAt: Number(r.changed_at),
   })));
+}
+
+// ==================== BLOCKS ====================
+
+async function handleBlocks(req: VercelRequest, res: VercelResponse, sql: any) {
+  if (req.method === 'GET') {
+    const { userId, targetId } = req.query;
+    if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
+    if (targetId && typeof targetId === 'string') {
+      // Check if either direction is blocked
+      const rows = await sql`SELECT id FROM blocked_users WHERE (blocker_id = ${userId} AND blocked_id = ${targetId}) OR (blocker_id = ${targetId} AND blocked_id = ${userId})` as Record<string, unknown>[];
+      return res.json({ blocked: rows.length > 0 });
+    }
+    // List users blocked by this user
+    const rows = await sql`SELECT b.blocked_id, u.display_name FROM blocked_users b LEFT JOIN users u ON b.blocked_id = u.id WHERE b.blocker_id = ${userId} ORDER BY b.created_at DESC`;
+    return res.json(rows.map((r: Record<string, unknown>) => ({ blockedId: r.blocked_id, displayName: (r.display_name as string) || r.blocked_id })));
+  }
+
+  if (req.method === 'POST') {
+    const { blockerId, blockedId } = req.body;
+    if (!blockerId || !blockedId) return res.status(400).json({ error: 'blockerId and blockedId required' });
+    if (blockerId === blockedId) return res.status(400).json({ error: 'Cannot block yourself' });
+    await sql`INSERT INTO blocked_users (blocker_id, blocked_id, created_at) VALUES (${blockerId}, ${blockedId}, ${Date.now()}) ON CONFLICT (blocker_id, blocked_id) DO NOTHING`;
+    return res.json({ ok: true });
+  }
+
+  if (req.method === 'DELETE') {
+    const { blockerId, blockedId } = req.query;
+    if (!blockerId || !blockedId) return res.status(400).json({ error: 'blockerId and blockedId required' });
+    await sql`DELETE FROM blocked_users WHERE blocker_id = ${blockerId as string} AND blocked_id = ${blockedId as string}`;
+    return res.json({ ok: true });
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
 }
