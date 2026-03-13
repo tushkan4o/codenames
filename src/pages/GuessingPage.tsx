@@ -67,6 +67,7 @@ export default function GuessingPage() {
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState(0);
   const [showNoClues, setShowNoClues] = useState(false);
+  const [showBlocked, setShowBlocked] = useState(false);
   // Track seen clue IDs in session for deterministic cycle (no repeats until all seen)
   const [seenClueIds, setSeenClueIds] = useState<string[]>([]);
   const [revealDelays, setRevealDelays] = useState<Record<number, number>>({});
@@ -99,13 +100,14 @@ export default function GuessingPage() {
       setViewingAttemptPicks(null);
       setPickPercents({});
       setConflictingGuess(null);
+      setShowBlocked(false);
       setLoading(true);
       const found = await api.getClueById(clueId, false, user?.id);
       // Block check: server returns { blocked: true } if user is blocked
       if (found && (found as any).blocked) {
         setClue(null);
         setLoading(false);
-        setShowNoClues(true);
+        setShowBlocked(true);
         return;
       }
       setClue(found);
@@ -680,6 +682,21 @@ export default function GuessingPage() {
                 {t.admin.confirm}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showBlocked && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-board-bg/90 animate-fade-in" onClick={() => setShowBlocked(false)}>
+          <div className="bg-gray-800 rounded-xl p-8 border border-gray-700 text-center max-w-sm mx-4 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowBlocked(false)} className="absolute top-2 right-2 text-gray-500 hover:text-white text-xl leading-none transition-colors">&times;</button>
+            <p className="text-white text-lg font-bold mb-2">{t.profile.blockedClue}</p>
+            <button
+              onClick={() => navigate('/')}
+              className="mt-4 px-6 py-3 rounded-lg bg-board-blue hover:brightness-110 text-white font-bold transition-colors"
+            >
+              {t.results.backHome}
+            </button>
           </div>
         </div>
       )}

@@ -388,9 +388,11 @@ async function handleBlocks(req: VercelRequest, res: VercelResponse, sql: any) {
     const { userId, targetId } = req.query;
     if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
     if (targetId && typeof targetId === 'string') {
-      // Check if either direction is blocked
-      const rows = await sql`SELECT id FROM blocked_users WHERE (blocker_id = ${userId} AND blocked_id = ${targetId}) OR (blocker_id = ${targetId} AND blocked_id = ${userId})` as Record<string, unknown>[];
-      return res.json({ blocked: rows.length > 0 });
+      // Check block direction
+      const rows = await sql`SELECT blocker_id FROM blocked_users WHERE (blocker_id = ${userId} AND blocked_id = ${targetId}) OR (blocker_id = ${targetId} AND blocked_id = ${userId})` as Record<string, unknown>[];
+      const blockedByMe = rows.some((r: Record<string, unknown>) => r.blocker_id === userId);
+      const blockedByThem = rows.some((r: Record<string, unknown>) => r.blocker_id === targetId);
+      return res.json({ blocked: rows.length > 0, blockedByMe, blockedByThem });
     }
     // List users blocked by this user
     const rows = await sql`SELECT b.blocked_id, u.display_name FROM blocked_users b LEFT JOIN users u ON b.blocked_id = u.id WHERE b.blocker_id = ${userId} ORDER BY b.created_at DESC`;

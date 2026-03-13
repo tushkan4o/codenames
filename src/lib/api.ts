@@ -341,7 +341,7 @@ export const api = {
   },
 
   // Block/unblock
-  async checkBlocked(userId: string, targetId: string): Promise<{ blocked: boolean }> {
+  async checkBlocked(userId: string, targetId: string): Promise<{ blocked: boolean; blockedByMe: boolean; blockedByThem: boolean }> {
     return get(`/api/social?route=blocks&userId=${encodeURIComponent(userId)}&targetId=${encodeURIComponent(targetId)}`);
   },
 

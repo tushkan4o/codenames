@@ -102,7 +102,8 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [subLoading, setSubLoading] = useState(false);
 
   // Block state
-  const [blocked, setBlocked] = useState(false);
+  const [blockedByMe, setBlockedByMe] = useState(false);
+  const [blockedByThem, setBlockedByThem] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
 
   // Load profile data only when profileId changes (not on user/settings updates)
@@ -120,7 +121,8 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
     setConfirmDeleteSolved(null);
     setProfileComments([]);
     setSubscribed(false);
-    setBlocked(false);
+    setBlockedByMe(false);
+    setBlockedByThem(false);
 
     api.getUserStats(profileId).then(setStats);
     api.getProfileComments(profileId).then((data) => {
@@ -157,7 +159,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   useEffect(() => {
     if (user && !isOwnProfile && profileId) {
       api.checkSubscription(user.id, profileId).then(({ subscribed }) => setSubscribed(subscribed)).catch(() => {});
-      api.checkBlocked(user.id, profileId).then(({ blocked }) => setBlocked(blocked)).catch(() => {});
+      api.checkBlocked(user.id, profileId).then((res) => { setBlockedByMe(res.blockedByMe); setBlockedByThem(res.blockedByThem); }).catch(() => {});
     }
   }, [user, profileId, isOwnProfile]);
 
@@ -321,15 +323,16 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   }
 
   async function handleToggleBlock() {
-    if (!user || isOwnProfile || blockLoading) return;
+    if (!user || isOwnProfile || blockLoading || blockedByThem) return;
     setBlockLoading(true);
     try {
-      if (blocked) {
+      if (blockedByMe) {
         await api.unblockUser(user.id, profileId);
+        setBlockedByMe(false);
       } else {
         await api.blockUser(user.id, profileId);
+        setBlockedByMe(true);
       }
-      setBlocked(!blocked);
     } catch (err) { console.error(err); }
     finally { setBlockLoading(false); }
   }
@@ -533,17 +536,29 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                       </svg>
                     </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleToggleBlock(); }}
-                      disabled={blockLoading}
-                      className={`p-1.5 rounded-lg transition-all shrink-0 ${blocked ? 'text-board-red bg-board-red/15' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700/50'}`}
-                      title={blocked ? t.profile.unblock : t.profile.block}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-                      </svg>
-                    </button>
+                    {blockedByThem && !blockedByMe ? (
+                      <span
+                        className="p-1.5 rounded-lg text-board-red/60 shrink-0 cursor-default"
+                        title={t.profile.blockedByThem}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                        </svg>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleToggleBlock(); }}
+                        disabled={blockLoading}
+                        className={`p-1.5 rounded-lg transition-all shrink-0 ${blockedByMe ? 'text-board-red bg-board-red/15' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700/50'}`}
+                        title={blockedByMe ? t.profile.unblock : t.profile.block}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                        </svg>
+                      </button>
+                    )}
                   </>)}
                 </div>
                 {/* Name history popover (other profiles) */}
@@ -777,7 +792,9 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                               >
                                 {t.profile.viewBoard}
                               </button>
-                            ) : clue.disabled ? null : clue.ranked !== false && !canPlayRanked(user) ? (
+                            ) : clue.disabled ? null : (blockedByMe || blockedByThem) ? (
+                              <span className="text-gray-500 text-xs italic">{t.profile.blockedClue}</span>
+                            ) : clue.ranked !== false && !canPlayRanked(user) ? (
                               <span className="text-gray-500 text-xs italic">{buildRankedLockMessage(user)}</span>
                             ) : (
                               <button

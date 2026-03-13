@@ -227,6 +227,8 @@ export const ru = {
     unsubscribe: 'Отписаться',
     block: 'Заблокировать',
     unblock: 'Разблокировать',
+    blockedByThem: 'Этот пользователь вас заблокировал',
+    blockedClue: 'Недоступно',
   },
   rating: {
     rateClue: 'Оцените подсказку:',
