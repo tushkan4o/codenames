@@ -114,7 +114,7 @@ export async function recalcUserStats(sql: any, userId: string): Promise<void> {
     ? (rankedCluesGiven - rankedNonZeroClues.length) / rankedCluesGiven : 0;
   let captainRating = 0;
   if (rankedCluesGiven > 0) {
-    const ratedClues = await sql`SELECT id, clue_rating FROM clues WHERE id = ANY(${rankedClueIds}) AND clue_rating > 0`;
+    const ratedClues = await sql`SELECT id, clue_rating FROM clues WHERE id = ANY(${rankedClueIds}) AND attempts >= 3`;
     const clueRatings = ratedClues.map((c: Record<string, unknown>) => Number(c.clue_rating) || 0);
     captainRating = computeCaptainRating(clueRatings);
   }
@@ -126,11 +126,11 @@ export async function recalcUserStats(sql: any, userId: string): Promise<void> {
   let rankedBlackPct = 0;
   if (cluesSolved > 0) {
     const solvedClueIds = [...new Set(solveRows.map((r: Record<string, unknown>) => r.clue_id as string))];
-    const solvedClueRows = await sql`SELECT id, clue_rating_base, ranked, user_id, null_indices FROM clues WHERE id = ANY(${solvedClueIds})`;
+    const solvedClueRows = await sql`SELECT id, clue_rating_base, ranked, user_id, null_indices, attempts FROM clues WHERE id = ANY(${solvedClueIds})`;
     const rankedOtherClueMap = new Map<string, number>();
     const nullIndicesMap = new Map<string, number[]>();
     for (const c of solvedClueRows) {
-      if (c.ranked !== false && (c.user_id as string) !== userId) {
+      if (c.ranked !== false && (c.user_id as string) !== userId && Number(c.attempts) >= 3) {
         rankedOtherClueMap.set(c.id as string, Number(c.clue_rating_base) || 0);
         nullIndicesMap.set(c.id as string, (c.null_indices as number[]) || []);
       }

@@ -702,7 +702,11 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                         </span>
                         <span className="text-xs text-gray-500 text-center hidden sm:block">{clue.createdAt > 0 ? formatDate(clue.createdAt) : '—'}</span>
-                        <span className="text-sm text-gray-400 text-center">{cStats && cStats.attempts > 0 ? cStats.clueRating : '—'}</span>
+                        <span className="text-sm text-center">{cStats && cStats.attempts > 0
+                          ? cStats.attempts >= 3
+                            ? <span className="text-gray-400">{cStats.clueRating}</span>
+                            : <span className="text-gray-500">{cStats.clueRating}?</span>
+                          : <span className="text-gray-400">—</span>}</span>
                         <span className="text-sm text-center">{clue.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
                           {isOwnProfile ? (
@@ -828,7 +832,11 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           {entry.result.score ?? 0}
                           <span className="text-gray-500 font-normal ml-0.5 text-xs">({entry.result.correctCount}/{entry.result.totalTargets})</span>
                         </span>}
-                        <span className="text-sm text-gray-400 text-center">{entry.result.solveRating ? entry.result.solveRating : '—'}</span>
+                        <span className="text-sm text-center">{entry.result.solveRating
+                          ? (cStats && cStats.attempts >= 3
+                            ? <span className="text-gray-400">{entry.result.solveRating}</span>
+                            : <span className="text-gray-500">{entry.result.solveRating}?</span>)
+                          : <span className="text-gray-400">—</span>}</span>
                         <span className="text-sm text-center">{entry.clue?.ranked !== false ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                         <span className="text-sm text-center">
                           {canView ? (
