@@ -21,7 +21,7 @@ interface ClueStatsPanelProps {
 function formatDate(ts: number): string {
   const d = new Date(ts);
   const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export function pluralAttempts(n: number): string {
@@ -93,7 +93,7 @@ export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptP
 
       {/* Creation date */}
       {stats.createdAt ? (
-        <div className="text-gray-500 text-xs mb-3">
+        <div className="text-gray-500 text-xs mb-3 font-mono">
           {formatDate(stats.createdAt)}
         </div>
       ) : null}
@@ -164,7 +164,7 @@ export default function ClueStatsPanel({ clueId, spymasterUserId, onShowAttemptP
                           {detail.displayName || detail.userId}
                         </td>
                         <td className="py-1.5 px-2 text-center text-white font-semibold">{detail.score}</td>
-                        <td className="py-1.5 pl-2 text-center text-gray-500">{formatDate(detail.timestamp)}</td>
+                        <td className="py-1.5 pl-2 text-center text-gray-500 font-mono">{formatDate(detail.timestamp)}</td>
                         {onDeleteAttempt && (
                           <td className="py-1.5 text-center">
                             <button

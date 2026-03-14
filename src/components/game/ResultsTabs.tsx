@@ -94,7 +94,7 @@ function ScoreHistogram({ scores, playerScore }: { scores: number[]; playerScore
 function formatDate(ts: number): string {
   const d = new Date(ts);
   const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 const panelClass = 'bg-gray-800/60 px-4 py-3';
@@ -128,6 +128,7 @@ export default function ResultsTabs({
   const { user } = useAuth();
   const { openProfile } = useProfileModal();
   const [activeTab, setActiveTab] = useState<ResultTab>(demoMode ? 'score' : 'info');
+  const [commentsCount, setCommentsCount] = useState<number | null>(null);
 
   // Stats data (shared between info and solutions)
   const [stats, setStats] = useState<{
@@ -156,7 +157,7 @@ export default function ResultsTabs({
   const tabs: { key: ResultTab; label: string }[] = [
     { key: 'info', label: t.results.tabInfo },
     ...(hasScore ? [{ key: 'score' as ResultTab, label: t.results.tabScore }] : []),
-    { key: 'comments', label: t.results.tabComments },
+    { key: 'comments', label: commentsCount != null && commentsCount > 0 ? `${t.results.tabComments} (${commentsCount})` : t.results.tabComments },
   ];
 
   const sortedDetails = stats?.details ? [...stats.details].sort((a, b) => {
@@ -206,7 +207,7 @@ export default function ResultsTabs({
               <button onClick={() => openProfile(clueUserId)} className="text-board-blue hover:text-blue-300 font-semibold transition-colors">{spymasterUserId}</button>
             )}
             {stats?.createdAt ? (
-              <span className="text-gray-500 text-xs">{formatDate(stats.createdAt)}</span>
+              <span className="text-gray-500 text-xs font-mono">{formatDate(stats.createdAt)}</span>
             ) : null}
           </div>
           {stats && stats.attempts > 0 ? (
@@ -257,7 +258,7 @@ export default function ResultsTabs({
                 >
                   <span className="text-gray-300 truncate">{detail.displayName || detail.userId}</span>
                   <span className="text-white font-semibold text-center">{detail.score}</span>
-                  <span className="text-gray-600 text-center">{formatDate(detail.timestamp)}</span>
+                  <span className="text-gray-600 text-center font-mono">{formatDate(detail.timestamp)}</span>
                 </div>
               ))}
             </div>
@@ -291,7 +292,7 @@ export default function ResultsTabs({
           {demoMode ? (
             <p className="text-sm text-gray-500 text-center py-4">{t.results.noComments}</p>
           ) : (
-            <CommentThread clueId={clueId} />
+            <CommentThread clueId={clueId} onCommentsCount={setCommentsCount} />
           )}
         </div>
       )}

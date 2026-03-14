@@ -64,6 +64,10 @@ export interface AdminClue {
   redCount: number | null;
   blueCount: number | null;
   assassinCount: number | null;
+  ratingsCount: number;
+  avgRating: number;
+  clueRating: number;
+  commentsCount: number;
 }
 
 export interface RatingStats {

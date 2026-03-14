@@ -89,7 +89,7 @@ export default function BoardReviewModal({ clue, result, onClose }: BoardReviewM
           <span className="ml-3 text-2xl font-extrabold text-white">{clue.number}</span>
           <p className="text-xs text-gray-400 mt-1">
             {clue.boardSize} &middot;{' '}
-            {new Date(clue.createdAt).toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            <span className="font-mono">{(() => { const d = new Date(clue.createdAt); const pad = (n: number) => n.toString().padStart(2, '0'); return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; })()}</span>
           </p>
         </div>
 

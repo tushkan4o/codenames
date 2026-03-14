@@ -66,7 +66,7 @@ interface OverallEntry {
 function formatDate(ts: number): string {
   const d = new Date(ts);
   const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function SortArrow({ field, activeField, dir }: { field: string; activeField: string | null; dir: SortDir }) {
@@ -474,7 +474,7 @@ export default function LeaderboardPage() {
                           {c.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                         </span>
                         <button onClick={(e) => { e.stopPropagation(); openProfile(c.userId); }} className="text-sm text-board-blue hover:text-blue-300 transition-colors font-semibold truncate text-left hidden sm:block">{c.displayName}</button>
-                        <span className="text-xs text-gray-500 text-center hidden sm:block">{c.createdAt > 0 ? formatDate(c.createdAt) : '—'}</span>
+                        <span className="text-xs text-gray-500 text-center hidden sm:block font-mono">{c.createdAt > 0 ? formatDate(c.createdAt) : '—'}</span>
                         <span className="text-sm text-center">{c.attempts > 0
                           ? c.attempts >= 3
                             ? <span className={c.ranked ? 'text-amber-400 font-bold' : 'text-gray-400'}>{c.clueRating}</span>
@@ -495,7 +495,7 @@ export default function LeaderboardPage() {
                     {isExpanded && (
                       <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                          {c.createdAt > 0 && <span className="text-gray-500">{formatDate(c.createdAt)}</span>}
+                          {c.createdAt > 0 && <span className="text-gray-500 font-mono">{formatDate(c.createdAt)}</span>}
                           {!c.createdAt && <span />}
                           <span>
                             <span className="text-gray-400">{t.leaderboard.author}: </span>

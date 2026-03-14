@@ -42,7 +42,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const rows = await sql`
         SELECT c.*,
           COALESCE(rp.report_count, 0) as report_count,
-          u.display_name
+          u.display_name,
+          (SELECT COUNT(*)::int FROM comments WHERE clue_id = c.id) as comments_count
         FROM clues c
         LEFT JOIN (
           SELECT clue_id, COUNT(*)::int as report_count
@@ -72,6 +73,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         redCount: row.red_count != null ? Number(row.red_count) : null,
         blueCount: row.blue_count != null ? Number(row.blue_count) : null,
         assassinCount: row.assassin_count != null ? Number(row.assassin_count) : null,
+        ratingsCount: Number(row.ratings_count) || 0,
+        avgRating: Number(row.avg_rating) || 0,
+        clueRating: Number(row.clue_rating) || 0,
+        commentsCount: Number(row.comments_count) || 0,
       })));
     }
 

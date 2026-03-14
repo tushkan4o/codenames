@@ -18,12 +18,6 @@ type SortDir = 'asc' | 'desc';
 function formatDateTime(ts: number): string {
   const d = new Date(ts);
   const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function formatDateTimeShort(ts: number): string {
-  const d = new Date(ts);
-  const pad = (n: number) => n.toString().padStart(2, '0');
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
@@ -48,6 +42,7 @@ export default function AdminPage() {
   const [confirmDeleteResult, setConfirmDeleteResult] = useState<{ clueId: string; userId: string; timestamp: number } | null>(null);
   const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null);
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [expandedClueId, setExpandedClueId] = useState<string | null>(null);
   const [renamingUserId, setRenamingUserId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [renameError, setRenameError] = useState('');
@@ -445,11 +440,13 @@ export default function AdminPage() {
         </div>
 
         <div className="space-y-1 overflow-y-auto flex-1 min-h-0 [scrollbar-gutter:stable]">
-          {sorted.slice(0, cluesLimit).map((clue) => (
+          {sorted.slice(0, cluesLimit).map((clue) => {
+            const isClueExpanded = expandedClueId === clue.id;
+            return (
             <div key={clue.id}>
               <div
-                onClick={() => handleViewClue(clue)}
-                className="bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600"
+                onClick={() => setExpandedClueId(isClueExpanded ? null : clue.id)}
+                className={`bg-gray-800/60 border rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600 ${isClueExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
               >
                 <div className="grid grid-cols-[1fr_auto_auto] md:grid-cols-[1.5fr_1fr_2rem_4.5rem_4rem_1fr_3rem_2rem_2rem] gap-x-2 items-center">
                   <span className="font-bold text-white uppercase text-sm truncate">
@@ -473,7 +470,7 @@ export default function AdminPage() {
                   <span className="hidden md:block text-sm text-center">{clue.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
                   <span className="hidden md:block text-sm text-center text-gray-400">{clue.attempts || '—'}</span>
                   <span className="hidden md:block text-sm text-center text-gray-400">{clue.avgScore > 0 ? clue.avgScore.toFixed(1) : '—'}</span>
-                  <span className="hidden md:block text-gray-400 text-sm text-center">
+                  <span className="hidden md:block text-gray-400 text-sm text-center font-mono">
                     {formatDateTime(clue.createdAt)}
                   </span>
                   <span
@@ -505,8 +502,35 @@ export default function AdminPage() {
                   </button>
                 </div>
               </div>
+              {isClueExpanded && (
+                <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    {clue.createdAt > 0 && <span className="text-gray-500 font-mono">{formatDateTime(clue.createdAt)}</span>}
+                    {!clue.createdAt && <span />}
+                    <span>
+                      <span className="text-gray-400">{t.admin.clueAuthor}: </span>
+                      <button onClick={() => openProfile(clue.userId)} className="text-board-blue hover:text-blue-300 transition-colors font-semibold">{clue.displayName}</button>
+                    </span>
+                    <span><span className="text-gray-400">{t.admin.attempts}:</span> <span className="text-white font-semibold">{clue.attempts}</span></span>
+                    <span><span className="text-gray-400">{t.admin.avgScore}:</span> <span className="text-white font-semibold">{clue.attempts > 0 ? clue.avgScore.toFixed(1) : '—'}</span></span>
+                    <span><span className="text-gray-400">{t.results.ratingsCount}:</span> <span className="text-white font-semibold">{clue.ratingsCount}</span></span>
+                    <span><span className="text-gray-400">{t.admin.avgRating}:</span> <span className="text-white font-semibold">{clue.ratingsCount > 0 ? clue.avgRating.toFixed(1) : '—'}</span></span>
+                    <span><span className="text-gray-400">{t.results.tabComments}:</span> <span className="text-white font-semibold">{clue.commentsCount}</span></span>
+                    <span><span className="text-gray-400">{t.admin.reportsCount}:</span> <span className={`font-semibold ${clue.reportCount > 0 ? 'text-board-red' : 'text-white'}`}>{clue.reportCount}</span></span>
+                    <div className="col-span-2 flex items-center gap-2 justify-end mt-1">
+                      <button
+                        onClick={() => handleViewClue(clue)}
+                        className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
+                      >
+                        {t.profile.viewBoard}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          ))}
+            );
+          })}
           {sorted.length > cluesLimit && (
             <button
               onClick={() => setCluesLimit((l) => l + 100)}
@@ -572,7 +596,7 @@ export default function AdminPage() {
                     <span className="text-gray-500 font-normal ml-0.5 text-xs">({r.correctCount}/{r.totalTargets})</span>
                   </span>
                   <span className="hidden md:block text-sm text-center">{r.ranked ? <span className="text-amber-400">★</span> : <span className="text-gray-600">☆</span>}</span>
-                  <span className="hidden md:block text-gray-400 text-sm text-center">{formatDateTime(r.timestamp)}</span>
+                  <span className="hidden md:block text-gray-400 text-sm text-center font-mono">{formatDateTime(r.timestamp)}</span>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -650,7 +674,7 @@ export default function AdminPage() {
                     onClick={() => setExpandedUserId(isExpanded ? null : u.id)}
                     className={`bg-gray-800/60 border rounded-lg px-4 py-1.5 cursor-pointer transition-colors hover:border-gray-600 ${isExpanded ? 'border-gray-500' : 'border-gray-700/30'}`}
                   >
-                    <div className="grid grid-cols-[1fr_auto] md:grid-cols-[1.5fr_4.5rem_4.5rem_4rem_1fr_1fr_2rem] gap-x-2 items-center">
+                    <div className="grid grid-cols-[1fr_auto_auto] md:grid-cols-[1.5fr_4.5rem_4.5rem_4rem_1fr_1fr_2rem] gap-x-2 items-center">
                       <span className="text-sm truncate">
                         <span className="font-semibold text-white">{u.displayName}</span>
                         {u.isAdmin && <span className="ml-1 text-[0.6rem] text-board-blue font-bold">ADM</span>}
@@ -659,8 +683,8 @@ export default function AdminPage() {
                       <span className="hidden md:block text-sm text-center text-gray-300">{u.cluesGiven}</span>
                       <span className="hidden md:block text-sm text-center text-gray-300">{u.cluesSolved}</span>
                       <span className="hidden md:block text-sm text-center text-gray-300">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</span>
-                      <span className="hidden md:block text-sm text-center text-gray-500">{formatDateTime(u.createdAt)}</span>
-                      <span className="hidden md:block text-sm text-center text-gray-400">{formatDateTimeShort(u.lastActivity)}</span>
+                      <span className="hidden md:block text-sm text-center text-gray-500 font-mono">{formatDateTime(u.createdAt)}</span>
+                      <span className="text-xs text-gray-400 text-center font-mono">{formatDateTime(u.lastActivity)}</span>
                       {!u.isAdmin ? (
                         <button
                           onClick={(e) => { e.stopPropagation(); setExpandedUserId(u.id); setConfirmDeleteUserId(u.id); }}
@@ -675,8 +699,8 @@ export default function AdminPage() {
                   {isExpanded && (
                     <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3 space-y-3">
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                        <span><span className="text-gray-400">{t.admin.registered}:</span> <span className="text-white">{formatDateTime(u.createdAt)}</span></span>
-                        <span><span className="text-gray-400">{t.admin.lastActive}:</span> <span className="text-white">{formatDateTime(u.lastActivity)}</span></span>
+                        <span><span className="text-gray-400">{t.admin.registered}:</span> <span className="text-white font-mono">{formatDateTime(u.createdAt)}</span></span>
+                        <span><span className="text-gray-400">{t.admin.lastActive}:</span> <span className="text-white font-mono">{formatDateTime(u.lastActivity)}</span></span>
                         <button
                           onClick={() => openProfile(u.id)}
                           className="px-3 py-1 rounded-lg bg-board-blue hover:brightness-110 text-white text-sm font-semibold transition-colors"
@@ -791,7 +815,7 @@ export default function AdminPage() {
                       {item.displayName}
                     </button>
                   </span>
-                  <span>{formatDateTime(item.createdAt)}</span>
+                  <span className="font-mono">{formatDateTime(item.createdAt)}</span>
                 </div>
                 <p className="text-gray-200 text-sm whitespace-pre-wrap mb-2">{item.message}</p>
                 {item.screenshots && item.screenshots.length > 0 && (

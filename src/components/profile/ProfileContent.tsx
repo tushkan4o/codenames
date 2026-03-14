@@ -37,7 +37,7 @@ interface ClueStats {
 function formatDate(ts: number): string {
   const d = new Date(ts);
   const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function SortArrow({ field, activeField, dir }: { field: string; activeField: string | null; dir: SortDir }) {
@@ -582,7 +582,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                       {nameHistory && nameHistory.length > 0 && nameHistory.map((entry, i) => (
                         <div key={i} className="text-sm">
                           <span className="text-white">{entry.oldName}</span>
-                          <span className="text-gray-500 text-xs ml-2">{formatDate(entry.changedAt)}</span>
+                          <span className="text-gray-500 text-xs ml-2 font-mono">{formatDate(entry.changedAt)}</span>
                         </div>
                       ))}
                     </div>
@@ -753,7 +753,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           {clue.word} <span className="text-amber-400 font-semibold">{clue.number}</span>
                           {clue.disabled && <span className="ml-1 text-[0.6rem] text-board-red font-bold">OFF</span>}
                         </span>
-                        <span className="text-xs text-gray-500 text-center hidden sm:block">{clue.createdAt > 0 ? formatDate(clue.createdAt) : '—'}</span>
+                        <span className="text-xs text-gray-500 text-center hidden sm:block font-mono">{clue.createdAt > 0 ? formatDate(clue.createdAt) : '—'}</span>
                         <span className="text-sm text-center">{cStats && cStats.attempts > 0
                           ? cStats.attempts >= 3
                             ? <span className={clue.ranked !== false ? 'text-amber-400 font-bold' : 'text-gray-400'}>{cStats.clueRating}</span>
@@ -780,7 +780,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                     {isExpanded && (
                       <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                          {clue.createdAt > 0 && <span className="text-gray-500">{formatDate(clue.createdAt)}</span>}
+                          {clue.createdAt > 0 && <span className="text-gray-500 font-mono">{formatDate(clue.createdAt)}</span>}
                           {!clue.createdAt && <span />}
                           <span>
                             <span className="text-gray-400">{t.leaderboard.author}: </span>
@@ -889,7 +889,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                           <span className="ml-1 text-amber-400 font-semibold">{entry.clue?.number ?? entry.result.totalTargets}</span>
                           {entry.result.disabled && <span className="ml-1 text-[0.6rem] text-red-400 font-bold border border-red-400/40 rounded px-0.5">OFF</span>}
                         </span>
-                        <span className="text-xs text-gray-500 text-center hidden sm:block">{entry.result.timestamp > 0 ? formatDate(entry.result.timestamp) : '—'}</span>
+                        <span className="text-xs text-gray-500 text-center hidden sm:block font-mono">{entry.result.timestamp > 0 ? formatDate(entry.result.timestamp) : '—'}</span>
                         {isOwnProfile && <span className="text-sm font-bold text-white text-center hidden sm:block">
                           {entry.result.score ?? 0}
                           <span className="text-gray-500 font-normal ml-0.5 text-xs">({entry.result.correctCount}/{entry.result.totalTargets})</span>
@@ -912,7 +912,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                     {isExpanded && (
                       <div className="mt-1 mx-2 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-3">
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                          {entry.result.timestamp > 0 && <span className="text-gray-500">{formatDate(entry.result.timestamp)}</span>}
+                          {entry.result.timestamp > 0 && <span className="text-gray-500 font-mono">{formatDate(entry.result.timestamp)}</span>}
                           {!entry.result.timestamp && <span />}
                           {entry.clue ? (
                             <span>
@@ -1051,7 +1051,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                 {profileComments.map((c) => (
                   <div key={c.id} className="text-sm group">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 text-xs">{formatDate(c.createdAt)}</span>
+                      <span className="text-gray-500 text-xs font-mono">{formatDate(c.createdAt)}</span>
                       {user && !commentsDisabled && (
                         <button
                           onClick={() => { setCommentReplyTo({ id: c.id, displayName: c.displayName, content: c.content }); commentInputRef.current?.focus(); }}

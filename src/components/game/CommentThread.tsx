@@ -22,7 +22,7 @@ interface MentionSuggestion {
 function formatDate(ts: number): string {
   const d = new Date(ts);
   const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function renderContent(content: string, onMentionClick?: (name: string) => void) {
@@ -58,9 +58,10 @@ function renderContent(content: string, onMentionClick?: (name: string) => void)
 
 interface CommentThreadProps {
   clueId: string;
+  onCommentsCount?: (count: number) => void;
 }
 
-export default function CommentThread({ clueId }: CommentThreadProps) {
+export default function CommentThread({ clueId, onCommentsCount }: CommentThreadProps) {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -78,7 +79,10 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    api.getComments(clueId).then(setComments);
+    api.getComments(clueId).then((data) => {
+      setComments(data);
+      onCommentsCount?.(data.length);
+    });
   }, [clueId]);
 
   const checkMention = useCallback((value: string, cursorPos: number) => {
@@ -197,16 +201,20 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
     setSending(true);
     try {
       const result = await api.addComment(clueId, user.id, text.trim(), replyTo?.id);
-      setComments((prev) => [{
-        id: result.id,
-        userId: user.id,
-        displayName: user.displayName,
-        content: text.trim(),
-        createdAt: Date.now(),
-        replyToId: replyTo?.id ?? null,
-        replyToDisplayName: replyTo?.displayName ?? null,
-        replyToContent: replyTo?.content ?? null,
-      }, ...prev]);
+      setComments((prev) => {
+        const updated = [{
+          id: result.id,
+          userId: user.id,
+          displayName: user.displayName,
+          content: text.trim(),
+          createdAt: Date.now(),
+          replyToId: replyTo?.id ?? null,
+          replyToDisplayName: replyTo?.displayName ?? null,
+          replyToContent: replyTo?.content ?? null,
+        }, ...prev];
+        onCommentsCount?.(updated.length);
+        return updated;
+      });
       setText('');
       setReplyTo(null);
     } catch (err) {
@@ -220,7 +228,11 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
     if (!user) return;
     try {
       await api.deleteComment(commentId, user.id, user.isAdmin);
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setComments((prev) => {
+        const updated = prev.filter((c) => c.id !== commentId);
+        onCommentsCount?.(updated.length);
+        return updated;
+      });
     } catch (err) {
       console.error('Failed to delete comment:', err);
     }
@@ -285,7 +297,7 @@ export default function CommentThread({ clueId }: CommentThreadProps) {
           {comments.map((c) => (
             <div key={c.id} className="text-sm group">
               <div className="flex items-center gap-2">
-                <span className="text-gray-500 text-xs">{formatDate(c.createdAt)}</span>
+                <span className="text-gray-500 text-xs font-mono">{formatDate(c.createdAt)}</span>
                 {user && (
                   <button
                     onClick={() => handleReply(c)}
