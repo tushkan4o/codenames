@@ -299,7 +299,7 @@ export default function LeaderboardPage() {
           ) : (
             <>
               <div className="overflow-y-hidden">
-                <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 py-1 items-center">
+                <div className="grid grid-cols-[1.5rem_1fr_5.5rem_5.5rem] sm:grid-cols-[1.5rem_1fr_5.5rem_6.5rem_5.5rem] gap-x-1 pl-2 py-1 items-center border border-transparent">
                   <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                   <span className={thAccordion}>{t.leaderboard.player}</span>
                   <span className={`${thAccordion} text-center sm:hidden`}>{t.leaderboard.gamesPlayed}</span>
@@ -348,7 +348,7 @@ export default function LeaderboardPage() {
           ) : (
             <>
               <div className="overflow-y-hidden">
-                <div className={`${ratingGrid} pl-2 py-1 items-center`}>
+                <div className={`${ratingGrid} pl-2 py-1 items-center border border-transparent`}>
                   <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                   <span className={thAccordion}>{t.leaderboard.player}</span>
                   <span className={`${thAccordion} text-center`} onClick={() => toggleSpySort('cluesGiven')}>{t.leaderboard.cluesGiven}<SortArrow field="cluesGiven" activeField={spySort} dir={spyDir} /></span>
@@ -397,7 +397,7 @@ export default function LeaderboardPage() {
           ) : (
             <>
               <div className="overflow-y-hidden">
-                <div className={`${ratingGrid} pl-2 py-1 items-center`}>
+                <div className={`${ratingGrid} pl-2 py-1 items-center border border-transparent`}>
                   <span className={`${thAccordion} text-center`}>{t.leaderboard.rank}</span>
                   <span className={thAccordion}>{t.leaderboard.player}</span>
                   <span className={`${thAccordion} text-center`} onClick={() => toggleGuesserSort('cluesSolved')}>{t.leaderboard.cluesSolved}<SortArrow field="cluesSolved" activeField={guesserSort} dir={guesserDir} /></span>
@@ -446,7 +446,7 @@ export default function LeaderboardPage() {
           ) : (
             <>
               <div className="overflow-y-hidden">
-                <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_5rem_9rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center">
+                <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_5rem_9rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center border border-transparent">
                   <span className={thAccordion} onClick={() => toggleClueSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={clueSort} dir={clueDir} /></span>
                   <span className={`${thAccordion} text-left hidden sm:block`}>{t.leaderboard.author}</span>
                   <span className={`${thAccordion} text-center hidden sm:block`} onClick={() => toggleClueSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={clueSort} dir={clueDir} /></span>
