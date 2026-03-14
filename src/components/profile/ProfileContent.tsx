@@ -725,7 +725,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             <p className="text-center text-gray-500">{t.profile.noCluesGiven}</p>
           ) : (
             <>
-              <div className="overflow-y-hidden">
+              <div className="overflow-y-auto [scrollbar-gutter:stable]">
                 <div className="grid grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3.5rem_2rem_2rem] gap-x-2 px-4 py-1 items-center border border-transparent">
                   <span className={thClass} onClick={() => toggleGivenSort('number')}>{t.leaderboard.clueWord}<SortArrow field="number" activeField={givenSort} dir={givenDir} /></span>
                   <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleGivenSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={givenSort} dir={givenDir} /></span>
@@ -734,7 +734,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
                 </div>
               </div>
-              <div className="overflow-y-auto flex-1 min-h-0">
+              <div className="overflow-y-auto flex-1 min-h-0 [scrollbar-gutter:stable]">
                 <div className="space-y-1">
               {sortedGiven.slice(0, givenLimit).map((clue) => {
                 const isOwn = clue.userId === user?.id;
@@ -860,7 +860,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
             <p className="text-center text-gray-500">{t.profile.noCluesSolved}</p>
           ) : (
             <>
-              <div className="overflow-y-hidden">
+              <div className="overflow-y-auto [scrollbar-gutter:stable]">
                 <div className={`grid ${isOwnProfile ? 'grid-cols-[1fr_3rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3rem_3.5rem_2rem_2rem]' : 'grid-cols-[1fr_3.5rem_2rem_2rem] sm:grid-cols-[1fr_9rem_3.5rem_2rem_2rem]'} gap-x-2 px-4 py-1 items-center border border-transparent`}>
                   <span className={thClass} onClick={() => toggleSolvedSort('number')}>Решение<SortArrow field="number" activeField={solvedSort} dir={solvedDir} /></span>
                   <span className={`${thClass} text-center hidden sm:block`} onClick={() => toggleSolvedSort('date')}>{t.profile.sortDate}<SortArrow field="date" activeField={solvedSort} dir={solvedDir} /></span>
@@ -870,7 +870,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
                   <span className={`${thClass} text-center`} onClick={cycleSolvedFilter} title={checkTitle}>{checkIcon}</span>
                 </div>
               </div>
-              <div className="overflow-y-auto flex-1 min-h-0">
+              <div className="overflow-y-auto flex-1 min-h-0 [scrollbar-gutter:stable]">
                 <div className="space-y-1">
               {sortedSolved.slice(0, solvedLimit).map((entry, i) => {
                 const solvedKey = `${entry.result.clueId}-${entry.result.timestamp}`;
