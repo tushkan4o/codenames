@@ -684,7 +684,7 @@ export default function AdminPage() {
                       <span className="hidden md:block text-sm text-center text-gray-300">{u.cluesSolved}</span>
                       <span className="hidden md:block text-sm text-center text-gray-300">{u.avgScore > 0 ? u.avgScore.toFixed(1) : '—'}</span>
                       <span className="hidden md:block text-sm text-center text-gray-500 font-mono">{formatDateTime(u.createdAt)}</span>
-                      <span className="text-xs text-gray-400 text-center font-mono">{formatDateTime(u.lastActivity)}</span>
+                      <span className="text-sm text-gray-400 text-center font-mono">{formatDateTime(u.lastActivity)}</span>
                       {!u.isAdmin ? (
                         <button
                           onClick={(e) => { e.stopPropagation(); setExpandedUserId(u.id); setConfirmDeleteUserId(u.id); }}

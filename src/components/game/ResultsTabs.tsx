@@ -147,6 +147,7 @@ export default function ResultsTabs({
   useEffect(() => {
     if (!demoMode) {
       api.getClueStats(clueId).then(setStats);
+      api.getComments(clueId).then((data) => setCommentsCount(data.length));
     }
   }, [clueId, demoMode]);
 
