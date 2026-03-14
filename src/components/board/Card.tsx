@@ -128,7 +128,7 @@ export default function Card({
   return (
     <button
       className={`
-        card-reveal relative flex items-center justify-center overflow-hidden w-full
+        card-reveal relative flex items-center justify-center overflow-hidden w-full min-w-0
         h-[calc(3.2rem*var(--card-h-scale,1))] sm:h-[calc(3.8rem*var(--card-h-scale,1))] lg:h-[calc(5.6rem*var(--card-h-scale,1))] rounded-lg font-card font-bold uppercase tracking-wide select-none
         ${fontSizeMap[fontSize || 'md']} p-1 sm:p-2 ${borderClass}
         transition-all duration-300
