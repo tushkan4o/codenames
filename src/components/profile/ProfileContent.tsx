@@ -728,7 +728,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
               const idx = order.indexOf(wordPackFilter);
               setWordPackFilter(order[(idx + 1) % order.length]);
             }}
-            className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg font-bold text-[0.65rem] sm:text-xs bg-gray-800 text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+            className="w-[100px] sm:w-[120px] py-1.5 sm:py-2 rounded-lg font-bold text-[0.65rem] sm:text-xs border border-gray-500 hover:border-gray-300 bg-transparent text-gray-400 hover:text-white transition-colors whitespace-nowrap"
           >
             {wordPackFilter === 'all' ? 'Все' : WORD_PACK_LABELS[wordPackFilter]}
           </button>

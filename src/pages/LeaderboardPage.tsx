@@ -303,7 +303,7 @@ export default function LeaderboardPage() {
               const idx = order.indexOf(wordPackFilter);
               setWordPackFilter(order[(idx + 1) % order.length]);
             }}
-            className="px-2.5 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs font-bold text-gray-300 transition-colors whitespace-nowrap"
+            className="w-[120px] py-1 rounded-lg border border-gray-500 hover:border-gray-300 bg-transparent text-xs font-bold text-gray-300 hover:text-white transition-colors whitespace-nowrap"
           >
             {wordPackFilter === 'all' ? 'Все словари' : WORD_PACK_LABELS[wordPackFilter]}
           </button>
