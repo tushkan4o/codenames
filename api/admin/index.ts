@@ -270,12 +270,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'clueId required' });
       }
       const rows = await sql`
-        SELECT * FROM reports WHERE clue_id = ${clueId} ORDER BY created_at DESC
+        SELECT r.*, u.display_name FROM reports r LEFT JOIN users u ON r.user_id = u.id WHERE r.clue_id = ${clueId} ORDER BY r.created_at DESC
       `;
       return res.json(rows.map((row: Record<string, unknown>) => ({
         id: row.id,
         clueId: row.clue_id,
         userId: row.user_id,
+        displayName: (row.display_name as string) || (row.user_id as string),
         reason: row.reason,
         createdAt: Number(row.created_at),
       })));

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../i18n/useTranslation';
 import { useProfileModal } from '../context/ProfileModalContext';
 import { api } from '../lib/api';
-import type { AdminClue, AdminUser, AdminResult, AdminFeedback } from '../lib/api';
+import type { AdminClue, AdminUser, AdminResult, AdminFeedback, Report, RatingStats } from '../lib/api';
 import NavBar from '../components/layout/NavBar';
 import BoardReviewModal from '../components/game/BoardReviewModal';
 import type { Clue, GuessResult } from '../types/game';
@@ -77,6 +77,14 @@ export default function AdminPage() {
   const [recalcLoading, setRecalcLoading] = useState(false);
   const [recalcStatus, setRecalcStatus] = useState<string | null>(null);
 
+  // Clue accordion detail data (lazy-loaded on expand)
+  interface ClueDetail {
+    reports: Report[];
+    comments: { id: number; userId: string; displayName: string; content: string; createdAt: number }[];
+    ratings: RatingStats;
+  }
+  const [clueDetails, setClueDetails] = useState<Record<string, ClueDetail | 'loading'>>({});
+
   // Results pagination state
   const [resultsCursor, setResultsCursor] = useState<string | null>(null);
   const [resultsHasMore, setResultsHasMore] = useState(false);
@@ -97,6 +105,23 @@ export default function AdminPage() {
     if (user?.isAdmin && adminTab) loadTabData(adminTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminTab]);
+
+  // Fetch detail data when clue accordion expands
+  useEffect(() => {
+    if (!expandedClueId || !user?.isAdmin) return;
+    if (clueDetails[expandedClueId]) return; // already loaded or loading
+    setClueDetails((prev) => ({ ...prev, [expandedClueId]: 'loading' }));
+    const clueId = expandedClueId;
+    Promise.all([
+      api.adminGetReports(user.id, clueId),
+      api.adminGetRatings(user.id, clueId),
+      api.getComments(clueId),
+    ]).then(([reports, ratings, comments]) => {
+      setClueDetails((prev) => ({ ...prev, [clueId]: { reports, ratings, comments } }));
+    }).catch(() => {
+      setClueDetails((prev) => { const next = { ...prev }; delete next[clueId]; return next; });
+    });
+  }, [expandedClueId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function loadTabData(tab: AdminTab) {
     if (!user?.isAdmin || loadedTabs.has(tab)) return;
@@ -549,6 +574,57 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
+                  {/* Detail: reports, ratings, comments */}
+                  {(() => {
+                    const detail = clueDetails[clue.id];
+                    if (detail === 'loading') return <p className="text-gray-500 text-xs mt-2">Загрузка...</p>;
+                    if (!detail) return null;
+                    return (
+                      <div className="mt-3 space-y-3 border-t border-gray-700/30 pt-3">
+                        {detail.reports.length > 0 && (
+                          <div>
+                            <p className="text-xs font-bold text-board-red uppercase mb-1">Репорты ({detail.reports.length})</p>
+                            <div className="space-y-0.5">
+                              {detail.reports.map((r) => (
+                                <div key={r.id} className="flex gap-2 text-xs">
+                                  <span className="text-gray-500 font-mono shrink-0">{formatDateTime(r.createdAt)}</span>
+                                  <button onClick={() => openProfile(r.userId)} className="text-board-blue hover:text-blue-300 shrink-0">{r.displayName || r.userId}</button>
+                                  <span className="text-gray-300 truncate">{r.reason}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {detail.ratings.total > 0 && (
+                          <div>
+                            <p className="text-xs font-bold text-amber-400 uppercase mb-1">Оценки ({detail.ratings.total}, avg: {detail.ratings.avg})</p>
+                            <div className="space-y-0.5">
+                              {(detail.ratings.items || []).map((r, i) => (
+                                <div key={i} className="flex gap-2 text-xs">
+                                  <button onClick={() => openProfile(r.userId)} className="text-board-blue hover:text-blue-300 shrink-0">{r.displayName}</button>
+                                  <span className="text-amber-400 font-bold">{r.rating}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {detail.comments.length > 0 && (
+                          <div>
+                            <p className="text-xs font-bold text-gray-400 uppercase mb-1">Комментарии ({detail.comments.length})</p>
+                            <div className="space-y-0.5">
+                              {detail.comments.map((c) => (
+                                <div key={c.id} className="flex gap-2 text-xs">
+                                  <span className="text-gray-500 font-mono shrink-0">{formatDateTime(c.createdAt)}</span>
+                                  <button onClick={() => openProfile(c.userId)} className="text-board-blue hover:text-blue-300 shrink-0">{c.displayName}</button>
+                                  <span className="text-gray-300 truncate">{c.content.length > 100 ? c.content.slice(0, 100) + '…' : c.content}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

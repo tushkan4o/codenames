@@ -97,6 +97,7 @@ export interface Report {
   id: number;
   clueId: string;
   userId: string;
+  displayName?: string;
   reason: string;
   createdAt: number;
 }
