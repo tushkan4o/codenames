@@ -282,54 +282,56 @@ export default function SetupPage() {
         </div>
 
         {/* Board config + Word pack selector side by side */}
-        <div className="flex gap-6 mb-8 justify-center">
+        <div className="flex gap-6 mb-8 justify-center items-start">
           {/* Color Config */}
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase text-center mb-3">{t.setup.boardConfig}</p>
             <div className="flex items-center gap-3 justify-center">
-              <div className="flex items-center gap-2">
-                {COLOR_CONFIG.map(({ key, bg }) => {
-                  const count = counts[key];
-                  const isNeutral = key === 'neutral';
-                  const adjustable = !isNeutral && !colorLocked;
-                  return (
-                    <div key={key} className="flex flex-col items-center gap-0.5">
-                      {adjustable ? (
-                        <button
-                          onClick={() => adjust(key, 1)}
-                          disabled={!canAdjust(key, 1)}
-                          className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase text-center mb-3">{t.setup.boardConfig}</p>
+                <div className="flex items-center gap-2">
+                  {COLOR_CONFIG.map(({ key, bg }) => {
+                    const count = counts[key];
+                    const isNeutral = key === 'neutral';
+                    const adjustable = !isNeutral && !colorLocked;
+                    return (
+                      <div key={key} className="flex flex-col items-center gap-0.5">
+                        {adjustable ? (
+                          <button
+                            onClick={() => adjust(key, 1)}
+                            disabled={!canAdjust(key, 1)}
+                            className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
+                          >
+                            ▲
+                          </button>
+                        ) : (
+                          <span className="text-xs text-transparent leading-none select-none">▲</span>
+                        )}
+                        <div
+                          className={`w-10 h-10 sm:w-11 sm:h-11 rounded-md ${bg} flex items-center justify-center text-white font-bold text-lg`}
                         >
-                          ▲
-                        </button>
-                      ) : (
-                        <span className="text-xs text-transparent leading-none select-none">▲</span>
-                      )}
-                      <div
-                        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-md ${bg} flex items-center justify-center text-white font-bold text-lg`}
-                      >
-                        {showQuestionMarks ? '?' : count}
+                          {showQuestionMarks ? '?' : count}
+                        </div>
+                        {adjustable ? (
+                          <button
+                            onClick={() => adjust(key, -1)}
+                            disabled={!canAdjust(key, -1)}
+                            className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
+                          >
+                            ▼
+                          </button>
+                        ) : (
+                          <span className="text-xs text-transparent leading-none select-none">▼</span>
+                        )}
                       </div>
-                      {adjustable ? (
-                        <button
-                          onClick={() => adjust(key, -1)}
-                          disabled={!canAdjust(key, -1)}
-                          className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
-                        >
-                          ▼
-                        </button>
-                      ) : (
-                        <span className="text-xs text-transparent leading-none select-none">▼</span>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
 
               <button
                 onClick={resetConfig}
                 disabled={colorLocked}
-                className={`p-2 rounded-lg transition-colors ${colorLocked ? 'text-transparent cursor-default' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+                className={`p-2 rounded-lg transition-colors mt-4 ${colorLocked ? 'text-transparent cursor-default' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
                 title={t.setup.resetConfig}
               >
                 <ArrowUturnLeftIcon className="w-4 h-4" />
@@ -342,7 +344,7 @@ export default function SetupPage() {
             <p className="text-xs font-semibold text-gray-500 uppercase text-center mb-3">{t.setup.wordPack}</p>
             <button
               onClick={() => setWordPack(nextWordPack(wordPack))}
-              className="px-4 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm transition-colors whitespace-nowrap"
+              className="w-[120px] h-10 sm:h-11 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm transition-colors whitespace-nowrap"
             >
               {WORD_PACK_LABELS[wordPack]}
             </button>

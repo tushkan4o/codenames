@@ -52,7 +52,8 @@ export default function ClueGivingPage() {
     if (!user || fetchedRef.current) return;
     fetchedRef.current = true;
 
-    api.getActiveCaptainGame(user.id).then((raw) => {
+    const savedWordPack = localStorage.getItem('codenames_word_pack') || 'ru';
+    api.getActiveCaptainGame(user.id, savedWordPack).then((raw) => {
       const game = typeof raw === 'string' ? JSON.parse(raw) : raw;
       if (!game?.seed) {
         setLoadError(`Сервер не вернул seed: ${JSON.stringify(game)}`);
@@ -295,9 +296,10 @@ export default function ClueGivingPage() {
   async function handleGiveAnother() {
     if (!user) return;
     try {
-      const game = await api.getActiveCaptainGame(user.id);
+      const game = await api.getActiveCaptainGame(user.id, wordPack);
       setCurrentSeed(game.seed);
       setIsRanked(game.ranked !== false);
+      setWordPack(game.wordPack || 'ru');
       setReshuffleCount(game.reshuffleCount);
       setSelectedTargets([]);
       setSelectedNulls([]);
