@@ -110,6 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'migrate-ids': return handleMigrateIds(res, sql);
     case 'migrate-ratings': // legacy alias
     case 'recalc-all': return handleRecalcAll(res, sql);
+    case 'fix-overflows': return handleFixOverflows(res, sql);
     case 'debug': return res.json({ route, method: req.method, query: req.query, url: req.url });
     default: return res.status(400).json({ error: 'Unknown route' });
   }
@@ -750,6 +751,122 @@ async function handleMigrateIds(res: VercelResponse, sql: any) {
 }
 
 // ==================== MIGRATE RATINGS ====================
+
+async function handleFixOverflows(res: VercelResponse, sql: any) {
+  try {
+    // 1. Backup results table
+    await sql`CREATE TABLE IF NOT EXISTS results_backup_overflow AS SELECT * FROM results`;
+    const backupCount = await sql`SELECT COUNT(*)::int as cnt FROM results_backup_overflow`;
+
+    // 2. Get all results with their clue data (for board regeneration)
+    const rows = await sql`
+      SELECT r.clue_id, r.user_id, r.guessed_indices, r.score, r.timestamp,
+        c.board_seed, c.board_size, c.word_pack, c.target_indices,
+        c.red_count, c.blue_count, c.assassin_count
+      FROM results r JOIN clues c ON r.clue_id = c.id
+    ` as Record<string, unknown>[];
+
+    let fixed = 0;
+    let unchanged = 0;
+
+    for (const row of rows) {
+      const guessedIndices = row.guessed_indices as number[];
+      if (!guessedIndices || guessedIndices.length === 0) { unchanged++; continue; }
+
+      // Regenerate board colors from seed
+      const boardData = generateBoardData(
+        row.board_seed as string,
+        row.board_size as string,
+        row.red_count as number | null,
+        row.blue_count as number | null,
+        row.assassin_count as number | null,
+        row.word_pack as string,
+      );
+      const colors = boardData.colors;
+      const targetIndices = row.target_indices as number[];
+
+      // Walk through picks, enforce auto-end rules
+      let nonRedCount = 0;
+      let hitAssassin = false;
+      let truncateAt = guessedIndices.length;
+
+      for (let i = 0; i < guessedIndices.length; i++) {
+        const color = colors[guessedIndices[i]];
+        if (color === 'assassin') {
+          hitAssassin = true;
+          truncateAt = i + 1; // include the assassin pick
+          break;
+        }
+        if (color === 'blue' || color === 'neutral') {
+          nonRedCount++;
+          if (nonRedCount >= 3) {
+            truncateAt = i + 1; // include the 3rd non-red pick
+            break;
+          }
+        }
+      }
+
+      if (truncateAt === guessedIndices.length) { unchanged++; continue; }
+
+      // Truncate and recalculate
+      const trimmed = guessedIndices.slice(0, truncateAt);
+      let newScore = 0;
+      if (!hitAssassin) {
+        for (const idx of trimmed) {
+          const c = colors[idx];
+          if (c === 'red') newScore += 1;
+          else if (c === 'blue') newScore -= 1;
+        }
+        newScore = Math.max(0, newScore);
+      }
+      const correctCount = targetIndices.filter((i: number) => trimmed.includes(i)).length;
+
+      await sql`UPDATE results SET
+        guessed_indices = ${trimmed},
+        score = ${newScore},
+        correct_count = ${correctCount}
+        WHERE clue_id = ${row.clue_id} AND user_id = ${row.user_id}`;
+      fixed++;
+    }
+
+    // 3. Recalc all clue stats and user ratings (reuse existing logic)
+    // Inline the recalc-all flow
+    const scoreRows = await sql`SELECT clue_id, array_agg(score ORDER BY score) as scores FROM results WHERE disabled IS NOT TRUE GROUP BY clue_id` as Record<string, unknown>[];
+    const scoreMap = new Map<string, number[]>();
+    for (const r of scoreRows) {
+      scoreMap.set(r.clue_id as string, (r.scores as number[]).map(Number));
+    }
+    const clueRows = await sql`SELECT id, reshuffle_count FROM clues` as Record<string, unknown>[];
+    const ratingRows = await sql`SELECT clue_id, COUNT(*)::int as cnt, ROUND(AVG(rating)::numeric, 1) as avg FROM ratings GROUP BY clue_id` as Record<string, unknown>[];
+    const ratingMap = new Map<string, { count: number; avg: number }>();
+    for (const r of ratingRows) {
+      ratingMap.set(r.clue_id as string, { count: Number(r.cnt), avg: Number(r.avg) });
+    }
+    for (const c of clueRows) {
+      const clueId = c.id as string;
+      const scores = scoreMap.get(clueId) || [];
+      const reshuffleCount = Number(c.reshuffle_count) || 0;
+      const clueRatingBase = computeClueRatingBase(scores);
+      const clueRating = computeClueRating(scores, reshuffleCount);
+      const attempts = scores.length;
+      const avgScore = attempts > 0 ? scores.reduce((s, v) => s + v, 0) / attempts : 0;
+      const ri = ratingMap.get(clueId);
+      const ratingsCount = ri?.count || 0;
+      const avgRating = ri?.avg || 0;
+      await sql`UPDATE clues SET clue_rating = ${clueRating}, clue_rating_base = ${clueRatingBase}, attempts = ${attempts}, avg_score = ${Math.round(avgScore * 10) / 10}, ratings_count = ${ratingsCount}, avg_rating = ${avgRating} WHERE id = ${clueId}`;
+      await sql`UPDATE results SET solve_rating = (120 + COALESCE(score, 0) * 40 - ${clueRatingBase})::int WHERE clue_id = ${clueId}`;
+    }
+    const users = await sql`SELECT id FROM users` as Record<string, unknown>[];
+    for (const u of users) {
+      await recalcUserStats(sql, u.id as string);
+    }
+
+    res.json({ ok: true, total: rows.length, fixed, unchanged, backupRows: Number(backupCount[0]?.cnt) || 0 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
+  }
+}
 
 async function handleRecalcAll(res: VercelResponse, sql: any) {
   try {
