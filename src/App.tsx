@@ -71,10 +71,10 @@ function OAuthHandler() {
 
     if (oauthType === 'success' && token) {
       // Existing user — resolve token to get user data
-      api.resolveOAuthToken(token).then((dbUser) => {
-        loginWithOAuth(dbUser);
+      api.resolveOAuthToken(token).then(async (dbUser) => {
+        const { redirectUrl } = await loginWithOAuth(dbUser);
         setSearchParams({}, { replace: true });
-        navigate('/', { replace: true });
+        navigate(redirectUrl || '/', { replace: true });
       }).catch(() => {
         setSearchParams({}, { replace: true });
         navigate('/login?oauth=error', { replace: true });

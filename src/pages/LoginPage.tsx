@@ -35,8 +35,8 @@ export default function LoginPage() {
     }
 
     try {
-      await login(trimmed, needsPassword ? password : undefined);
-      navigate('/');
+      const { redirectUrl } = await login(trimmed, needsPassword ? password : undefined);
+      navigate(redirectUrl || '/');
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg === 'oauth_required') {

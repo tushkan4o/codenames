@@ -28,8 +28,8 @@ export default function OAuthRegisterPage() {
     setLoading(true);
     try {
       const dbUser = await api.completeOAuthRegistration(token, trimmed);
-      loginWithOAuth(dbUser);
-      navigate('/');
+      const { redirectUrl } = await loginWithOAuth(dbUser);
+      navigate(redirectUrl || '/');
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg === 'name_taken') setError(t.oauth.errorNameTaken);

@@ -14,8 +14,8 @@ interface AuthContextValue {
   clearPendingRedirect: () => void;
   roamingState: Record<string, unknown> | null;
   clearRoamingState: () => void;
-  login: (displayName: string, password?: string) => Promise<User>;
-  loginWithOAuth: (dbUser: Record<string, unknown>) => User;
+  login: (displayName: string, password?: string) => Promise<{ user: User; redirectUrl: string | null }>;
+  loginWithOAuth: (dbUser: Record<string, unknown>) => Promise<{ user: User; redirectUrl: string | null }>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   refreshUser: () => Promise<void>;
@@ -106,18 +106,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, sessionId: TAB_SESSION_ID, url, state }),
+      }).then(r => r.json()).then(data => {
+        if (data.active === false) setEvicted(true);
       }).catch(() => {});
     }, 800);
   }, [user?.id]);
 
-  /** Claim session for login flows (no roaming restore) */
-  const claimSession = useCallback((userId: string) => {
+  /** Claim session and return roaming redirect URL (if any) */
+  const claimSession = useCallback(async (userId: string): Promise<string | null> => {
     setEvicted(false);
     channelRef.current?.postMessage({ type: 'CLAIM', tabId: TAB_SESSION_ID });
-    claimOnServer(userId).catch(() => {});
+    try {
+      const result = await claimOnServer(userId);
+      if (result.savedUrl && result.savedUrl !== '/') {
+        setRoamingState(result.savedState);
+        return result.savedUrl;
+      }
+    } catch { /* ignore */ }
+    return null;
   }, []);
 
-  async function login(displayName: string, password?: string): Promise<User> {
+  async function login(displayName: string, password?: string): Promise<{ user: User; redirectUrl: string | null }> {
     const preferences = { ...DEFAULT_PREFERENCES };
 
     const res = await fetch('/api/auth/oauth?action=login', {
@@ -137,17 +146,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CURRENT_USER_KEY, localUser.id);
     localStorage.setItem(CACHED_USER_KEY, JSON.stringify(localUser));
     setUser(localUser);
-    claimSession(localUser.id);
-    return localUser;
+    const redirectUrl = await claimSession(localUser.id);
+    return { user: localUser, redirectUrl };
   }
 
-  function loginWithOAuth(dbUser: Record<string, unknown>): User {
+  async function loginWithOAuth(dbUser: Record<string, unknown>): Promise<{ user: User; redirectUrl: string | null }> {
     const localUser = dbUserToLocal(dbUser);
     localStorage.setItem(CURRENT_USER_KEY, localUser.id);
     localStorage.setItem(CACHED_USER_KEY, JSON.stringify(localUser));
     setUser(localUser);
-    claimSession(localUser.id);
-    return localUser;
+    const redirectUrl = await claimSession(localUser.id);
+    return { user: localUser, redirectUrl };
   }
 
   function logout() {
@@ -232,7 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!active) setEvicted(true);
     };
 
-    const interval = setInterval(pollServer, 30000);
+    const interval = setInterval(pollServer, 60000);
     return () => clearInterval(interval);
   }, [user?.id, evicted]);
 

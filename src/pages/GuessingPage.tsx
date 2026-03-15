@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { computeGuessScore } from '../lib/scoring';
 import { api } from '../lib/api';
@@ -84,6 +84,9 @@ export default function GuessingPage() {
   const [viewingAttemptPicks, setViewingAttemptPicks] = useState<number[] | null>(null);
   const [pickPercents, setPickPercents] = useState<Record<number, number>>({});
 
+  // Block picks once auto-end triggers (before finishGame setTimeout fires)
+  const endingRef = useRef(false);
+
   // Smart link: conflict with active guess on different clue
   const [conflictingGuess, setConflictingGuess] = useState<ActiveGuessState | null>(null);
 
@@ -93,6 +96,7 @@ export default function GuessingPage() {
     async function loadClue() {
       if (!clueId) return;
       setPhase('picking');
+      endingRef.current = false;
       setAssassinHit(false);
       setScore(0);
       setRevealDelays({});
@@ -284,6 +288,7 @@ export default function GuessingPage() {
 
   function handlePick(index: number) {
     if (phase !== 'picking' || !board || !clue) return;
+    if (endingRef.current) return; // Auto-end triggered, waiting for finishGame
     if (pickedIndices.includes(index)) return;
     if (confirmEnd) return; // Don't pick cards while confirming end
 
@@ -325,6 +330,7 @@ export default function GuessingPage() {
         const card = board!.cards[index];
 
         if (card.color === 'assassin') {
+          endingRef.current = true;
           setAssassinHit(true);
           setScore(0);
           clearActiveGuess();
@@ -336,6 +342,7 @@ export default function GuessingPage() {
         // Auto-end: all target reds found (normal clues)
         const newRedCount = newPicked.filter((i) => board!.cards[i].color === 'red').length;
         if (effectiveTargetCount > 0 && newRedCount >= effectiveTargetCount) {
+          endingRef.current = true;
           clearActiveGuess();
           saveSessionState(`/guess/${clue!.id}`, null);
           setTimeout(() => finishGame(newPicked, false), 400);
@@ -345,6 +352,7 @@ export default function GuessingPage() {
         // Auto-end: all red words picked (for 0-clues where target count is unknown)
         const totalReds = colorCounts?.red ?? 0;
         if (effectiveTargetCount === 0 && totalReds > 0 && newRedCount >= totalReds) {
+          endingRef.current = true;
           clearActiveGuess();
           saveSessionState(`/guess/${clue!.id}`, null);
           setTimeout(() => finishGame(newPicked, false), 400);
@@ -357,6 +365,7 @@ export default function GuessingPage() {
           return c === 'blue' || c === 'neutral';
         }).length;
         if (nonRedCount >= 3) {
+          endingRef.current = true;
           clearActiveGuess();
           saveSessionState(`/guess/${clue!.id}`, null);
           setTimeout(() => finishGame(newPicked, false), 400);

@@ -561,14 +561,15 @@ async function handleSaveState(req: VercelRequest, res: VercelResponse, sql: any
   if (!userId || !sessionId) return res.status(400).json({ error: 'userId and sessionId required' });
   try {
     // Only save if this tab still owns the session (prevents evicted tabs from overwriting)
-    await sql`
+    const result = await sql`
       UPDATE users
       SET session_url = ${url ?? null}, session_state = ${state ? JSON.stringify(state) : null}
       WHERE id = ${userId} AND active_session = ${sessionId}
     `;
-    res.json({ ok: true });
+    const active = (result.count ?? result.rowCount ?? 0) > 0;
+    res.json({ ok: true, active });
   } catch {
-    res.json({ ok: true });
+    res.json({ ok: true, active: true });
   }
 }
 
