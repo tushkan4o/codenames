@@ -72,6 +72,7 @@ async function checkOnServer(userId: string): Promise<boolean> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const channelRef = useRef<BroadcastChannel | null>(null);
   const saveStateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const claimedRef = useRef(false);
   const [evicted, setEvicted] = useState(false);
   // pendingRedirect: set when server has a different URL to redirect to
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
@@ -98,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** Save current page URL + state to server (debounced) */
   const saveSessionState = useCallback((url: string, state: Record<string, unknown> | null) => {
-    if (!user) return;
+    if (!user || evicted) return;
     if (saveStateTimerRef.current) clearTimeout(saveStateTimerRef.current);
     saveStateTimerRef.current = setTimeout(() => {
       saveStateTimerRef.current = null;
@@ -107,17 +108,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, sessionId: TAB_SESSION_ID, url, state }),
       }).then(r => r.json()).then(data => {
-        if (data.active === false) setEvicted(true);
+        if (data.active === false && claimedRef.current) setEvicted(true);
       }).catch(() => {});
     }, 800);
-  }, [user?.id]);
+  }, [user?.id, evicted]);
 
   /** Claim session and return roaming redirect URL (if any) */
   const claimSession = useCallback(async (userId: string): Promise<string | null> => {
     setEvicted(false);
+    claimedRef.current = false;
     channelRef.current?.postMessage({ type: 'CLAIM', tabId: TAB_SESSION_ID });
     try {
       const result = await claimOnServer(userId);
+      claimedRef.current = true;
       if (result.savedUrl && result.savedUrl !== '/') {
         setRoamingState(result.savedState);
         return result.savedUrl;
@@ -220,6 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     channelRef.current?.postMessage({ type: 'CLAIM', tabId: TAB_SESSION_ID });
 
     claimOnServer(user.id).then((result) => {
+      claimedRef.current = true;
       if (!result.savedUrl || result.savedUrl === '/') return;
       // Store the roaming state for pages to consume
       setRoamingState(result.savedState);
