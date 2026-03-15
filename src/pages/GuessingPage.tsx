@@ -58,7 +58,7 @@ function saveCompletedGuess(state: CompletedGuessState) {
 export default function GuessingPage() {
   const { clueId } = useParams<{ clueId: string }>();
   const navigate = useNavigate();
-  const { user, saveSessionState } = useAuth();
+  const { user, saveSessionState, roamingState, clearRoamingState } = useAuth();
   const { t } = useTranslation();
   const [clue, setClue] = useState<Clue | null>(null);
   const [pickedIndices, setPickedIndices] = useState<number[]>([]);
@@ -117,8 +117,8 @@ export default function GuessingPage() {
       // Track this clue in session for deterministic cycle
       if (found) setSeenClueIds(prev => prev.includes(clueId) ? prev : [...prev, clueId]);
 
-      // Save URL for roaming session state
-      if (found) saveSessionState(`/guess/${clueId}`, null);
+      // Save URL for roaming session state (picks will be updated below after restore)
+      if (found && !roamingState) saveSessionState(`/guess/${clueId}`, { pickedIndices: [] });
 
       // Smart link: server says user already solved this clue
       if (found?.existingResult) {
@@ -182,9 +182,15 @@ export default function GuessingPage() {
       // Clear stale completed state — if we reach here, server confirmed no existingResult
       localStorage.removeItem(COMPLETED_GUESS_KEY);
 
-      // Restore in-progress game from localStorage
-      if (saved && saved.clueId === clueId && saved.pickedIndices.length > 0) {
+      // Restore in-progress game: roamingState (cross-device) > localStorage (same browser) > fresh
+      const roamingPicks = roamingState?.pickedIndices;
+      if (Array.isArray(roamingPicks) && roamingPicks.length > 0) {
+        setPickedIndices(roamingPicks);
+        saveActiveGuess(clueId, roamingPicks); // sync to localStorage
+        clearRoamingState();
+      } else if (saved && saved.clueId === clueId && saved.pickedIndices.length > 0) {
         setPickedIndices(saved.pickedIndices);
+        saveSessionState(`/guess/${clueId}`, { pickedIndices: saved.pickedIndices });
       } else {
         setPickedIndices([]);
       }
@@ -322,6 +328,7 @@ export default function GuessingPage() {
           setAssassinHit(true);
           setScore(0);
           clearActiveGuess();
+          saveSessionState(`/guess/${clue!.id}`, null);
           setTimeout(() => finishGame(newPicked, true), 600);
           return newPicked;
         }
@@ -330,6 +337,7 @@ export default function GuessingPage() {
         const newRedCount = newPicked.filter((i) => board!.cards[i].color === 'red').length;
         if (effectiveTargetCount > 0 && newRedCount >= effectiveTargetCount) {
           clearActiveGuess();
+          saveSessionState(`/guess/${clue!.id}`, null);
           setTimeout(() => finishGame(newPicked, false), 400);
           return newPicked;
         }
@@ -338,6 +346,7 @@ export default function GuessingPage() {
         const totalReds = colorCounts?.red ?? 0;
         if (effectiveTargetCount === 0 && totalReds > 0 && newRedCount >= totalReds) {
           clearActiveGuess();
+          saveSessionState(`/guess/${clue!.id}`, null);
           setTimeout(() => finishGame(newPicked, false), 400);
           return newPicked;
         }
@@ -349,12 +358,16 @@ export default function GuessingPage() {
         }).length;
         if (nonRedCount >= 3) {
           clearActiveGuess();
+          saveSessionState(`/guess/${clue!.id}`, null);
           setTimeout(() => finishGame(newPicked, false), 400);
           return newPicked;
         }
 
-        // Save in-progress state
-        if (clue) saveActiveGuess(clue.id, newPicked);
+        // Save in-progress state (localStorage + server for cross-device)
+        if (clue) {
+          saveActiveGuess(clue.id, newPicked);
+          saveSessionState(`/guess/${clue.id}`, { pickedIndices: newPicked });
+        }
         return newPicked;
       });
     }, revealDuration);
@@ -366,6 +379,7 @@ export default function GuessingPage() {
       if (!clue || !board || !user) return;
 
       clearActiveGuess();
+      saveSessionState(`/guess/${clue.id}`, null);
       const computedScore = isAssassin ? 0 : computeGuessScore(finalPicked, board.cards);
       setScore(computedScore);
 
@@ -405,7 +419,7 @@ export default function GuessingPage() {
 
       runRevealAnimation(finalPicked);
     },
-    [clue, board, user],
+    [clue, board, user, saveSessionState],
   );
 
   function handleEndTurn() {
