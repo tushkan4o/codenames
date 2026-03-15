@@ -475,6 +475,8 @@ async function handleResults(req: VercelRequest, res: VercelResponse, sql: any) 
           await recalcUserStats(sql, clueAuthorId);
         }
       } catch { /* best-effort, cron will fix */ }
+      // Clear active_guess immediately (don't rely on debounced saveSessionState)
+      await sql`UPDATE users SET active_guess = NULL WHERE id = ${result.userId}`.catch(() => {});
       return res.json({ ok: true, targetIndices, nullIndices });
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'code' in err && (err as Record<string, unknown>).code === '23505') {
