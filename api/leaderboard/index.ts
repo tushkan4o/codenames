@@ -44,25 +44,26 @@ async function handleLeaderboard(req: VercelRequest, res: VercelResponse, sql: a
           c.clue_rating, c.attempts, c.avg_score, c.ratings_count, c.avg_rating, c.disabled,
           u.display_name
         FROM clues c LEFT JOIN users u ON c.user_id = u.id
-        WHERE c.word_pack = ${wordPack} AND c.board_size = ${boardSize}
+        WHERE c.word_pack = ${wordPack} AND c.board_size = ${boardSize} AND (c.disabled IS NOT TRUE)
         ORDER BY c.attempts DESC`
       : sql`SELECT c.id, c.word, c.number, c.user_id, c.ranked, c.created_at,
           c.clue_rating, c.attempts, c.avg_score, c.ratings_count, c.avg_rating, c.disabled,
           u.display_name
         FROM clues c LEFT JOIN users u ON c.user_id = u.id
-        WHERE c.word_pack = ${wordPack}
+        WHERE c.word_pack = ${wordPack} AND (c.disabled IS NOT TRUE)
         ORDER BY c.attempts DESC`)
     : (hasBoardSize
       ? sql`SELECT c.id, c.word, c.number, c.user_id, c.ranked, c.created_at,
           c.clue_rating, c.attempts, c.avg_score, c.ratings_count, c.avg_rating, c.disabled,
           u.display_name
         FROM clues c LEFT JOIN users u ON c.user_id = u.id
-        WHERE c.board_size = ${boardSize}
+        WHERE c.board_size = ${boardSize} AND (c.disabled IS NOT TRUE)
         ORDER BY c.attempts DESC`
       : sql`SELECT c.id, c.word, c.number, c.user_id, c.ranked, c.created_at,
           c.clue_rating, c.attempts, c.avg_score, c.ratings_count, c.avg_rating, c.disabled,
           u.display_name
         FROM clues c LEFT JOIN users u ON c.user_id = u.id
+        WHERE (c.disabled IS NOT TRUE)
         ORDER BY c.attempts DESC`);
 
   if (hasWordPack) {
