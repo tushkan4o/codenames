@@ -567,8 +567,8 @@ async function handleSaveState(req: VercelRequest, res: VercelResponse, sql: any
       SET session_url = ${url ?? null}, session_state = ${state ? JSON.stringify(state) : null}
       WHERE id = ${userId} AND active_session = ${sessionId}
     `;
-    // Piggyback: update active_guess when saving guess state
-    if (typeof url === 'string' && url.startsWith('/guess/') && state?.pickedIndices) {
+    // Piggyback: update active_guess when saving guess state (only with actual picks)
+    if (typeof url === 'string' && url.startsWith('/guess/') && Array.isArray(state?.pickedIndices) && state.pickedIndices.length > 0) {
       const clueId = url.replace('/guess/', '');
       await sql`UPDATE users SET active_guess = ${JSON.stringify({ clueId, pickedIndices: state.pickedIndices })}::jsonb WHERE id = ${userId}`;
     } else if (state === null && typeof url === 'string' && url.startsWith('/guess/')) {
