@@ -96,9 +96,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearRoamingState = useCallback(() => setRoamingState(null), []);
 
-  /** Save current page URL + state to server (debounced) */
+  /** Save current page URL + state to server (debounced, fire-and-forget) */
   const saveSessionState = useCallback((url: string, state: Record<string, unknown> | null) => {
-    if (!user || evicted) return;
+    if (!user) return;
     if (saveStateTimerRef.current) clearTimeout(saveStateTimerRef.current);
     saveStateTimerRef.current = setTimeout(() => {
       saveStateTimerRef.current = null;
@@ -106,11 +106,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, sessionId: TAB_SESSION_ID, url, state }),
-      }).then(r => r.json()).then(data => {
-        if (data.active === false) setEvicted(true);
       }).catch(() => {});
     }, 800);
-  }, [user?.id, evicted]);
+  }, [user?.id]);
 
   /** Claim session and return roaming redirect URL (if any) */
   const claimSession = useCallback(async (userId: string): Promise<string | null> => {
