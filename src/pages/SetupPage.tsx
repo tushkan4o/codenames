@@ -342,12 +342,16 @@ export default function SetupPage() {
           {/* Word Pack Selector */}
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase text-center mb-3">{t.setup.wordPack}</p>
-            <button
-              onClick={() => setWordPack(nextWordPack(wordPack))}
-              className="w-[120px] h-10 sm:h-11 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm transition-colors whitespace-nowrap"
-            >
-              {WORD_PACK_LABELS[wordPack]}
-            </button>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-xs text-transparent leading-none select-none">▲</span>
+              <button
+                onClick={() => setWordPack(nextWordPack(wordPack))}
+                className="w-[120px] h-10 sm:h-11 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm transition-colors whitespace-nowrap"
+              >
+                {WORD_PACK_LABELS[wordPack]}
+              </button>
+              <span className="text-xs text-transparent leading-none select-none">▼</span>
+            </div>
           </div>
         </div>
 
