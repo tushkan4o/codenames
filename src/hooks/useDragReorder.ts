@@ -148,21 +148,50 @@ export function useDragReorder(cardCount: number) {
     }
   }, []);
 
+  // Shared cleanup: remove floating clone and reset drag state
+  const cleanupDrag = useCallback(() => {
+    if (floatingRef.current) {
+      floatingRef.current.remove();
+      floatingRef.current = null;
+    }
+    dragRef.current = null;
+    setDraggingOrigIdx(null);
+  }, []);
+
   const handlePointerUp = useCallback((e: React.PointerEvent): boolean => {
     const drag = dragRef.current;
     if (!drag || e.pointerId !== drag.pointerId) return false;
 
     const wasDrag = drag.active;
-
-    if (floatingRef.current) {
-      floatingRef.current.remove();
-      floatingRef.current = null;
-    }
-
-    dragRef.current = null;
-    setDraggingOrigIdx(null);
-
+    cleanupDrag();
     return wasDrag;
+  }, [cleanupDrag]);
+
+  // Global fallback: pointerup/pointercancel outside the grid (iOS Safari fires pointercancel)
+  useEffect(() => {
+    function handleGlobalEnd(e: PointerEvent) {
+      const drag = dragRef.current;
+      if (!drag) return;
+      if (e.pointerId !== drag.pointerId) return;
+      cleanupDrag();
+    }
+    window.addEventListener('pointerup', handleGlobalEnd);
+    window.addEventListener('pointercancel', handleGlobalEnd);
+    return () => {
+      window.removeEventListener('pointerup', handleGlobalEnd);
+      window.removeEventListener('pointercancel', handleGlobalEnd);
+    };
+  }, [cleanupDrag]);
+
+  // Cleanup on unmount (e.g., navigating to next clue while dragging)
+  useEffect(() => {
+    return () => {
+      if (floatingRef.current) {
+        floatingRef.current.remove();
+        floatingRef.current = null;
+      }
+      dragRef.current = null;
+    };
   }, []);
 
   const flipAnimate = useCallback(() => {
