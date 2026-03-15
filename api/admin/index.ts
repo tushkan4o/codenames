@@ -407,6 +407,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Delete OAuth linked accounts
       await sql`DELETE FROM oauth_accounts WHERE user_id = ${userId}`;
 
+      // Delete social graph references
+      await sql`DELETE FROM subscriptions WHERE subscriber_id = ${userId} OR target_id = ${userId}`;
+      await sql`DELETE FROM blocked_users WHERE blocker_id = ${userId} OR blocked_id = ${userId}`;
+
       // Delete user
       await sql`DELETE FROM users WHERE id = ${userId}`;
 

@@ -286,12 +286,17 @@ export default function AdminPage() {
   }
 
   async function handleDeleteUser(userId: string) {
-    await api.adminDeleteUser(user!.id, userId);
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
-    setClues((prev) => prev.filter((c) => c.userId !== userId));
-    setResults((prev) => prev.filter((r) => r.userId !== userId));
-    setConfirmDeleteUserId(null);
-    showDeleted();
+    try {
+      await api.adminDeleteUser(user!.id, userId);
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      setClues((prev) => prev.filter((c) => c.userId !== userId));
+      setResults((prev) => prev.filter((r) => r.userId !== userId));
+      setConfirmDeleteUserId(null);
+      showDeleted();
+    } catch (err) {
+      alert(`Delete failed: ${err instanceof Error ? err.message : 'unknown error'}`);
+      setConfirmDeleteUserId(null);
+    }
   }
 
   async function handleAdminRename(userId: string) {
