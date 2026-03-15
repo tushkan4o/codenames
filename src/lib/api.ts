@@ -130,16 +130,16 @@ export const api = {
     await post('/api/game?route=clues', clue);
   },
 
-  async startCaptainGame(userId: string, ranked: boolean, params: string): Promise<{ seed: string; params: string; reshuffleCount: number; ranked: boolean }> {
-    return post('/api/game?route=captain-game', { userId, ranked, params });
+  async startCaptainGame(userId: string, ranked: boolean, params: string, wordPack?: string): Promise<{ seed: string; params: string; reshuffleCount: number; ranked: boolean; wordPack: string }> {
+    return post('/api/game?route=captain-game', { userId, ranked, params, wordPack });
   },
 
-  async getActiveCaptainGame(userId: string): Promise<{ seed: string; params: string; reshuffleCount: number; ranked: boolean }> {
-    return post('/api/game?route=captain-game', { userId });
+  async getActiveCaptainGame(userId: string, wordPack?: string): Promise<{ seed: string; params: string; reshuffleCount: number; ranked: boolean; wordPack: string }> {
+    return post('/api/game?route=captain-game', { userId, wordPack });
   },
 
-  async captainReshuffle(userId: string): Promise<{ seed: string; params: string; reshuffleCount: number; ranked: boolean }> {
-    return post('/api/game?route=captain-reshuffle', { userId });
+  async captainReshuffle(userId: string, wordPack?: string): Promise<{ seed: string; params: string; reshuffleCount: number; ranked: boolean; wordPack: string }> {
+    return post('/api/game?route=captain-reshuffle', { userId, wordPack });
   },
 
   async getRandomClue(
@@ -210,12 +210,13 @@ export const api = {
     return get(`/api/game?${params}`);
   },
 
-  async getLeaderboard(boardSize?: BoardSize): Promise<{
+  async getLeaderboard(boardSize?: BoardSize, wordPack?: string): Promise<{
     spymasters: { userId: string; displayName: string; cluesGiven: number; avgWordsPerClue: number; avgScoreOnClues: number; captainRating: number }[];
     guessers: { userId: string; displayName: string; cluesSolved: number; avgWordsPicked: number; avgScore: number; scoutRating: number }[];
   }> {
     const params = new URLSearchParams({ route: 'leaderboard' });
     if (boardSize) params.set('boardSize', boardSize);
+    if (wordPack) params.set('wordPack', wordPack);
     return get(`/api/leaderboard?${params}`);
   },
 

@@ -8,6 +8,8 @@ import NavBar from '../components/layout/NavBar';
 import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 import { BOARD_CONFIGS } from '../types/game';
 import type { BoardSize, GameMode } from '../types/game';
+import { WORD_PACK_LABELS, WORD_PACK_ORDER, nextWordPack } from '../lib/wordPacks';
+import type { WordPackId } from '../lib/wordPacks';
 
 const COLOR_CONFIG = [
   { key: 'red' as const, bg: 'bg-board-red' },
@@ -35,6 +37,10 @@ export default function SetupPage() {
     const saved = localStorage.getItem('codenames_setup_ranked');
     return saved === null ? false : saved === 'true';
   });
+  const [wordPack, setWordPack] = useState<WordPackId>(() => {
+    const saved = localStorage.getItem('codenames_word_pack');
+    return WORD_PACK_ORDER.includes(saved as WordPackId) ? (saved as WordPackId) : 'ru';
+  });
   const boardSize: BoardSize = '5x5';
   const [loading, setLoading] = useState(false);
   const [puzzleCount, setPuzzleCount] = useState<{ available: number; total: number } | null>(null);
@@ -54,6 +60,7 @@ export default function SetupPage() {
   // Persist setup preferences
   useEffect(() => { localStorage.setItem('codenames_setup_mode', mode); }, [mode]);
   useEffect(() => { localStorage.setItem('codenames_setup_ranked', String(ranked)); }, [ranked]);
+  useEffect(() => { localStorage.setItem('codenames_word_pack', wordPack); }, [wordPack]);
 
   // Force casual if user can't play ranked
   const canRanked = canPlayRanked(user);
@@ -78,8 +85,8 @@ export default function SetupPage() {
       setPuzzleCount(null);
       return;
     }
-    api.getClueCount(user.id, 'ru', boardSize, ranked).then(setPuzzleCount).catch(() => setPuzzleCount(null));
-  }, [user, mode, boardSize, ranked]);
+    api.getClueCount(user.id, wordPack, boardSize, ranked).then(setPuzzleCount).catch(() => setPuzzleCount(null));
+  }, [user, mode, boardSize, ranked, wordPack]);
 
   function canAdjust(key: string, delta: number): boolean {
     if (ranked || mode === 'guessing') return false;
@@ -134,7 +141,7 @@ export default function SetupPage() {
     if (!user) return;
     setLoading(true);
     try {
-      const clue = await api.getRandomClue(user.id, [], 'ru', boardSize, ranked);
+      const clue = await api.getRandomClue(user.id, [], wordPack, boardSize, ranked);
       if (clue) {
         navigate(`/guess/${clue.id}`);
       } else {
@@ -161,7 +168,7 @@ export default function SetupPage() {
         }
       }
       // Start captain game on server (sets active mode + creates game if needed)
-      await api.startCaptainGame(user.id, ranked, params.toString());
+      await api.startCaptainGame(user.id, ranked, params.toString(), wordPack);
       navigate('/give-clue');
     } else {
       // Check for unfinished game
@@ -274,56 +281,70 @@ export default function SetupPage() {
           )}
         </div>
 
-        {/* Color Config — always visible */}
-        <p className="text-xs font-semibold text-gray-500 uppercase text-center mb-3">{t.setup.boardConfig}</p>
-        <div className="mb-8">
-          <div className="flex items-center gap-3 justify-center">
-            <div className="flex items-center gap-2">
-              {COLOR_CONFIG.map(({ key, bg }) => {
-                const count = counts[key];
-                const isNeutral = key === 'neutral';
-                const adjustable = !isNeutral && !colorLocked;
-                return (
-                  <div key={key} className="flex flex-col items-center gap-0.5">
-                    {adjustable ? (
-                      <button
-                        onClick={() => adjust(key, 1)}
-                        disabled={!canAdjust(key, 1)}
-                        className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
+        {/* Board config + Word pack selector side by side */}
+        <div className="flex gap-6 mb-8 justify-center">
+          {/* Color Config */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase text-center mb-3">{t.setup.boardConfig}</p>
+            <div className="flex items-center gap-3 justify-center">
+              <div className="flex items-center gap-2">
+                {COLOR_CONFIG.map(({ key, bg }) => {
+                  const count = counts[key];
+                  const isNeutral = key === 'neutral';
+                  const adjustable = !isNeutral && !colorLocked;
+                  return (
+                    <div key={key} className="flex flex-col items-center gap-0.5">
+                      {adjustable ? (
+                        <button
+                          onClick={() => adjust(key, 1)}
+                          disabled={!canAdjust(key, 1)}
+                          className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
+                        >
+                          ▲
+                        </button>
+                      ) : (
+                        <span className="text-xs text-transparent leading-none select-none">▲</span>
+                      )}
+                      <div
+                        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-md ${bg} flex items-center justify-center text-white font-bold text-lg`}
                       >
-                        ▲
-                      </button>
-                    ) : (
-                      <span className="text-xs text-transparent leading-none select-none">▲</span>
-                    )}
-                    <div
-                      className={`w-10 h-10 sm:w-11 sm:h-11 rounded-md ${bg} flex items-center justify-center text-white font-bold text-lg`}
-                    >
-                      {showQuestionMarks ? '?' : count}
+                        {showQuestionMarks ? '?' : count}
+                      </div>
+                      {adjustable ? (
+                        <button
+                          onClick={() => adjust(key, -1)}
+                          disabled={!canAdjust(key, -1)}
+                          className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
+                        >
+                          ▼
+                        </button>
+                      ) : (
+                        <span className="text-xs text-transparent leading-none select-none">▼</span>
+                      )}
                     </div>
-                    {adjustable ? (
-                      <button
-                        onClick={() => adjust(key, -1)}
-                        disabled={!canAdjust(key, -1)}
-                        className="text-gray-400 hover:text-white disabled:opacity-20 text-xs leading-none"
-                      >
-                        ▼
-                      </button>
-                    ) : (
-                      <span className="text-xs text-transparent leading-none select-none">▼</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
 
+              <button
+                onClick={resetConfig}
+                disabled={colorLocked}
+                className={`p-2 rounded-lg transition-colors ${colorLocked ? 'text-transparent cursor-default' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
+                title={t.setup.resetConfig}
+              >
+                <ArrowUturnLeftIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Word Pack Selector */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase text-center mb-3">{t.setup.wordPack}</p>
             <button
-              onClick={resetConfig}
-              disabled={colorLocked}
-              className={`p-2 rounded-lg transition-colors ${colorLocked ? 'text-transparent cursor-default' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
-              title={t.setup.resetConfig}
+              onClick={() => setWordPack(nextWordPack(wordPack))}
+              className="px-4 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold text-sm transition-colors whitespace-nowrap"
             >
-              <ArrowUturnLeftIcon className="w-4 h-4" />
+              {WORD_PACK_LABELS[wordPack]}
             </button>
           </div>
         </div>

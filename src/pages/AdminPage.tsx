@@ -8,6 +8,8 @@ import type { AdminClue, AdminUser, AdminResult, AdminFeedback } from '../lib/ap
 import NavBar from '../components/layout/NavBar';
 import BoardReviewModal from '../components/game/BoardReviewModal';
 import type { Clue, GuessResult } from '../types/game';
+import { WORD_PACK_LABELS, WORD_PACK_ORDER } from '../lib/wordPacks';
+import type { WordPackId } from '../lib/wordPacks';
 
 type AdminTab = 'clues' | 'users' | 'results' | 'feedback';
 type SortField = 'createdAt' | 'reportCount' | 'word' | 'userId' | 'attempts' | 'avgScore';
@@ -51,6 +53,7 @@ export default function AdminPage() {
 
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [adminWordPack, setAdminWordPack] = useState<WordPackId | 'all'>('all');
 
   const [userSort, setUserSort] = useState<UserSortField>('lastActivity');
   const [userDir, setUserDir] = useState<SortDir>('desc');
@@ -315,10 +318,11 @@ export default function AdminPage() {
     setTimeout(() => setDeletedMessage(null), 2000);
   }
 
-  const filtered = clues.filter((c) =>
-    c.userId.toLowerCase().includes(search.toLowerCase()) ||
-    c.word.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = clues.filter((c) => {
+    if (adminWordPack !== 'all' && c.wordPack !== adminWordPack) return false;
+    return c.userId.toLowerCase().includes(search.toLowerCase()) ||
+      c.word.toLowerCase().includes(search.toLowerCase());
+  });
 
   const sorted = [...filtered].sort((a, b) => {
     let diff = 0;
@@ -412,14 +416,25 @@ export default function AdminPage() {
 
         {/* ======== CLUES TAB ======== */}
         {adminTab === 'clues' && (<div className="flex flex-col flex-1 min-h-0">
-        <div className="mb-4">
+        <div className="mb-4 flex gap-2">
           <input
             type="text"
             placeholder={t.admin.search}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setCluesLimit(100); }}
-            className="w-full bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
+            className="flex-1 bg-gray-800/60 border border-gray-700/30 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
           />
+          <button
+            onClick={() => {
+              const opts: Array<WordPackId | 'all'> = ['all', ...WORD_PACK_ORDER];
+              const idx = opts.indexOf(adminWordPack);
+              setAdminWordPack(opts[(idx + 1) % opts.length]);
+              setCluesLimit(100);
+            }}
+            className="px-3 py-2 bg-gray-700/60 border border-gray-600/30 rounded-lg text-xs font-bold text-gray-300 hover:text-white hover:border-gray-500 transition-colors whitespace-nowrap"
+          >
+            {adminWordPack === 'all' ? 'Все' : WORD_PACK_LABELS[adminWordPack]}
+          </button>
         </div>
 
         <div className="text-sm text-gray-400 mb-2">
@@ -456,6 +471,9 @@ export default function AdminPage() {
                       <span className="ml-1 text-[0.6rem] text-purple-400 font-bold" title={`${clue.redCount}/${clue.blueCount}/${clue.assassinCount}`}>
                         {clue.redCount}/{clue.blueCount}/{clue.assassinCount}
                       </span>
+                    )}
+                    {clue.wordPack && clue.wordPack !== 'ru' && (
+                      <span className="ml-1 text-[0.6rem] text-cyan-400 font-bold">{clue.wordPack === 'en' ? 'EN' : 'RU-D'}</span>
                     )}
                     <span className="md:hidden text-xs text-gray-500 font-normal normal-case ml-1">— {clue.displayName}</span>
                   </span>

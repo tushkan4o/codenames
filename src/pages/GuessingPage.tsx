@@ -255,13 +255,13 @@ export default function GuessingPage() {
     if (!user) return;
     try {
       // Pass all seen clue IDs so seeded shuffle picks the next unseen one
-      const newClue = await api.getRandomClue(user.id, seenClueIds, undefined, undefined, clue?.ranked);
+      const newClue = await api.getRandomClue(user.id, seenClueIds, clue?.wordPack, undefined, clue?.ranked);
       if (newClue) {
         navigate(`/guess/${newClue.id}`);
       } else {
         // All puzzles seen in this cycle — reset and retry
         setSeenClueIds([]);
-        const retryClue = await api.getRandomClue(user.id, clue ? [clue.id] : [], undefined, undefined, clue?.ranked);
+        const retryClue = await api.getRandomClue(user.id, clue ? [clue.id] : [], clue?.wordPack, undefined, clue?.ranked);
         if (retryClue) {
           navigate(`/guess/${retryClue.id}`);
         } else {

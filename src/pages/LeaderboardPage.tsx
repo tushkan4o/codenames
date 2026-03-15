@@ -8,6 +8,8 @@ import { canPlayRanked, buildRankedLockMessage } from '../lib/rankedAccess';
 import NavBar from '../components/layout/NavBar';
 import BoardReviewModal from '../components/game/BoardReviewModal';
 import type { BoardSize, Clue, GuessResult } from '../types/game';
+import { WORD_PACK_LABELS, WORD_PACK_ORDER, nextWordPack } from '../lib/wordPacks';
+import type { WordPackId } from '../lib/wordPacks';
 
 const ACTIVE_GUESS_KEY = 'codenames_active_guess';
 
@@ -92,6 +94,10 @@ export default function LeaderboardPage() {
   const [confirmDeleteClue, setConfirmDeleteClue] = useState<string | null>(null);
   const [rankedFilter, setRankedFilter] = useState<RankedFilter>('all');
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>('all');
+  const [wordPackFilter, setWordPackFilter] = useState<WordPackId | 'all'>(() => {
+    const saved = localStorage.getItem('codenames_leaderboard_wp');
+    return saved && (WORD_PACK_ORDER as readonly string[]).includes(saved) ? (saved as WordPackId) : 'all';
+  });
   const [unfinishedModal, setUnfinishedModal] = useState<{ savedClueId: string; targetClueId: string } | null>(null);
 
   const [spySort, setSpySort] = useState<'captainRating' | 'cluesGiven' | 'rankedAvgWords' | 'rankedZeroPct' | null>('captainRating');
@@ -103,9 +109,10 @@ export default function LeaderboardPage() {
   const [clueSort, setClueSort] = useState<'number' | 'attempts' | 'clueRating' | 'date' | null>('clueRating');
   const [clueDir, setClueDir] = useState<SortDir>('desc');
 
-  const loadData = useCallback(async (size: SizeFilter) => {
+  const loadData = useCallback(async (size: SizeFilter, wp: WordPackId | 'all') => {
     const boardSize = size === 'all' ? undefined : size;
-    const data = await api.getLeaderboard(boardSize);
+    const wordPack = wp === 'all' ? undefined : wp;
+    const data = await api.getLeaderboard(boardSize, wordPack);
     setSpymasters(data.spymasters as SpymasterEntry[]);
     setGuessers(data.guessers as GuesserEntry[]);
     setClueStats((data as { clueStats?: ClueStatEntry[] }).clueStats || []);
@@ -113,8 +120,12 @@ export default function LeaderboardPage() {
   }, []);
 
   useEffect(() => {
-    loadData(sizeFilter);
-  }, [sizeFilter, loadData]);
+    loadData(sizeFilter, wordPackFilter);
+  }, [sizeFilter, wordPackFilter, loadData]);
+
+  useEffect(() => {
+    localStorage.setItem('codenames_leaderboard_wp', wordPackFilter);
+  }, [wordPackFilter]);
 
   useEffect(() => {
     if (user) {
@@ -284,7 +295,19 @@ export default function LeaderboardPage() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h1 className="text-2xl font-extrabold text-white mb-4 text-center">{t.leaderboard.title}</h1>
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <h1 className="text-2xl font-extrabold text-white">{t.leaderboard.title}</h1>
+          <button
+            onClick={() => {
+              const order: (WordPackId | 'all')[] = ['all', ...WORD_PACK_ORDER];
+              const idx = order.indexOf(wordPackFilter);
+              setWordPackFilter(order[(idx + 1) % order.length]);
+            }}
+            className="px-2.5 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs font-bold text-gray-300 transition-colors whitespace-nowrap"
+          >
+            {wordPackFilter === 'all' ? 'Все словари' : WORD_PACK_LABELS[wordPackFilter]}
+          </button>
+        </div>
 
         <div className="grid grid-cols-4 gap-2 mb-4">
           <button onClick={() => setTab('overall')} className={tabBtnClass(tab === 'overall')}>{t.leaderboard.overall}</button>

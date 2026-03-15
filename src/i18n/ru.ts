@@ -58,6 +58,7 @@ export const ru = {
     start: 'Начать',
     resetConfig: 'Сброс',
     boardConfig: 'Настройки поля',
+    wordPack: 'Словарь',
     ranked: 'Рейтинговая',
     rankedDesc: 'Стандартное поле, результаты в рейтинге',
     casual: 'Обычная',

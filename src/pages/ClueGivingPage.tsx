@@ -24,6 +24,7 @@ export default function ClueGivingPage() {
   const [currentSeed, setCurrentSeed] = useState<string | null>(null);
   const [gameParams, setGameParams] = useState<URLSearchParams>(new URLSearchParams());
   const [isRanked, setIsRanked] = useState(true);
+  const [wordPack, setWordPack] = useState('ru');
   const [reshuffleCount, setReshuffleCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -60,6 +61,7 @@ export default function ClueGivingPage() {
       setCurrentSeed(game.seed);
       setGameParams(new URLSearchParams(game.params || ''));
       setIsRanked(game.ranked !== false);
+      setWordPack(game.wordPack || 'ru');
       setReshuffleCount(game.reshuffleCount || 0);
       setLoading(false);
     }).catch((err) => {
@@ -79,8 +81,8 @@ export default function ClueGivingPage() {
 
   const board = useMemo(() => {
     if (!currentSeed) return null;
-    return generateBoard(currentSeed, config);
-  }, [currentSeed, config]);
+    return generateBoard(currentSeed, config, wordPack);
+  }, [currentSeed, config, wordPack]);
 
   const {
     displayOrder, draggingOrigIdx,
@@ -122,7 +124,7 @@ export default function ClueGivingPage() {
   async function handleReshuffle() {
     if (!user) return;
     try {
-      const game = await api.captainReshuffle(user.id);
+      const game = await api.captainReshuffle(user.id, wordPack);
       setCurrentSeed(game.seed);
       setReshuffleCount(game.reshuffleCount);
       setSelectedTargets([]);
@@ -264,7 +266,7 @@ export default function ClueGivingPage() {
       nullIndices: selectedNulls,
       createdAt: Date.now(),
       userId: user.id,
-      wordPack: 'ru',
+      wordPack,
       boardSize,
       reshuffleCount,
       ranked: isRanked,

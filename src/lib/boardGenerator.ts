@@ -1,14 +1,24 @@
 import { createSeededRandom, hashString } from './seededRandom';
 import { WORD_LIST_RU } from '../data/words-ru';
+import { WORD_LIST_RU_DEFAULT } from '../data/words-ru-default';
+import { WORD_LIST_EN } from '../data/words-en';
 import type { BoardConfig, BoardState, CardColor, CardState } from '../types/game';
 
-export function generateBoard(seed: string, config: BoardConfig, _wordPack?: string): BoardState {
+export function getWordList(wordPack: string): string[] {
+  switch (wordPack) {
+    case 'ru-default': return WORD_LIST_RU_DEFAULT;
+    case 'en': return WORD_LIST_EN;
+    default: return WORD_LIST_RU;
+  }
+}
+
+export function generateBoard(seed: string, config: BoardConfig, wordPack?: string): BoardState {
   const numericSeed = hashString(seed);
   const random = createSeededRandom(numericSeed);
 
   const startingTeam: 'red' | 'blue' = random() < 0.5 ? 'red' : 'blue';
 
-  const words = WORD_LIST_RU;
+  const words = getWordList(wordPack || 'ru');
   const shuffled = [...words];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));

@@ -9,6 +9,8 @@ import { COUNTRIES, getCountryByCode } from '../../lib/countries';
 import BoardReviewModal from '../game/BoardReviewModal';
 import type { Clue, GuessResult } from '../../types/game';
 import type { UserStats, NameHistoryEntry } from '../../types/user';
+import { WORD_PACK_LABELS, WORD_PACK_ORDER } from '../../lib/wordPacks';
+import type { WordPackId } from '../../lib/wordPacks';
 
 const ACTIVE_GUESS_KEY = 'codenames_active_guess';
 
@@ -69,6 +71,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
   const [solvedFilter, setSolvedFilter] = useState<SolvedFilter>('all');
   const [confirmDeleteSolved, setConfirmDeleteSolved] = useState<string | null>(null);
   const [unfinishedModal, setUnfinishedModal] = useState<{ savedClueId: string; targetClueId: string } | null>(null);
+  const [wordPackFilter, setWordPackFilter] = useState<WordPackId | 'all'>('all');
 
   const [givenSort, setGivenSort] = useState<GivenSortField | null>('date');
   const [givenDir, setGivenDir] = useState<SortDir>('desc');
@@ -176,6 +179,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
 
   const sortedGiven = useMemo(() => {
     let filtered = cluesGiven;
+    if (wordPackFilter !== 'all') filtered = filtered.filter((c) => c.wordPack === wordPackFilter);
     if (rankedFilter === 'ranked') filtered = filtered.filter((c) => c.ranked !== false);
     else if (rankedFilter === 'casual') filtered = filtered.filter((c) => c.ranked === false);
     if (solvedFilter === 'solved') filtered = filtered.filter((c) => mySolvedClueIds.has(c.id));
@@ -190,10 +194,11 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       return givenDir === 'desc' ? diff : -diff;
     });
     return sorted;
-  }, [cluesGiven, givenSort, givenDir, clueStatsMap, rankedFilter, solvedFilter, mySolvedClueIds]);
+  }, [cluesGiven, givenSort, givenDir, clueStatsMap, rankedFilter, solvedFilter, mySolvedClueIds, wordPackFilter]);
 
   const sortedSolved = useMemo(() => {
     let filtered = solvedEntries;
+    if (wordPackFilter !== 'all') filtered = filtered.filter((e) => e.clue?.wordPack === wordPackFilter);
     if (rankedFilter === 'ranked') filtered = filtered.filter((e) => e.clue?.ranked !== false);
     else if (rankedFilter === 'casual') filtered = filtered.filter((e) => e.clue?.ranked === false);
     if (solvedFilter === 'solved') filtered = filtered.filter((e) => canViewClue(e.result.clueId, e.clue?.userId));
@@ -215,7 +220,7 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
       return solvedDir === 'desc' ? diff : -diff;
     });
     return sorted;
-  }, [solvedEntries, solvedSort, solvedDir, clueStatsMap, rankedFilter, solvedFilter, mySolvedClueIds, isOwnProfile, user]);
+  }, [solvedEntries, solvedSort, solvedDir, clueStatsMap, rankedFilter, solvedFilter, mySolvedClueIds, isOwnProfile, user, wordPackFilter]);
 
   function handleGivenAction(clue: Clue) {
     const solved = mySolvedClueIds.has(clue.id);
@@ -716,6 +721,16 @@ export default function ProfileContent({ profileId }: ProfileContentProps) {
           >
             {t.profile.commentsTab}
             {profileComments.length > 0 && <span className="ml-1 text-xs opacity-70">({profileComments.length})</span>}
+          </button>
+          <button
+            onClick={() => {
+              const order: (WordPackId | 'all')[] = ['all', ...WORD_PACK_ORDER];
+              const idx = order.indexOf(wordPackFilter);
+              setWordPackFilter(order[(idx + 1) % order.length]);
+            }}
+            className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg font-bold text-[0.65rem] sm:text-xs bg-gray-800 text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+          >
+            {wordPackFilter === 'all' ? 'Все' : WORD_PACK_LABELS[wordPackFilter]}
           </button>
         </div>
 
