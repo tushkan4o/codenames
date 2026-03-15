@@ -8,7 +8,7 @@ import { canPlayRanked, buildRankedLockMessage } from '../lib/rankedAccess';
 import NavBar from '../components/layout/NavBar';
 import BoardReviewModal from '../components/game/BoardReviewModal';
 import type { BoardSize, Clue, GuessResult } from '../types/game';
-import { WORD_PACK_LABELS, WORD_PACK_ORDER, nextWordPack } from '../lib/wordPacks';
+import { WORD_PACK_LABELS, WORD_PACK_ORDER } from '../lib/wordPacks';
 import type { WordPackId } from '../lib/wordPacks';
 
 const ACTIVE_GUESS_KEY = 'codenames_active_guess';
