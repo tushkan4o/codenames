@@ -162,7 +162,7 @@ export const api = {
     return get(`/api/game?${params}`);
   },
 
-  async getClueById(id: string, reveal = false, userId?: string): Promise<(Clue & { existingResult?: { guessedIndices: number[]; score: number; correctCount: number; totalTargets: number } }) | null> {
+  async getClueById(id: string, reveal = false, userId?: string): Promise<(Clue & { existingResult?: { guessedIndices: number[]; score: number; correctCount: number; totalTargets: number }; activeGuess?: { clueId: string; pickedIndices: number[] } }) | null> {
     const params = new URLSearchParams({ route: 'clue', id });
     if (reveal) params.set('reveal', 'true');
     if (userId) params.set('userId', userId);

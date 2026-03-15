@@ -10,6 +10,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sql = neon(process.env.DATABASE_URL!) as any;
   const route = req.query.route as string;
 
+  // HTTP cache headers for read-heavy GET endpoints (served by Vercel CDN)
+  if (req.method === 'GET') {
+    if (route === 'profile') {
+      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+    } else if (route === 'nameHistory') {
+      res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
+    }
+  }
+
   switch (route) {
     case 'notifications': return handleNotifications(req, res, sql);
     case 'subscriptions': return handleSubscriptions(req, res, sql);

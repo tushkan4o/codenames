@@ -58,16 +58,6 @@ async function claimOnServer(userId: string): Promise<ClaimResult> {
   }
 }
 
-async function checkOnServer(userId: string): Promise<boolean> {
-  try {
-    const res = await fetch(`/api/game?route=check-session&userId=${encodeURIComponent(userId)}&sessionId=${encodeURIComponent(TAB_SESSION_ID)}`);
-    if (!res.ok) return true;
-    const data = await res.json();
-    return data.active !== false;
-  } catch {
-    return true;
-  }
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const channelRef = useRef<BroadcastChannel | null>(null);
@@ -107,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, sessionId: TAB_SESSION_ID, url, state }),
       }).catch(() => {});
-    }, 800);
+    }, 3000);
   }, [user?.id]);
 
   /** Claim session and return roaming redirect URL (if any) */
@@ -228,20 +218,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Poll server for cross-device eviction detection
-  useEffect(() => {
-    if (!user) return;
-
-    const pollServer = async () => {
-      if (evicted) return;
-      const active = await checkOnServer(user.id);
-      if (!active) setEvicted(true);
-    };
-
-    const interval = setInterval(pollServer, 60000);
-    return () => clearInterval(interval);
-  }, [user?.id, evicted]);
 
   return (
     <AuthContext.Provider value={{

@@ -350,6 +350,7 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: any)
     const { userId: queryUserId } = req.query;
     let existingResult = null;
     let isAuthor = false;
+    let activeGuess = null;
     if (queryUserId && typeof queryUserId === 'string') {
       if (queryUserId === row.user_id) {
         isAuthor = true;
@@ -362,6 +363,13 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: any)
             correctCount: Number(resultRows[0].correct_count),
             totalTargets: Number(resultRows[0].total_targets),
           };
+        }
+        // Piggyback: fetch active_guess for cross-device conflict detection
+        if (!existingResult) {
+          const guessRows = await sql`SELECT active_guess FROM users WHERE id = ${queryUserId}`;
+          if (guessRows.length > 0 && guessRows[0].active_guess) {
+            activeGuess = guessRows[0].active_guess;
+          }
         }
         // Block check: if no existing result and user is blocked, deny access
         if (!existingResult) {
@@ -386,6 +394,7 @@ async function handleClueById(req: VercelRequest, res: VercelResponse, sql: any)
       } : {}),
       ...(existingResult ? { existingResult } : {}),
       ...(isAuthor ? { isAuthor: true } : {}),
+      ...(activeGuess ? { activeGuess } : {}),
     });
   }
 }

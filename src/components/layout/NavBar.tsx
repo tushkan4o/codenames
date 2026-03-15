@@ -141,7 +141,7 @@ export default function NavBar() {
     if (!user) return;
     const fetch = () => api.getNotifications(user.id).then(setNotifications).catch(() => {});
     fetch();
-    pollRef.current = setInterval(fetch, 30000);
+    pollRef.current = setInterval(fetch, 120000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [user?.id]);
 

@@ -16,7 +16,23 @@ export default function HomePage() {
 
   useEffect(() => {
     if (user) {
-      api.getUserStats(user.id).then(setStats);
+      // Client-side cache: skip API call if fresh stats exist in sessionStorage
+      const cacheKey = `codenames_stats_${user.id}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const { data, ts } = JSON.parse(cached);
+          if (Date.now() - ts < 120000) { // 2-minute TTL
+            setStats(data);
+            saveSessionState('/', null);
+            return;
+          }
+        } catch { /* ignore */ }
+      }
+      api.getUserStats(user.id).then((data) => {
+        setStats(data);
+        sessionStorage.setItem(cacheKey, JSON.stringify({ data, ts: Date.now() }));
+      });
       saveSessionState('/', null);
     }
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps

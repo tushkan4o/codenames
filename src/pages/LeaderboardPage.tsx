@@ -112,7 +112,23 @@ export default function LeaderboardPage() {
   const loadData = useCallback(async (size: SizeFilter, wp: WordPackId | 'all') => {
     const boardSize = size === 'all' ? undefined : size;
     const wordPack = wp === 'all' ? undefined : wp;
+    // Client-side cache: skip API if fresh data exists
+    const cacheKey = `codenames_lb_${size}_${wp}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const { data, ts } = JSON.parse(cached);
+        if (Date.now() - ts < 120000) { // 2-minute TTL
+          setSpymasters(data.spymasters as SpymasterEntry[]);
+          setGuessers(data.guessers as GuesserEntry[]);
+          setClueStats((data as { clueStats?: ClueStatEntry[] }).clueStats || []);
+          setOverall((data as { overall?: OverallEntry[] }).overall || []);
+          return;
+        }
+      } catch { /* ignore */ }
+    }
     const data = await api.getLeaderboard(boardSize, wordPack);
+    sessionStorage.setItem(cacheKey, JSON.stringify({ data, ts: Date.now() }));
     setSpymasters(data.spymasters as SpymasterEntry[]);
     setGuessers(data.guessers as GuesserEntry[]);
     setClueStats((data as { clueStats?: ClueStatEntry[] }).clueStats || []);

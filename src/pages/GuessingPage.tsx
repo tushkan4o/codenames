@@ -168,9 +168,9 @@ export default function GuessingPage() {
         return;
       }
 
-      // Check for active guess on a different clue (conflict) — localStorage + server
+      // Check for active guess on a different clue (conflict) — localStorage + server (piggybacked in clue response)
       const saved = loadActiveGuess();
-      const activeGuessSource = saved ?? (user ? await api.getActiveGuess(user.id) : null);
+      const activeGuessSource = saved ?? (found as any)?.activeGuess ?? null;
       if (cancelled) return;
       if (activeGuessSource && activeGuessSource.clueId !== clueId && activeGuessSource.pickedIndices.length > 0) {
         // Verify the conflicting clue still exists and user hasn't solved it
