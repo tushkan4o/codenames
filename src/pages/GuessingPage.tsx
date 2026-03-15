@@ -88,6 +88,8 @@ export default function GuessingPage() {
   const [conflictingGuess, setConflictingGuess] = useState<ActiveGuessState | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadClue() {
       if (!clueId) return;
       setPhase('picking');
@@ -103,6 +105,7 @@ export default function GuessingPage() {
       setShowBlocked(false);
       setLoading(true);
       const found = await api.getClueById(clueId, false, user?.id);
+      if (cancelled) return; // Stale response — clueId changed
       // Block check: server returns { blocked: true } if user is blocked
       if (found && (found as any).blocked) {
         setClue(null);
@@ -126,6 +129,7 @@ export default function GuessingPage() {
         setRevealedNulls(found.nullIndices || []);
         setPhase('done');
         api.getClueStats(clueId).then((s) => {
+          if (cancelled) return;
           if (s.attempts > 0) {
             const pcts: Record<number, number> = {};
             const counts = (s as { pickCounts?: Record<number, number> }).pickCounts || {};
@@ -146,6 +150,7 @@ export default function GuessingPage() {
         setRevealedNulls(found!.nullIndices || []);
         setPhase('done');
         api.getClueStats(clueId).then((s) => {
+          if (cancelled) return;
           if (s.attempts > 0) {
             const pcts: Record<number, number> = {};
             const counts = (s as { pickCounts?: Record<number, number> }).pickCounts || {};
@@ -164,6 +169,7 @@ export default function GuessingPage() {
       if (saved && saved.clueId !== clueId && saved.pickedIndices.length > 0) {
         // Verify the conflicting clue still exists and user hasn't solved it
         const conflictClue = await api.getClueById(saved.clueId, false, user?.id);
+        if (cancelled) return;
         if (conflictClue && !conflictClue.existingResult) {
           setConflictingGuess(saved);
           setLoading(false);
@@ -186,6 +192,7 @@ export default function GuessingPage() {
       setLoading(false);
     }
     loadClue();
+    return () => { cancelled = true; };
   }, [clueId]);
 
   const config = useMemo(() => {
@@ -319,14 +326,31 @@ export default function GuessingPage() {
           return newPicked;
         }
 
-        // Auto-end only for non-zero clues when all reds found
-        if (effectiveTargetCount > 0) {
-          const newRedCount = newPicked.filter((i) => board!.cards[i].color === 'red').length;
-          if (newRedCount >= effectiveTargetCount) {
-            clearActiveGuess();
-            setTimeout(() => finishGame(newPicked, false), 400);
-            return newPicked;
-          }
+        // Auto-end: all target reds found (normal clues)
+        const newRedCount = newPicked.filter((i) => board!.cards[i].color === 'red').length;
+        if (effectiveTargetCount > 0 && newRedCount >= effectiveTargetCount) {
+          clearActiveGuess();
+          setTimeout(() => finishGame(newPicked, false), 400);
+          return newPicked;
+        }
+
+        // Auto-end: all red words picked (for 0-clues where target count is unknown)
+        const totalReds = colorCounts?.red ?? 0;
+        if (effectiveTargetCount === 0 && totalReds > 0 && newRedCount >= totalReds) {
+          clearActiveGuess();
+          setTimeout(() => finishGame(newPicked, false), 400);
+          return newPicked;
+        }
+
+        // Auto-end: 3 non-red words picked (blue or neutral)
+        const nonRedCount = newPicked.filter((i) => {
+          const c = board!.cards[i].color;
+          return c === 'blue' || c === 'neutral';
+        }).length;
+        if (nonRedCount >= 3) {
+          clearActiveGuess();
+          setTimeout(() => finishGame(newPicked, false), 400);
+          return newPicked;
         }
 
         // Save in-progress state
