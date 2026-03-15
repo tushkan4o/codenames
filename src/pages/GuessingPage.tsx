@@ -87,6 +87,10 @@ export default function GuessingPage() {
   // Block picks once auto-end triggers (before finishGame setTimeout fires)
   const endingRef = useRef(false);
 
+  // Track all committed picks (revealed + currently animating) synchronously
+  // This prevents rapid clicks from bypassing auto-end checks
+  const committedPicksRef = useRef<number[]>([]);
+
   // Smart link: conflict with active guess on different clue
   const [conflictingGuess, setConflictingGuess] = useState<ActiveGuessState | null>(null);
 
@@ -97,6 +101,7 @@ export default function GuessingPage() {
       if (!clueId) return;
       setPhase('picking');
       endingRef.current = false;
+      committedPicksRef.current = [];
       setAssassinHit(false);
       setScore(0);
       setRevealDelays({});
@@ -192,17 +197,21 @@ export default function GuessingPage() {
       const roamingPicks = roamingState?.pickedIndices;
       if (Array.isArray(roamingPicks) && roamingPicks.length > 0) {
         setPickedIndices(roamingPicks);
+        committedPicksRef.current = roamingPicks;
         saveActiveGuess(clueId, roamingPicks); // sync to localStorage
         clearRoamingState();
       } else if (saved && saved.clueId === clueId && saved.pickedIndices.length > 0) {
         setPickedIndices(saved.pickedIndices);
+        committedPicksRef.current = saved.pickedIndices;
         saveSessionState(`/guess/${clueId}`, { pickedIndices: saved.pickedIndices });
       } else if (activeGuessSource && activeGuessSource.clueId === clueId && activeGuessSource.pickedIndices.length > 0) {
         // Cross-device: restore picks from server active_guess
         setPickedIndices(activeGuessSource.pickedIndices);
+        committedPicksRef.current = activeGuessSource.pickedIndices;
         saveActiveGuess(clueId, activeGuessSource.pickedIndices);
       } else {
         setPickedIndices([]);
+        committedPicksRef.current = [];
       }
 
       setLoading(false);
@@ -307,6 +316,9 @@ export default function GuessingPage() {
         next.delete(index);
         return next;
       });
+      // Remove from committed picks and re-evaluate endingRef
+      committedPicksRef.current = committedPicksRef.current.filter((i) => i !== index);
+      endingRef.current = false;
       return;
     }
 
@@ -317,6 +329,43 @@ export default function GuessingPage() {
       });
       setRevealTimers({});
       setRevealingIndices(new Set());
+    }
+
+    // Synchronous auto-end check BEFORE animation starts
+    // This prevents rapid clicks from bypassing the 3-non-red limit
+    if (board.cards[index].color !== 'red' && board.cards[index].color !== 'assassin') {
+      const committed = committedPicksRef.current;
+      const nonRedCommitted = committed.filter((i) => {
+        const c = board.cards[i].color;
+        return c === 'blue' || c === 'neutral';
+      }).length;
+      if (nonRedCommitted >= 3) return; // Already at limit, block pick
+    }
+
+    // Commit this pick synchronously (before animation delay)
+    committedPicksRef.current = [...committedPicksRef.current, index];
+
+    // Check if this pick triggers auto-end — set endingRef synchronously
+    const card = board.cards[index];
+    if (card.color === 'assassin') {
+      endingRef.current = true;
+    } else {
+      const committed = committedPicksRef.current;
+      const redCount = committed.filter((i) => board.cards[i].color === 'red').length;
+      if (effectiveTargetCount > 0 && redCount >= effectiveTargetCount) {
+        endingRef.current = true;
+      } else {
+        const totalReds = colorCounts?.red ?? 0;
+        if (effectiveTargetCount === 0 && totalReds > 0 && redCount >= totalReds) {
+          endingRef.current = true;
+        } else {
+          const nonRedCount = committed.filter((i) => {
+            const c = board.cards[i].color;
+            return c === 'blue' || c === 'neutral';
+          }).length;
+          if (nonRedCount >= 3) endingRef.current = true;
+        }
+      }
     }
 
     // Start border trace animation
