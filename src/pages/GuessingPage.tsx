@@ -21,7 +21,7 @@ const ACTIVE_GUESS_KEY = 'codenames_active_guess';
 interface ActiveGuessState {
   clueId: string;
   pickedIndices: number[];
-  timestamp: number;
+  timestamp?: number;
 }
 
 function saveActiveGuess(clueId: string, pickedIndices: number[]) {
@@ -168,25 +168,27 @@ export default function GuessingPage() {
         return;
       }
 
-      // Check for active guess on a different clue (conflict)
+      // Check for active guess on a different clue (conflict) — localStorage + server
       const saved = loadActiveGuess();
-      if (saved && saved.clueId !== clueId && saved.pickedIndices.length > 0) {
+      const activeGuessSource = saved ?? (user ? await api.getActiveGuess(user.id) : null);
+      if (cancelled) return;
+      if (activeGuessSource && activeGuessSource.clueId !== clueId && activeGuessSource.pickedIndices.length > 0) {
         // Verify the conflicting clue still exists and user hasn't solved it
-        const conflictClue = await api.getClueById(saved.clueId, false, user?.id);
+        const conflictClue = await api.getClueById(activeGuessSource.clueId, false, user?.id);
         if (cancelled) return;
         if (conflictClue && !conflictClue.existingResult) {
-          setConflictingGuess(saved);
+          setConflictingGuess(activeGuessSource);
           setLoading(false);
           return;
         }
-        // Clue was deleted or already solved — clear stale localStorage
+        // Clue was deleted or already solved — clear stale state
         clearActiveGuess();
       }
 
       // Clear stale completed state — if we reach here, server confirmed no existingResult
       localStorage.removeItem(COMPLETED_GUESS_KEY);
 
-      // Restore in-progress game: roamingState (cross-device) > localStorage (same browser) > fresh
+      // Restore in-progress game: roamingState > localStorage > server active_guess > fresh
       const roamingPicks = roamingState?.pickedIndices;
       if (Array.isArray(roamingPicks) && roamingPicks.length > 0) {
         setPickedIndices(roamingPicks);
@@ -195,6 +197,10 @@ export default function GuessingPage() {
       } else if (saved && saved.clueId === clueId && saved.pickedIndices.length > 0) {
         setPickedIndices(saved.pickedIndices);
         saveSessionState(`/guess/${clueId}`, { pickedIndices: saved.pickedIndices });
+      } else if (activeGuessSource && activeGuessSource.clueId === clueId && activeGuessSource.pickedIndices.length > 0) {
+        // Cross-device: restore picks from server active_guess
+        setPickedIndices(activeGuessSource.pickedIndices);
+        saveActiveGuess(clueId, activeGuessSource.pickedIndices);
       } else {
         setPickedIndices([]);
       }

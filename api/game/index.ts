@@ -103,6 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     case 'claim-session': return handleClaimSession(req, res, sql);
     case 'check-session': return handleCheckSession(req, res, sql);
     case 'save-state': return handleSaveState(req, res, sql);
+    case 'active-guess': return handleGetActiveGuess(req, res, sql);
     case 'captain-game': return handleCaptainGame(req, res, sql);
     case 'captain-reshuffle': return handleCaptainReshuffle(req, res, sql);
     case 'init': return handleInit(res, sql);
@@ -566,9 +567,29 @@ async function handleSaveState(req: VercelRequest, res: VercelResponse, sql: any
       SET session_url = ${url ?? null}, session_state = ${state ? JSON.stringify(state) : null}
       WHERE id = ${userId} AND active_session = ${sessionId}
     `;
+    // Piggyback: update active_guess when saving guess state
+    if (typeof url === 'string' && url.startsWith('/guess/') && state?.pickedIndices) {
+      const clueId = url.replace('/guess/', '');
+      await sql`UPDATE users SET active_guess = ${JSON.stringify({ clueId, pickedIndices: state.pickedIndices })}::jsonb WHERE id = ${userId}`;
+    } else if (state === null && typeof url === 'string' && url.startsWith('/guess/')) {
+      // Game finished — clear active guess
+      await sql`UPDATE users SET active_guess = NULL WHERE id = ${userId}`;
+    }
     res.json({ ok: true });
   } catch {
     res.json({ ok: true });
+  }
+}
+
+async function handleGetActiveGuess(req: VercelRequest, res: VercelResponse, sql: any) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  const { userId } = req.query;
+  if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'userId required' });
+  try {
+    const rows = await sql`SELECT active_guess FROM users WHERE id = ${userId}`;
+    res.json({ activeGuess: rows.length > 0 ? rows[0].active_guess : null });
+  } catch {
+    res.json({ activeGuess: null });
   }
 }
 
@@ -797,6 +818,7 @@ async function handleInit(res: VercelResponse, sql: any) {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_ranked JSONB`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_casual JSONB`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS captain_active TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS active_guess JSONB`;
     await sql`CREATE TABLE IF NOT EXISTS comments (id SERIAL PRIMARY KEY, clue_id TEXT NOT NULL REFERENCES clues(id), user_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at BIGINT NOT NULL, reply_to_id INT)`;
     await sql`ALTER TABLE comments ADD COLUMN IF NOT EXISTS reply_to_id INT`;
     await sql`CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), type TEXT NOT NULL, actor_id TEXT, clue_id TEXT, clue_word TEXT, message TEXT, created_at BIGINT NOT NULL, read BOOLEAN DEFAULT false)`;

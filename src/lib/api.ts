@@ -142,6 +142,11 @@ export const api = {
     return post('/api/game?route=captain-reshuffle', { userId, wordPack });
   },
 
+  async getActiveGuess(userId: string): Promise<{ clueId: string; pickedIndices: number[] } | null> {
+    const data = await get<{ activeGuess: { clueId: string; pickedIndices: number[] } | null }>(`/api/game?route=active-guess&userId=${encodeURIComponent(userId)}`);
+    return data.activeGuess;
+  },
+
   async getRandomClue(
     userId: string,
     excludeIds: string[] = [],
