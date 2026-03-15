@@ -565,8 +565,9 @@ async function handleSaveState(req: VercelRequest, res: VercelResponse, sql: any
       UPDATE users
       SET session_url = ${url ?? null}, session_state = ${state ? JSON.stringify(state) : null}
       WHERE id = ${userId} AND active_session = ${sessionId}
+      RETURNING id
     `;
-    const active = (result.count ?? result.rowCount ?? 0) > 0;
+    const active = result.length > 0;
     res.json({ ok: true, active });
   } catch {
     res.json({ ok: true, active: true });
