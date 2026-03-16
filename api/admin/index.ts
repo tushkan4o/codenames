@@ -28,6 +28,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({ action, adminId, method: req.method, query: req.query, url: req.url });
   }
 
+  // Maintenance status — public, no auth needed (users must be able to check)
+  if (action === 'maintenanceStatus' && req.method === 'GET') {
+    const rows = await sql`SELECT value FROM config WHERE key = 'maintenance'`;
+    if (rows.length === 0) return res.json({ enabled: false });
+    const val = rows[0].value as { enabled: boolean; message?: string };
+    return res.json({ enabled: val.enabled || false, message: val.message || null });
+  }
+
   if (!adminId || typeof adminId !== 'string') {
     return res.status(400).json({ error: 'adminId required' });
   }
@@ -338,6 +346,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.json({ ok: true, updated: updates });
     }
 
+    if (action === 'setMaintenance') {
+      const { enabled, message } = req.body || {};
+      const value = JSON.stringify({ enabled: !!enabled, message: message || null });
+      await sql`INSERT INTO config (key, value) VALUES ('maintenance', ${value}::jsonb) ON CONFLICT (key) DO UPDATE SET value = ${value}::jsonb`;
+      return res.json({ ok: true });
+    }
+
     if (action === 'renameUser') {
       const { userId } = req.query;
       if (!userId || typeof userId !== 'string') {
@@ -484,6 +499,8 @@ async function handleInit(_req: VercelRequest, res: VercelResponse) {
     await sql`CREATE TABLE IF NOT EXISTS blocked_users (id SERIAL PRIMARY KEY, blocker_id TEXT NOT NULL REFERENCES users(id), blocked_id TEXT NOT NULL REFERENCES users(id), created_at BIGINT NOT NULL, UNIQUE(blocker_id, blocked_id))`;
     await sql`CREATE INDEX IF NOT EXISTS idx_blocked_blocker ON blocked_users(blocker_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_blocked_blocked ON blocked_users(blocked_id)`;
+    // Config key-value store (maintenance mode, etc.)
+    await sql`CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value JSONB NOT NULL)`;
     await sql`UPDATE users SET password = '1242', is_admin = true WHERE id = 'tushkan'`;
     res.json({ ok: true, message: 'Tables created/updated successfully' });
   } catch (err: unknown) {

@@ -1,4 +1,4 @@
-import { Component, useEffect } from 'react';
+import { Component, useEffect, useState } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
@@ -34,6 +34,36 @@ function EvictionBanner() {
         >
           Переподключиться
         </button>
+      </div>
+    </div>
+  );
+}
+
+function MaintenanceBanner() {
+  const { user } = useAuth();
+  const [maintenance, setMaintenance] = useState<{ enabled: boolean; message?: string | null } | null>(null);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval>;
+    const check = () => {
+      api.getMaintenanceStatus().then(setMaintenance).catch(() => {});
+    };
+    check();
+    timer = setInterval(check, 30_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Don't block admins — they need to toggle it off
+  if (!maintenance?.enabled || user?.isAdmin) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center">
+      <div className="bg-gray-800 rounded-xl p-8 max-w-sm text-center">
+        <div className="text-4xl mb-4">🔧</div>
+        <p className="text-amber-400 text-lg font-bold mb-2">Техническое обслуживание</p>
+        <p className="text-gray-300 text-sm">
+          {maintenance.message || 'Сервис временно недоступен. Попробуйте позже.'}
+        </p>
       </div>
     </div>
   );
@@ -153,6 +183,7 @@ export default function App() {
         <Analytics />
         <GameProvider>
           <EvictionBanner />
+          <MaintenanceBanner />
           <ProfileModal />
           <OAuthHandler />
           <RoamingRedirectHandler />

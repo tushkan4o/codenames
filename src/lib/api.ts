@@ -454,4 +454,13 @@ export const api = {
   async recalcAll(): Promise<{ ok: boolean }> {
     return post('/api/game?route=recalc-all', {});
   },
+
+  // Maintenance mode
+  async getMaintenanceStatus(): Promise<{ enabled: boolean; message?: string | null }> {
+    return get('/api/admin?action=maintenanceStatus');
+  },
+
+  async setMaintenanceMode(adminId: string, enabled: boolean, message?: string): Promise<void> {
+    await patch(`/api/admin?action=setMaintenance&adminId=${encodeURIComponent(adminId)}`, { enabled, message });
+  },
 };

@@ -77,6 +77,10 @@ export default function AdminPage() {
   const [recalcLoading, setRecalcLoading] = useState(false);
   const [recalcStatus, setRecalcStatus] = useState<string | null>(null);
 
+  // Maintenance mode
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+
   // Clue accordion detail data (lazy-loaded on expand)
   interface ClueDetail {
     reports: Report[];
@@ -99,6 +103,8 @@ export default function AdminPage() {
       navigate('/');
       return;
     }
+    // Load maintenance status on mount
+    api.getMaintenanceStatus().then((s) => setMaintenanceEnabled(s.enabled)).catch(() => {});
   }, [user, navigate]);
 
   useEffect(() => {
@@ -183,6 +189,17 @@ export default function AdminPage() {
       setRecalcLoading(false);
       setTimeout(() => setRecalcStatus(null), 3000);
     }
+  }
+
+  async function handleToggleMaintenance() {
+    if (!user) return;
+    setMaintenanceLoading(true);
+    try {
+      const newState = !maintenanceEnabled;
+      await api.setMaintenanceMode(user.id, newState);
+      setMaintenanceEnabled(newState);
+    } catch { /* ignore */ }
+    setMaintenanceLoading(false);
   }
 
   if (!user?.isAdmin) return null;
@@ -409,6 +426,17 @@ export default function AdminPage() {
             }`}
           >
             {recalcLoading ? '...' : recalcStatus === 'ok' ? 'OK' : recalcStatus === 'error' ? 'ERR' : 'Recalc'}
+          </button>
+          <button
+            onClick={handleToggleMaintenance}
+            disabled={maintenanceLoading}
+            className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg font-bold text-xs transition-colors ${
+              maintenanceEnabled ? 'bg-amber-600 hover:bg-amber-500 text-white' :
+              maintenanceLoading ? 'bg-gray-700 text-gray-400' :
+              'bg-gray-700 hover:bg-gray-600 text-gray-300'
+            }`}
+          >
+            {maintenanceLoading ? '...' : maintenanceEnabled ? '🔧 ON' : '🔧 OFF'}
           </button>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-3 mb-4">
