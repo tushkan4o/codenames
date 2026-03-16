@@ -1,73 +1,147 @@
-# React + TypeScript + Vite
+# Codenames Online
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A multiplayer web adaptation of the board game **Codenames**, built with React and deployed on Vercel. Players take turns as spymasters (giving clues) and guessers (finding target words on the board). Features ranked/casual modes, leaderboards, user profiles, and a full admin panel.
 
-Currently, two official plugins are available:
+**Live:** [codenames-lyart.vercel.app](https://codenames-lyart.vercel.app)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- **Two roles** — Spymaster gives word+number clues; Guesser picks cards on the board
+- **Board sizes** — 4×4 (16 cards) and 5×5 (25 cards)
+- **Ranked & Casual modes** — Ranked affects leaderboard standings; Casual allows custom color counts
+- **Clue-0 mode** — Spymaster marks dangerous cards to warn teammates away
+- **Deterministic boards** — Seed-based generation ensures identical boards for all players
+- **Anti-cheat** — Target cards are hidden from guessers until results are submitted; scoring is server-side
+- **Leaderboards** — Rankings for top spymasters, guessers, and best clues
+- **User profiles** — Stats, game history, clue ratings
+- **Interactive tutorial** — Step-by-step walkthrough for new players
+- **OAuth login** — Optional account linking
+- **Admin panel** — Manage clues, users, results, and reports
+- **Russian UI** — All interface text in Russian
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, TypeScript 5.9, Vite 7 |
+| Styling | Tailwind CSS 3.4 |
+| Routing | React Router v7 |
+| Backend | Vercel Serverless Functions (TypeScript) |
+| Database | Neon PostgreSQL (serverless) |
+| Icons | Heroicons React |
+| Deployment | Vercel (auto-deploy on push) |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Project Structure
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+codenames/
+├── api/                    # Vercel Serverless Functions (backend)
+│   ├── auth/               # Login, OAuth
+│   ├── game/               # Clue CRUD, guessing, random clue
+│   ├── leaderboard/        # Rankings
+│   ├── social/             # Profiles, ratings, comments
+│   ├── admin/              # Admin operations
+│   └── feedback/           # User feedback
+│
+├── src/
+│   ├── pages/              # Route pages (Login, Home, Setup, ClueGiving, Guessing, Results, etc.)
+│   ├── components/         # UI components (board/, clue/, game/, layout/, profile/, settings/, shared/)
+│   ├── context/            # React contexts (Auth, Game state machine, ProfileModal)
+│   ├── hooks/              # Custom hooks (drag-and-drop)
+│   ├── i18n/               # Internationalization (Russian)
+│   ├── lib/                # Utilities (API client, board generator, scoring, validation)
+│   ├── types/              # TypeScript type definitions
+│   ├── data/               # Word lists (Russian, English)
+│   └── tutorial/           # Tutorial scenarios and state machine
+│
+├── public/                 # Static assets
+├── schema.sql              # Database schema reference
+├── vercel.json             # Vercel config (SPA rewrites, cron jobs)
+├── tailwind.config.js      # Custom theme (board colors, animations)
+├── vite.config.ts          # Vite bundler config
+└── package.json            # Dependencies and scripts
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Getting Started
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Prerequisites
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- Node.js 18+
+- A [Neon](https://neon.tech) PostgreSQL database
+- A [Vercel](https://vercel.com) account (for deployment)
+
+### Local Development
+
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/<your-username>/codenames.git
+   cd codenames
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+
+   Create a `.env.local` file:
+   ```env
+   DATABASE_URL=postgresql://<user>:<password>@<host>/<database>?sslmode=require
+   ```
+
+4. **Initialize the database**
+
+   Deploy to Vercel first (or use `vercel dev`), then visit:
+   ```
+   /api/admin?action=init
+   ```
+   This creates all tables and runs migrations.
+
+5. **Start the dev server**
+   ```bash
+   npm run dev
+   ```
+
+   The app runs at `http://localhost:5173`.
+
+### Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Vite dev server |
+| `npm run build` | Type-check and build for production |
+| `npm run lint` | Run ESLint |
+| `npm run preview` | Preview production build locally |
+
+## Deployment
+
+Push to `master` → Vercel auto-deploys. No additional CI/CD configuration needed.
+
+The Vercel project must have the `DATABASE_URL` environment variable set to your Neon connection string.
+
+## Database
+
+The app uses 6 tables: `users`, `clues`, `results`, `ratings`, `reports`, and `oauth_accounts`. See [schema.sql](schema.sql) for the full schema.
+
+Key constraints:
+- Users can't guess their own clues
+- One guess attempt per clue per user
+- Scores are computed server-side to prevent cheating
+
+## API
+
+All API endpoints live under `/api/` and are deployed as Vercel Serverless Functions.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Login or auto-create account |
+| GET/POST | `/api/game` | Clue operations (create, get, random) |
+| GET | `/api/leaderboard` | Rankings by board size |
+| GET/POST | `/api/social` | Profiles, ratings, comments |
+| GET/DELETE | `/api/admin` | Admin CRUD operations |
+| GET | `/api/admin?action=init` | Initialize/migrate database |
+
+## License
+
+This project is not currently licensed for redistribution. All rights reserved.
